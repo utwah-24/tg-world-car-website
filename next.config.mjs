@@ -5,6 +5,14 @@ const nextConfig = {
   },
   images: {
     unoptimized: true,
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'tgworld.e-saloon.online',
+        port: '',
+        pathname: '/public/**',
+      },
+    ],
   },
 }
 

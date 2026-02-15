@@ -2,9 +2,15 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Menu, X, Car } from "lucide-react"
+import { Menu, X } from "lucide-react"
+import Image from "next/image"
 
-export function Header() {
+interface HeaderProps {
+  logoLight?: string
+  logoDark?: string
+}
+
+export function Header({ logoLight = "/placeholder-logo.svg", logoDark = "/placeholder-logo.svg" }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   const scrollToSection = (sectionId: string) => {
@@ -21,52 +27,28 @@ export function Header() {
         <div className="flex items-center justify-between h-16 lg:h-18">
           {/* Logo */}
           <div className="flex items-center gap-2">
-            <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center">
-              <Car className="w-5 h-5 text-primary-foreground" />
+            <div className="relative h-10 w-32 sm:h-12 sm:w-40">
+              <Image
+                src={logoLight}
+                alt="TG World"
+                fill
+                className="object-contain"
+                priority
+                unoptimized={logoLight?.startsWith('http')}
+                onError={(e) => {
+                  // Fallback to placeholder if image fails to load
+                  (e.target as HTMLImageElement).src = "/placeholder-logo.svg"
+                }}
+              />
             </div>
-            <span className="font-semibold text-lg tracking-tight text-foreground">TG World</span>
           </div>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8">
-            <button 
-              onClick={() => scrollToSection("popular")}
-              className="text-sm font-medium text-foreground hover:text-primary transition-colors"
-            >
-              Buy
-            </button>
-            <button 
-              onClick={() => scrollToSection("coming-soon")}
-              className="text-sm font-medium text-foreground hover:text-primary transition-colors"
-            >
-              Sell
-            </button>
-            <button 
-              onClick={() => scrollToSection("features")}
-              className="text-sm font-medium text-foreground hover:text-primary transition-colors"
-            >
-              Finance
-            </button>
-            <button 
-              onClick={() => scrollToSection("contact")}
-              className="text-sm font-medium text-foreground hover:text-primary transition-colors"
-            >
-              Reviews
-            </button>
-          </nav>
-
-          {/* CTA Buttons */}
-          <div className="hidden md:flex items-center gap-3">
-            <Button 
-              onClick={() => scrollToSection("contact")}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-5"
-            >
-              Post Your Add
-            </Button>
+          {/* Sign In Button */}
+          <div className="hidden md:flex items-center">
             <Button 
               variant="outline"
               onClick={() => scrollToSection("contact")}
-              className="rounded-full px-5 border-border text-foreground hover:bg-muted"
+              className="rounded-full px-6 border-border text-foreground hover:bg-muted"
             >
               Sign In
             </Button>
@@ -86,45 +68,16 @@ export function Header() {
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t border-border">
             <nav className="flex flex-col gap-4">
-              <button 
-                onClick={() => scrollToSection("popular")}
-                className="text-left text-sm font-medium text-foreground hover:text-primary transition-colors"
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  scrollToSection("contact")
+                  setIsMenuOpen(false)
+                }}
+                className="w-full rounded-full border-border text-foreground"
               >
-                Buy
-              </button>
-              <button 
-                onClick={() => scrollToSection("coming-soon")}
-                className="text-left text-sm font-medium text-foreground hover:text-primary transition-colors"
-              >
-                Sell
-              </button>
-              <button 
-                onClick={() => scrollToSection("features")}
-                className="text-left text-sm font-medium text-foreground hover:text-primary transition-colors"
-              >
-                Finance
-              </button>
-              <button 
-                onClick={() => scrollToSection("contact")}
-                className="text-left text-sm font-medium text-foreground hover:text-primary transition-colors"
-              >
-                Reviews
-              </button>
-              <div className="flex gap-3 mt-2">
-                <Button 
-                  onClick={() => scrollToSection("contact")}
-                  className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 rounded-full"
-                >
-                  Post Your Add
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => scrollToSection("contact")}
-                  className="flex-1 rounded-full border-border text-foreground"
-                >
-                  Sign In
-                </Button>
-              </div>
+                Sign In
+              </Button>
             </nav>
           </div>
         )}

@@ -1,3 +1,5 @@
+import { fetchCars, fetchCarsByCategory, fetchThirdPartyCars, type CarFromAPI } from './api'
+
 export interface Car {
   id: string
   name: string
@@ -18,23 +20,18 @@ export interface Car {
   description?: string
 }
 
+// Type alias for compatibility
+export type { CarFromAPI }
+
 export const cars: Car[] = [
-  // Top Selling Cars
+  // Top Selling Cars - Using placeholder, real data comes from API
   {
     id: "1",
     name: "Toyota Land Cruiser ZX",
     year: 2024,
     price: "375,000,000 TZS",
-    image: "/cars/2024 TOYOTA LANDCRUISER ZX/Front.jpeg",
-    images: [
-      "/cars/2024 TOYOTA LANDCRUISER ZX/Front.jpeg",
-      "/cars/2024 TOYOTA LANDCRUISER ZX/Back.jpeg",
-      "/cars/2024 TOYOTA LANDCRUISER ZX/side.jpeg",
-      "/cars/2024 TOYOTA LANDCRUISER ZX/interior.jpeg",
-      "/cars/2024 TOYOTA LANDCRUISER ZX/Interior2.jpeg",
-      "/cars/2024 TOYOTA LANDCRUISER ZX/Engine.jpeg",
-      "/cars/2024 TOYOTA LANDCRUISER ZX/Transmission.jpeg"
-    ],
+    image: "/placeholder.svg",
+    images: ["/placeholder.svg"],
     category: "top-selling",
     mileage: "0km (Brand New)",
     transmission: "Automatic 10 Speed",
@@ -52,15 +49,8 @@ export const cars: Car[] = [
     name: "Range Rover Sport Autobiography",
     year: 2024,
     price: "520,000,000 TZS",
-    image: "/cars/2024 RANGE ROVER SPORTS AUTOBIOGRAPHY/front.jpeg",
-    images: [
-      "/cars/2024 RANGE ROVER SPORTS AUTOBIOGRAPHY/front.jpeg",
-      "/cars/2024 RANGE ROVER SPORTS AUTOBIOGRAPHY/back .jpeg",
-      "/cars/2024 RANGE ROVER SPORTS AUTOBIOGRAPHY/side .jpeg",
-      "/cars/2024 RANGE ROVER SPORTS AUTOBIOGRAPHY/interior.jpeg",
-      "/cars/2024 RANGE ROVER SPORTS AUTOBIOGRAPHY/interior2.jpeg",
-      "/cars/2024 RANGE ROVER SPORTS AUTOBIOGRAPHY/sunroof.jpeg"
-    ],
+    image: "/placeholder.svg",
+    images: ["/placeholder.svg"],
     category: "top-selling",
     mileage: "4,700 km",
     transmission: "Automatic 8 Speed",
@@ -77,16 +67,8 @@ export const cars: Car[] = [
     name: "Toyota Land Cruiser Sahara",
     year: 2024,
     price: "395,000,000 TZS",
-    image: "/cars/2024 TOYOTA LANDCRUISER SAHARA/front .jpeg",
-    images: [
-      "/cars/2024 TOYOTA LANDCRUISER SAHARA/front .jpeg",
-      "/cars/2024 TOYOTA LANDCRUISER SAHARA/back .jpeg",
-      "/cars/2024 TOYOTA LANDCRUISER SAHARA/Dashboard.jpeg",
-      "/cars/2024 TOYOTA LANDCRUISER SAHARA/Interior.jpeg",
-      "/cars/2024 TOYOTA LANDCRUISER SAHARA/front_seats.jpeg",
-      "/cars/2024 TOYOTA LANDCRUISER SAHARA/Back_seats.jpeg",
-      "/cars/2024 TOYOTA LANDCRUISER SAHARA/Engine.jpeg"
-    ],
+    image: "/placeholder.svg",
+    images: ["/placeholder.svg"],
     category: "top-selling",
     mileage: "22,000 km",
     transmission: "Automatic",
@@ -104,13 +86,8 @@ export const cars: Car[] = [
     name: "Ford Ranger Wildtrack",
     year: 2023,
     price: "155,000,000 TZS",
-    image: "/cars/2023 FORD RANGER WILDTRACK/front.jpeg",
-    images: [
-      "/cars/2023 FORD RANGER WILDTRACK/front.jpeg",
-      "/cars/2023 FORD RANGER WILDTRACK/back.jpeg",
-      "/cars/2023 FORD RANGER WILDTRACK/side.jpeg",
-      "/cars/2023 FORD RANGER WILDTRACK/Interior.jpeg"
-    ],
+    image: "/placeholder.svg",
+    images: ["/placeholder.svg"],
     category: "coming-soon",
     mileage: "Low Mileage",
     transmission: "Automatic",
@@ -126,12 +103,8 @@ export const cars: Car[] = [
     name: "Toyota Fortuner",
     year: 2023,
     price: "165,000,000 TZS",
-    image: "/cars/2023 TOYOTA FORTUNER/Front.jpeg",
-    images: [
-      "/cars/2023 TOYOTA FORTUNER/Front.jpeg",
-      "/cars/2023 TOYOTA FORTUNER/Back.jpeg",
-      "/cars/2023 TOYOTA FORTUNER/interior.jpeg"
-    ],
+    image: "/placeholder.svg",
+    images: ["/placeholder.svg"],
     category: "coming-soon",
     mileage: "Low Mileage",
     transmission: "Automatic",
@@ -149,12 +122,8 @@ export const cars: Car[] = [
     name: "Scania Dump Truck 94C-300",
     year: 2003,
     price: "185,000,000 TZS",
-    image: "/cars/2003 SCANIA DUMP TRUCK 94C - 300/Front.jpeg",
-    images: [
-      "/cars/2003 SCANIA DUMP TRUCK 94C - 300/Front.jpeg",
-      "/cars/2003 SCANIA DUMP TRUCK 94C - 300/back .jpeg",
-      "/cars/2003 SCANIA DUMP TRUCK 94C - 300/side.jpeg"
-    ],
+    image: "/placeholder.svg",
+    images: ["/placeholder.svg"],
     category: "coming-soon",
     transmission: "Manual",
     fuel: "Diesel",
@@ -167,12 +136,8 @@ export const cars: Car[] = [
     name: "Scania Dump Truck 124C-380",
     year: 2004,
     price: "185,000,000 TZS",
-    image: "/cars/2004 SCANIA DUMP TRUCK 124c - 380/Front.jpeg",
-    images: [
-      "/cars/2004 SCANIA DUMP TRUCK 124c - 380/Front.jpeg",
-      "/cars/2004 SCANIA DUMP TRUCK 124c - 380/back.jpeg",
-      "/cars/2004 SCANIA DUMP TRUCK 124c - 380/side.jpeg"
-    ],
+    image: "/placeholder.svg",
+    images: ["/placeholder.svg"],
     category: "coming-soon",
     transmission: "Manual",
     fuel: "Diesel",
@@ -186,15 +151,8 @@ export const cars: Car[] = [
     name: "Subaru Forester SJ5",
     year: 2015,
     price: "37,500,000 TZS",
-    image: "/cars/2015 SUBARU FORESTER SJ5/Front.jpeg",
-    images: [
-      "/cars/2015 SUBARU FORESTER SJ5/Front.jpeg",
-      "/cars/2015 SUBARU FORESTER SJ5/back.jpeg",
-      "/cars/2015 SUBARU FORESTER SJ5/Side.jpeg",
-      "/cars/2015 SUBARU FORESTER SJ5/interior.jpeg",
-      "/cars/2015 SUBARU FORESTER SJ5/Engine.jpeg",
-      "/cars/2015 SUBARU FORESTER SJ5/boot.jpeg"
-    ],
+    image: "/placeholder.svg",
+    images: ["/placeholder.svg"],
     category: "sold-out",
     mileage: "58,000 km",
     transmission: "Automatic",
@@ -211,16 +169,8 @@ export const cars: Car[] = [
     name: "Toyota Harrier 240G",
     year: 2007,
     price: "37,500,000 TZS",
-    image: "/cars/2007 TOYOTA Harrier 240G L PACKAGECBA-ACU30W/Front.jpeg",
-    images: [
-      "/cars/2007 TOYOTA Harrier 240G L PACKAGECBA-ACU30W/Front.jpeg",
-      "/cars/2007 TOYOTA Harrier 240G L PACKAGECBA-ACU30W/Back.jpeg",
-      "/cars/2007 TOYOTA Harrier 240G L PACKAGECBA-ACU30W/Side.jpeg",
-      "/cars/2007 TOYOTA Harrier 240G L PACKAGECBA-ACU30W/Interior.jpeg",
-      "/cars/2007 TOYOTA Harrier 240G L PACKAGECBA-ACU30W/Seats.jpeg",
-      "/cars/2007 TOYOTA Harrier 240G L PACKAGECBA-ACU30W/Seats2.jpeg",
-      "/cars/2007 TOYOTA Harrier 240G L PACKAGECBA-ACU30W/Engine.jpeg"
-    ],
+    image: "/placeholder.svg",
+    images: ["/placeholder.svg"],
     category: "sold-out",
     mileage: "47,518 km",
     transmission: "Automatic",
@@ -237,12 +187,8 @@ export const cars: Car[] = [
     name: "Toyota Land Cruiser ZX",
     year: 2011,
     price: "152,500,000 TZS",
-    image: "/cars/2011 TOYOTA LANDCRUISER ZX/Front.jpeg",
-    images: [
-      "/cars/2011 TOYOTA LANDCRUISER ZX/Front.jpeg",
-      "/cars/2011 TOYOTA LANDCRUISER ZX/Back.jpeg",
-      "/cars/2011 TOYOTA LANDCRUISER ZX/interior.jpeg"
-    ],
+    image: "/placeholder.svg",
+    images: ["/placeholder.svg"],
     category: "sold-out",
     mileage: "Low Mileage",
     transmission: "Automatic",
@@ -255,6 +201,89 @@ export const cars: Car[] = [
   },
 ]
 
-export const getTopSellingCars = () => cars.filter(car => car.category === "top-selling")
-export const getComingSoonCars = () => cars.filter(car => car.category === "coming-soon")
-export const getSoldOutCars = () => cars.filter(car => car.category === "sold-out")
+// Helper functions to get cars by category (now async to support API)
+export const getTopSellingCars = async (): Promise<Car[]> => {
+  try {
+    const apiCars = await fetchCarsByCategory("top-selling")
+    if (apiCars && apiCars.length > 0) {
+      return apiCars
+    }
+  } catch (error) {
+    console.error('Error fetching top selling cars from API, falling back to static data:', error)
+  }
+  // Fallback to static data if API fails
+  return cars.filter(car => car.category === "top-selling")
+}
+
+export const getComingSoonCars = async (): Promise<Car[]> => {
+  try {
+    const apiCars = await fetchCarsByCategory("coming-soon")
+    if (apiCars && apiCars.length > 0) {
+      return apiCars
+    }
+  } catch (error) {
+    console.error('Error fetching coming soon cars from API, falling back to static data:', error)
+  }
+  // Fallback to static data if API fails
+  return cars.filter(car => car.category === "coming-soon")
+}
+
+export const getSoldOutCars = async (): Promise<Car[]> => {
+  try {
+    const apiCars = await fetchCarsByCategory("sold-out")
+    if (apiCars && apiCars.length > 0) {
+      return apiCars
+    }
+  } catch (error) {
+    console.error('Error fetching sold out cars from API, falling back to static data:', error)
+  }
+  // Fallback to static data if API fails
+  return cars.filter(car => car.category === "sold-out")
+}
+
+// Function to get all cars from API or fallback to static data
+export const getAllCars = async (): Promise<Car[]> => {
+  try {
+    const [apiCars, thirdPartyCars] = await Promise.all([
+      fetchCars(),
+      fetchThirdPartyCars()
+    ])
+    
+    // Combine and deduplicate cars by ID
+    // If a car exists in both, prefer the third-party version
+    const carMap = new Map<string, Car>()
+    
+    // Add regular cars first
+    apiCars?.forEach(car => {
+      carMap.set(car.id, car)
+    })
+    
+    // Add/override with third-party cars (they take priority)
+    thirdPartyCars?.forEach(car => {
+      carMap.set(car.id, car)
+    })
+    
+    const allCars = Array.from(carMap.values())
+    
+    if (allCars.length > 0) {
+      return allCars
+    }
+  } catch (error) {
+    console.error('Error fetching all cars from API, falling back to static data:', error)
+  }
+  // Fallback to static data if API fails
+  return cars
+}
+
+// Function to get only third-party cars
+export const getThirdPartyCars = async (): Promise<Car[]> => {
+  try {
+    const thirdPartyCars = await fetchThirdPartyCars()
+    if (thirdPartyCars && thirdPartyCars.length > 0) {
+      return thirdPartyCars
+    }
+  } catch (error) {
+    console.error('Error fetching third-party cars from API:', error)
+  }
+  return []
+}

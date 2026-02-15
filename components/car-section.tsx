@@ -101,12 +101,14 @@ export function CarSection({
 
         {/* See More Button */}
         <div className="mt-10 text-center">
-          <Button 
-            variant="outline" 
-            className="rounded-full px-8 h-11 border-primary text-primary hover:bg-primary hover:text-primary-foreground bg-transparent"
-          >
-            See More {title}
-          </Button>
+          <a href="/shop">
+            <Button 
+              variant="outline" 
+              className="rounded-full px-8 h-11 border-primary text-primary hover:bg-primary hover:text-primary-foreground bg-transparent"
+            >
+              See More {title}
+            </Button>
+          </a>
         </div>
       </div>
     </section>

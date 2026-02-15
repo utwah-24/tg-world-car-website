@@ -19,6 +19,7 @@ interface CarCardProps {
 export function CarCard({ car, showBadge, badgeText, badgeVariant = "default", delay = 0 }: CarCardProps) {
   const isSoldOut = car.category === "sold-out"
   const isComingSoon = car.category === "coming-soon"
+  const isThirdParty = car.description?.includes('[THIRD_PARTY]') || false
   const { ref, isVisible } = useScrollAnimation({ threshold: 0.1 })
 
   return (
@@ -40,6 +41,7 @@ export function CarCard({ car, showBadge, badgeText, badgeVariant = "default", d
           fill
           className={`object-cover transition-transform duration-500 group-hover:scale-105 ${isSoldOut ? "grayscale" : ""}`}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          unoptimized={car.image?.startsWith('http')}
         />
         
         {/* Location & Rating Badge */}
@@ -59,8 +61,16 @@ export function CarCard({ car, showBadge, badgeText, badgeVariant = "default", d
         </div>
 
         {/* Status Badges */}
-        {(isSoldOut || isComingSoon || (showBadge && badgeText)) && (
-          <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3">
+        {(isSoldOut || isComingSoon || isThirdParty || (showBadge && badgeText)) && (
+          <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 flex gap-2">
+            {/* Third Party Badge - Always show if it's third party */}
+            {isThirdParty && (
+              <Badge className="text-[10px] sm:text-xs font-medium bg-purple-600 text-white px-2 py-0.5 sm:px-2.5 sm:py-1">
+                Third Party
+              </Badge>
+            )}
+            
+            {/* Other badges */}
             {showBadge && badgeText && !isSoldOut && !isComingSoon && (
               <Badge variant={badgeVariant} className="text-[10px] sm:text-xs font-medium bg-primary text-primary-foreground px-2 py-0.5 sm:px-2.5 sm:py-1">
                 {badgeText}
@@ -71,7 +81,7 @@ export function CarCard({ car, showBadge, badgeText, badgeVariant = "default", d
                 Sold
               </Badge>
             )}
-            {isComingSoon && (
+            {isComingSoon && !isThirdParty && (
               <Badge className="text-[10px] sm:text-xs font-medium bg-primary text-primary-foreground px-2 py-0.5 sm:px-2.5 sm:py-1">
                 Coming Soon
               </Badge>
@@ -125,23 +135,18 @@ export function CarCard({ car, showBadge, badgeText, badgeVariant = "default", d
         {/* Description - Hidden on mobile */}
         {car.description && (
           <p className="hidden sm:block text-xs text-muted-foreground line-clamp-2 mb-4">
-            {car.description}
+            {car.description.replace('[THIRD_PARTY] ', '')}
           </p>
         )}
 
-        {/* CTA Buttons */}
-        <div className="flex gap-2 mt-3 sm:mt-4">
+        {/* CTA Button */}
+        <div className="mt-3 sm:mt-4">
           <Button 
-            className="flex-[2] bg-primary text-primary-foreground hover:bg-primary/90 rounded-full h-9 text-xs sm:text-sm font-medium px-3 sm:px-4"
+            onClick={() => window.location.href = `/car/${car.id}`}
+            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-full h-9 text-xs sm:text-sm font-medium"
             disabled={isSoldOut}
           >
-            {isSoldOut ? "Sold" : "Shop Now"}
-          </Button>
-          <Button 
-            variant="outline"
-            className="flex-1 rounded-full h-9 text-xs sm:text-sm border-border text-foreground hover:bg-muted bg-transparent px-2 sm:px-4"
-          >
-            <span>View</span>
+            {isSoldOut ? "Sold Out" : "Shop Now"}
           </Button>
         </div>
       </CardContent>

@@ -1,8 +1,13 @@
 "use client"
 
-import { Phone, Mail, MapPin, Clock, Car } from "lucide-react"
+import { Phone, Mail, MapPin, Clock } from "lucide-react"
+import Image from "next/image"
 
-export function Footer() {
+interface FooterProps {
+  logoLight?: string
+}
+
+export function Footer({ logoLight = "/placeholder-logo.svg" }: FooterProps) {
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId)
     if (element) {
@@ -16,11 +21,17 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
           {/* Brand */}
           <div className="lg:col-span-1">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center">
-                <Car className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <span className="text-lg font-semibold text-background">TG World</span>
+            <div className="relative h-10 w-32 mb-4">
+              <Image
+                src={logoLight}
+                alt="TG World"
+                fill
+                className="object-contain object-left brightness-0 invert"
+                unoptimized={logoLight?.startsWith('http')}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "/placeholder-logo.svg"
+                }}
+              />
             </div>
             <p className="text-background/70 text-sm leading-relaxed">
               Your trusted partner in finding the perfect vehicle. Premium quality, exceptional service.
