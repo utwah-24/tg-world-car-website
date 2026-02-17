@@ -22,6 +22,47 @@ export function CarCard({ car, showBadge, badgeText, badgeVariant = "default", d
   const isThirdParty = car.description?.includes('[THIRD_PARTY]') || false
   const { ref, isVisible } = useScrollAnimation({ threshold: 0.1 })
 
+  // Generate a clean summary from the description
+  const getCleanSummary = (description: string): string => {
+    if (!description) return ''
+    
+    // Remove [THIRD_PARTY] marker
+    let clean = description.replace('[THIRD_PARTY] ', '')
+    
+    // Extract key details that aren't already shown in specs
+    const engineMatch = clean.match(/Engine Size\s*:\s*([^\n]+)/i)
+    const driveMatch = clean.match(/Drive\s*:\s*(AWD|4WD|FWD|RWD)/i)
+    const seatsMatch = clean.match(/Seat Capacity\s*:\s*(\d+)/i)
+    const colorMatch = clean.match(/Color\s*:\s*([^\n]+)/i)
+    
+    const details = []
+    if (engineMatch) details.push(engineMatch[1].trim().split(' ')[0]) // Just the size like "3,000cc"
+    if (driveMatch) details.push(driveMatch[1])
+    if (seatsMatch) details.push(`${seatsMatch[1]} Seats`)
+    if (colorMatch && !colorMatch[1].includes('Price') && !colorMatch[1].includes('Engine')) {
+      details.push(colorMatch[1].trim().split('\n')[0])
+    }
+    
+    // If we have details, format them nicely
+    if (details.length > 0) {
+      return details.slice(0, 3).join(' • ')
+    }
+    
+    // Otherwise, try to get a clean first line without repetitive info
+    const lines = clean.split('\n').filter(line => 
+      !line.includes('Price :') && 
+      !line.includes('Transmission :') && 
+      !line.includes('Fuel :') && 
+      !line.includes('Mileage :') &&
+      !line.includes('Location :') &&
+      line.trim().length > 0
+    )
+    
+    return lines[0] ? lines[0].trim().substring(0, 80) : ''
+  }
+
+  const cleanSummary = car.description ? getCleanSummary(car.description) : ''
+
   return (
     <div
       ref={ref}
@@ -133,9 +174,9 @@ export function CarCard({ car, showBadge, badgeText, badgeVariant = "default", d
         </div>
 
         {/* Description - Hidden on mobile */}
-        {car.description && (
-          <p className="hidden sm:block text-xs text-muted-foreground line-clamp-2 mb-4">
-            {car.description.replace('[THIRD_PARTY] ', '')}
+        {cleanSummary && (
+          <p className="hidden sm:block text-xs text-muted-foreground line-clamp-1 mb-4">
+            {cleanSummary}
           </p>
         )}
 

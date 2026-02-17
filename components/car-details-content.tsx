@@ -4,7 +4,7 @@ import { useState } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ChevronLeft, ChevronRight, MapPin, Star, Shield, Fuel, Gauge, Calendar, Car as CarIcon } from "lucide-react"
+import { ChevronLeft, ChevronRight, MapPin, Star, Shield, Fuel, Gauge, Calendar, Car as CarIcon, DollarSign, Cog, Palette, Settings, Users, Check } from "lucide-react"
 import type { Car } from "@/lib/cars-data"
 
 interface CarDetailsContentProps {
@@ -190,13 +190,102 @@ export function CarDetailsContent({ car }: CarDetailsContentProps) {
               </div>
             )}
 
-            {/* Description */}
+            {/* Description - Redesigned */}
             {car.description && (
               <div className="mt-6 bg-card rounded-2xl p-6 border border-border animate-fade-in-up" style={{ animationDelay: "0.6s", opacity: 0, animationFillMode: "forwards" }}>
-                <h2 className="text-xl font-bold mb-4 text-foreground">Description</h2>
-                <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
-                  {car.description.replace('[THIRD_PARTY] ', '')}
-                </p>
+                <h2 className="text-xl font-bold mb-6 text-foreground flex items-center gap-2">
+                  <span className="text-2xl">📋</span>
+                  Vehicle Details
+                </h2>
+                
+                {(() => {
+                  const desc = car.description.replace('[THIRD_PARTY] ', '')
+                  const lines = desc.split('\n').filter(line => line.trim())
+                  
+                  // Extract different sections
+                  const specs: { label: string, value: string, IconComponent: any }[] = []
+                  const highlights: string[] = []
+                  
+                  lines.forEach(line => {
+                    const priceMatch = line.match(/Price\s*:\s*(.+)/i)
+                    const engineMatch = line.match(/Engine Size\s*:\s*(.+)/i)
+                    const fuelMatch = line.match(/Fuel\s*:\s*(.+)/i)
+                    const transMatch = line.match(/Transmission\s*:\s*(.+)/i)
+                    const mileageMatch = line.match(/Mileage\s*:\s*(.+)/i)
+                    const driveMatch = line.match(/Drive\s*:\s*(.+)/i)
+                    const seatsMatch = line.match(/Seat Capacity\s*:\s*(.+)/i)
+                    const colorMatch = line.match(/Colou?r\s*:\s*(.+)/i)
+                    const featuresMatch = line.match(/Features\s*:\s*(.+)/i)
+                    
+                    if (priceMatch) specs.push({ label: 'Price', value: priceMatch[1].trim(), IconComponent: DollarSign })
+                    else if (engineMatch) specs.push({ label: 'Engine', value: engineMatch[1].trim(), IconComponent: Cog })
+                    else if (fuelMatch) specs.push({ label: 'Fuel Type', value: fuelMatch[1].trim(), IconComponent: Fuel })
+                    else if (transMatch) specs.push({ label: 'Transmission', value: transMatch[1].trim(), IconComponent: Settings })
+                    else if (mileageMatch) specs.push({ label: 'Mileage', value: mileageMatch[1].trim(), IconComponent: Gauge })
+                    else if (driveMatch) specs.push({ label: 'Drive Type', value: driveMatch[1].trim(), IconComponent: CarIcon })
+                    else if (seatsMatch) specs.push({ label: 'Seats', value: seatsMatch[1].trim(), IconComponent: Users })
+                    else if (colorMatch) specs.push({ label: 'Color', value: colorMatch[1].trim(), IconComponent: Palette })
+                    else if (featuresMatch) highlights.push(featuresMatch[1].trim())
+                    else if (line.trim() && !line.includes(':') && line.length > 10) {
+                      highlights.push(line.trim())
+                    }
+                  })
+                  
+                  return (
+                    <div className="space-y-6">
+                      {/* Specifications Grid */}
+                      {specs.length > 0 && (
+                        <div>
+                          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4">Specifications</h3>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {specs.map((spec, index) => {
+                              const Icon = spec.IconComponent
+                              return (
+                                <div 
+                                  key={index} 
+                                  className="flex items-start gap-3 p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
+                                >
+                                  <div className="shrink-0 w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                                    <Icon className="w-5 h-5 text-primary" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs text-muted-foreground font-medium">{spec.label}</p>
+                                    <p className="text-sm font-semibold text-foreground mt-0.5 truncate">{spec.value}</p>
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Highlights */}
+                      {highlights.length > 0 && (
+                        <div>
+                          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4">Highlights</h3>
+                          <div className="space-y-2">
+                            {highlights.map((highlight, index) => (
+                              <div 
+                                key={index}
+                                className="flex items-start gap-3 p-3 rounded-lg bg-primary/5 border-l-4 border-primary"
+                              >
+                                <Check className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                                <p className="text-sm text-foreground leading-relaxed">{highlight}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Full Description Fallback */}
+                      {specs.length === 0 && highlights.length === 0 && (
+                        <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+                          {desc}
+                        </p>
+                      )}
+                    </div>
+                  )
+                })()}
               </div>
             )}
           </div>
@@ -206,9 +295,8 @@ export function CarDetailsContent({ car }: CarDetailsContentProps) {
             {/* Pricing Card */}
             <div className="bg-card rounded-2xl p-6 border border-border sticky top-24 animate-slide-in-right" style={{ animationDelay: "0.3s", opacity: 0, animationFillMode: "forwards" }}>
               <div className="mb-6">
-                <p className="text-sm text-muted-foreground mb-1">Your payment</p>
+                <p className="text-sm text-muted-foreground mb-1">Price</p>
                 <div className="text-3xl font-bold text-foreground">{car.price}</div>
-                <p className="text-xs text-muted-foreground mt-1">/Month</p>
               </div>
 
               <Button 

@@ -1,26 +1,36 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
+import Image from "next/image"
 import { CarCard } from "./car-card"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import type { Car } from "@/lib/cars-data"
-import { Car as CarIcon, Truck, Package, Sparkles, Search, X } from "lucide-react"
+import { Car as CarIcon, Sparkles, Search, X } from "lucide-react"
 
 interface ShopContentProps {
   cars: Car[]
 }
 
 const categories = [
-  { id: "all", label: "All Vehicles", icon: Sparkles },
-  { id: "suv", label: "SUV", icon: CarIcon, apiCategory: "SUV" },
-  { id: "trucks", label: "Trucks", icon: Truck, apiCategory: "TRUCKS" },
-  { id: "third-party", label: "Third Party", icon: Package, apiCategory: "THIRD_PARTY" },
+  { id: "all", label: "All Vehicles", icon: Sparkles, isImage: false },
+  { id: "suv", label: "SUV", iconPath: "/icons/suv.png", isImage: true, apiCategory: "SUV" },
+  { id: "trucks", label: "Trucks", iconPath: "/icons/trucks.png", isImage: true, apiCategory: "TRUCKS" },
+  { id: "third-party", label: "Third Party", iconPath: "/icons/third-party.png", isImage: true, apiCategory: "THIRD_PARTY" },
 ]
 
 export function ShopContent({ cars }: ShopContentProps) {
   const [activeCategory, setActiveCategory] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
+
+  // Read category from URL on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const category = params.get('category')
+    if (category && categories.some(c => c.id === category)) {
+      setActiveCategory(category)
+    }
+  }, [])
 
   // Filter cars by category AND search query
   const filteredCars = useMemo(() => {
@@ -116,7 +126,6 @@ export function ShopContent({ cars }: ShopContentProps) {
         <div className="mb-8 animate-fade-in-up" style={{ animationDelay: "0.2s", opacity: 0, animationFillMode: "forwards" }}>
           <div className="flex flex-wrap items-center gap-3">
             {categories.map((category) => {
-              const Icon = category.icon
               const categoryCount = category.id === "all" 
                 ? cars.length 
                 : cars.filter(car => {
@@ -150,7 +159,17 @@ export function ShopContent({ cars }: ShopContentProps) {
                       : "bg-transparent border-border text-foreground hover:bg-muted hover:scale-105"
                   }`}
                 >
-                  <Icon className="w-5 h-5 mr-2" />
+                  {category.isImage && category.iconPath ? (
+                    <Image 
+                      src={category.iconPath} 
+                      alt={category.label}
+                      width={20}
+                      height={20}
+                      className="mr-2"
+                    />
+                  ) : category.icon ? (
+                    <category.icon className="w-5 h-5 mr-2" />
+                  ) : null}
                   {category.label}
                   <span className="ml-2 text-sm opacity-70">({categoryCount})</span>
                 </Button>

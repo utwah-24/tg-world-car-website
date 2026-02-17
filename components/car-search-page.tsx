@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react"
 import { SearchBox } from "./search-box"
+import { InfoCards } from "./info-cards"
 import { CarSection } from "./car-section"
 import { ContentReviewsSection } from "./content-reviews-section"
 import type { Car } from "@/lib/cars-data"
@@ -43,6 +44,9 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, con
     <>
       {/* Search Box */}
       <SearchBox onSearch={handleSearch} />
+
+      {/* Info Cards Section */}
+      <InfoCards />
       
       {/* Search Results or Category Sections */}
       {filteredCars !== null ? (

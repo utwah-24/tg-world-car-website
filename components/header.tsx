@@ -27,7 +27,7 @@ export function Header({ logoLight = "/placeholder-logo.svg", logoDark = "/place
         <div className="flex items-center justify-between h-16 lg:h-18">
           {/* Logo */}
           <div className="flex items-center gap-2">
-            <div className="relative h-10 w-32 sm:h-12 sm:w-40">
+            <a href="/" className="relative h-10 w-32 sm:h-12 sm:w-40 cursor-pointer">
               <Image
                 src={logoLight}
                 alt="TG World"
@@ -40,7 +40,7 @@ export function Header({ logoLight = "/placeholder-logo.svg", logoDark = "/place
                   (e.target as HTMLImageElement).src = "/placeholder-logo.svg"
                 }}
               />
-            </div>
+            </a>
           </div>
 
           {/* Sign In Button */}

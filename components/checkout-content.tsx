@@ -6,9 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Checkbox } from "@/components/ui/checkbox"
-import { ArrowLeft, CreditCard, Wallet, Building, MapPin, Phone, Mail, User, CheckCircle } from "lucide-react"
+import { ArrowLeft, MapPin, User, CheckCircle, FileText, FileCheck } from "lucide-react"
 import type { Car } from "@/lib/cars-data"
 
 interface CheckoutContentProps {
@@ -16,7 +15,6 @@ interface CheckoutContentProps {
 }
 
 export function CheckoutContent({ car }: CheckoutContentProps) {
-  const [paymentMethod, setPaymentMethod] = useState("card")
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -163,64 +161,36 @@ export function CheckoutContent({ car }: CheckoutContentProps) {
               </div>
             </div>
 
-            {/* Payment Method */}
+            {/* Request Documents */}
             <div className="bg-card rounded-2xl p-6 border border-border animate-fade-in-up" style={{ animationDelay: "0.4s", opacity: 0, animationFillMode: "forwards" }}>
-              <h2 className="text-xl font-bold mb-6 text-foreground flex items-center gap-2">
-                <CreditCard className="w-5 h-5" />
-                Payment Method
+              <h2 className="text-xl font-bold mb-4 text-foreground flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                Request Documents
               </h2>
               
-              <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
-                <div className="space-y-3">
-                  {/* Bank Transfer */}
-                  <div className="flex items-center space-x-3 p-4 rounded-xl border border-border hover:bg-muted/50 cursor-pointer">
-                    <RadioGroupItem value="bank" id="bank" />
-                    <Label htmlFor="bank" className="flex items-center gap-3 cursor-pointer flex-1">
-                      <Building className="w-5 h-5 text-primary" />
-                      <div>
-                        <p className="font-medium">Bank Transfer</p>
-                        <p className="text-xs text-muted-foreground">Transfer directly to our bank account</p>
-                      </div>
-                    </Label>
-                  </div>
-
-                  {/* Mobile Money */}
-                  <div className="flex items-center space-x-3 p-4 rounded-xl border border-border hover:bg-muted/50 cursor-pointer">
-                    <RadioGroupItem value="mobile" id="mobile" />
-                    <Label htmlFor="mobile" className="flex items-center gap-3 cursor-pointer flex-1">
-                      <Phone className="w-5 h-5 text-primary" />
-                      <div>
-                        <p className="font-medium">Mobile Money (M-Pesa, Tigo Pesa, Airtel Money)</p>
-                        <p className="text-xs text-muted-foreground">Pay with mobile money services</p>
-                      </div>
-                    </Label>
-                  </div>
-
-                  {/* Cash Payment */}
-                  <div className="flex items-center space-x-3 p-4 rounded-xl border border-border hover:bg-muted/50 cursor-pointer">
-                    <RadioGroupItem value="cash" id="cash" />
-                    <Label htmlFor="cash" className="flex items-center gap-3 cursor-pointer flex-1">
-                      <Wallet className="w-5 h-5 text-primary" />
-                      <div>
-                        <p className="font-medium">Cash Payment</p>
-                        <p className="text-xs text-muted-foreground">Pay in cash at our office</p>
-                      </div>
-                    </Label>
-                  </div>
-
-                  {/* Card Payment */}
-                  <div className="flex items-center space-x-3 p-4 rounded-xl border border-border hover:bg-muted/50 cursor-pointer">
-                    <RadioGroupItem value="card" id="card" />
-                    <Label htmlFor="card" className="flex items-center gap-3 cursor-pointer flex-1">
-                      <CreditCard className="w-5 h-5 text-primary" />
-                      <div>
-                        <p className="font-medium">Credit/Debit Card</p>
-                        <p className="text-xs text-muted-foreground">Pay securely with your card</p>
-                      </div>
-                    </Label>
-                  </div>
-                </div>
-              </RadioGroup>
+              <p className="text-sm text-muted-foreground mb-6">Get detailed pricing and documentation for this vehicle</p>
+              
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button 
+                  type="button"
+                  variant="outline"
+                  className="flex-1 h-12 rounded-xl font-medium hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all"
+                  onClick={() => alert('Proforma invoice request will be sent. Our team will contact you shortly.')}
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  Request Proforma Invoice
+                </Button>
+                
+                <Button 
+                  type="button"
+                  variant="outline"
+                  className="flex-1 h-12 rounded-xl font-medium hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all"
+                  onClick={() => alert('Quotation request will be sent. Our team will contact you shortly.')}
+                >
+                  <FileCheck className="w-4 h-4 mr-2" />
+                  Request Quotation
+                </Button>
+              </div>
             </div>
 
             {/* Additional Information */}

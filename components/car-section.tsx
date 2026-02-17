@@ -1,10 +1,8 @@
 "use client"
 
-import { useState } from "react"
 import { CarCard } from "@/components/car-card"
 import { Button } from "@/components/ui/button"
 import type { Car } from "@/lib/cars-data"
-import { Zap, Car as CarIcon, Truck, Sparkles } from "lucide-react"
 import { useScrollAnimation } from "@/hooks/use-scroll-animation"
 
 interface CarSectionProps {
@@ -15,15 +13,7 @@ interface CarSectionProps {
   showBadge?: boolean
   badgeText?: string
   badgeVariant?: "default" | "secondary" | "destructive" | "outline"
-  showFilters?: boolean
 }
-
-const categories = [
-  { id: "all", label: "All", icon: Sparkles },
-  { id: "suv", label: "SUV", icon: CarIcon },
-  { id: "truck", label: "Truck", icon: Truck },
-  { id: "luxury", label: "Luxury", icon: Zap },
-]
 
 export function CarSection({ 
   id, 
@@ -32,10 +22,8 @@ export function CarSection({
   cars, 
   showBadge, 
   badgeText, 
-  badgeVariant,
-  showFilters = false
+  badgeVariant
 }: CarSectionProps) {
-  const [activeFilter, setActiveFilter] = useState("all")
   const { ref: headerRef, isVisible: headerVisible } = useScrollAnimation({ threshold: 0.2 })
 
   return (
@@ -59,31 +47,6 @@ export function CarSection({
             </p>
           )}
         </div>
-
-        {/* Category Filters */}
-        {showFilters && (
-          <div className="flex flex-wrap items-center gap-2 mb-8">
-            {categories.map((category) => {
-              const Icon = category.icon
-              return (
-                <Button
-                  key={category.id}
-                  variant={activeFilter === category.id ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setActiveFilter(category.id)}
-                  className={`rounded-full h-9 px-4 ${
-                    activeFilter === category.id 
-                      ? "bg-primary text-primary-foreground" 
-                      : "bg-transparent border-border text-foreground hover:bg-muted"
-                  }`}
-                >
-                  <Icon className="w-4 h-4 mr-1.5" />
-                  {category.label}
-                </Button>
-              )
-            })}
-          </div>
-        )}
 
         {/* Cars Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 lg:gap-6">

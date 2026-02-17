@@ -114,11 +114,17 @@ function transformCarData(rawCar: RawCarFromAPI): CarFromAPI {
   const mileage = description.match(/Mileage\s*:\s*([^\r\n]+)/i)?.[1]?.trim()
   const color = description.match(/Colou?r\s*:\s*([^\r\n]+)/i)?.[1]?.trim()
   
+  // Clean up price - remove "With New Registration" and other common suffixes
+  let cleanPrice = rawCar.car_price || 'Contact for price'
+  cleanPrice = cleanPrice.replace(/\s*With New Registration\s*/gi, '')
+  cleanPrice = cleanPrice.replace(/\s*with registration\s*/gi, '')
+  cleanPrice = cleanPrice.trim()
+  
   return {
     id: rawCar.car_id.toString(),
     name,
     year,
-    price: rawCar.car_price || 'Contact for price',
+    price: cleanPrice,
     image: mainImageUrl, // Always use Front.jpeg
     images: allImageUrls, // All images available
     category,
@@ -256,6 +262,7 @@ interface ContentFromAPI {
   content_name: string
   content_video: string
   duration: string | null
+  car_id?: number
   created_at: string
   updated_at: string
 }
@@ -269,6 +276,7 @@ export interface ContentVideo {
   title: string
   videoUrl: string
   duration?: string
+  carId?: string
 }
 
 /**
@@ -295,6 +303,7 @@ export async function fetchContent(): Promise<ContentVideo[]> {
       title: content.content_name,
       videoUrl: `${API_BASE_URL}/public/${content.content_video}`,
       duration: content.duration || undefined,
+      carId: content.car_id?.toString(),
     }))
     
     console.log(`✅ Successfully fetched ${transformedContent.length} content videos from API`)
