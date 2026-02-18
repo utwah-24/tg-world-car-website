@@ -21,6 +21,12 @@ export function CarCard({ car, showBadge, badgeText, badgeVariant = "default", d
   const isComingSoon = car.category === "coming-soon"
   const isThirdParty = car.description?.includes('[THIRD_PARTY]') || false
   const { ref, isVisible } = useScrollAnimation({ threshold: 0.1 })
+  
+  // Check if this car's image should be flipped
+  const carNameUpper = car.name.toUpperCase()
+  const shouldFlipImage = carNameUpper.includes('FORD RANGER WILDTRACK') || 
+                          carNameUpper.includes('SCANIA DUMP TRUCK') ||
+                          (carNameUpper.includes('SCANIA') && carNameUpper.includes('94C'))
 
   // Generate a clean summary from the description
   const getCleanSummary = (description: string): string => {
@@ -81,6 +87,7 @@ export function CarCard({ car, showBadge, badgeText, badgeVariant = "default", d
           alt={`${car.year} ${car.name}`}
           fill
           className={`object-cover transition-transform duration-500 group-hover:scale-105 ${isSoldOut ? "grayscale" : ""}`}
+          style={shouldFlipImage ? { transform: 'scaleX(-1)' } : undefined}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           unoptimized={car.image?.startsWith('http')}
         />
