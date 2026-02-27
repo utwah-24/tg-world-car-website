@@ -6,7 +6,7 @@ interface HeroProps {
 
 export function Hero({ heroImage = "/placeholder.svg" }: HeroProps) {
   return (
-    <section className="relative pt-16 lg:pt-18">
+    <section className="relative">
       {/* Hero Image Background */}
       <div className="relative h-[500px] sm:h-[600px] lg:h-[700px] xl:h-[750px]">
         <img

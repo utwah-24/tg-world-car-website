@@ -1,9 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Menu, X } from "lucide-react"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 
 interface HeaderProps {
   logoLight?: string
@@ -12,6 +13,14 @@ interface HeaderProps {
 
 export function Header({ logoLight = "/placeholder-logo.svg", logoDark = "/placeholder-logo.svg" }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+  const router = useRouter()
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 10)
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => window.removeEventListener("scroll", onScroll)
+  }, [])
 
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId)
@@ -22,7 +31,13 @@ export function Header({ logoLight = "/placeholder-logo.svg", logoDark = "/place
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md shadow-sm">
+    <header
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        scrolled
+          ? "bg-white shadow-sm"
+          : "bg-transparent shadow-none backdrop-blur-none"
+      }`}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 lg:h-18">
           {/* Logo */}
@@ -47,8 +62,8 @@ export function Header({ logoLight = "/placeholder-logo.svg", logoDark = "/place
           <div className="hidden md:flex items-center">
             <Button 
               variant="outline"
-              onClick={() => scrollToSection("contact")}
-              className="rounded-full px-6 border-border text-foreground hover:bg-muted"
+              onClick={() => router.push("/signin")}
+              className="rounded-full px-6 border-transparent bg-transparent text-white font-bold hover:bg-white hover:text-black hover:border-white"
             >
               Sign In
             </Button>
@@ -56,7 +71,7 @@ export function Header({ logoLight = "/placeholder-logo.svg", logoDark = "/place
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden p-2"
+            className="md:hidden p-2 text-white"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             aria-label="Toggle menu"
           >
@@ -71,7 +86,7 @@ export function Header({ logoLight = "/placeholder-logo.svg", logoDark = "/place
               <Button 
                 variant="outline"
                 onClick={() => {
-                  scrollToSection("contact")
+                  router.push("/signin")
                   setIsMenuOpen(false)
                 }}
                 className="w-full rounded-full border-border text-foreground"

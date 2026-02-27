@@ -1,7 +1,6 @@
 import { HeaderWrapper } from "@/components/header-wrapper"
 import { HeroWrapper } from "@/components/hero-wrapper"
 import { CarSearchPage } from "@/components/car-search-page"
-import { FeaturesSection } from "@/components/features-section"
 import { ContactSection } from "@/components/contact-section"
 import { FooterWrapper } from "@/components/footer-wrapper"
 import { getTopSellingCars, getComingSoonCars, getSoldOutCars } from "@/lib/cars-data"
@@ -31,9 +30,6 @@ export default async function Home() {
         soldOutCars={soldOutCars}
         contentVideos={contentVideos}
       />
-
-      {/* Features Section */}
-      <FeaturesSection />
 
       {/* Contact Section */}
       <ContactSection />
