@@ -4,7 +4,7 @@ import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Fuel, Gauge, MapPin, Calendar, Star, Car } from "lucide-react"
+import { Fuel, Gauge, MapPin, Star, Car, Tag } from "lucide-react"
 import type { Car as CarType } from "@/lib/cars-data"
 import { useScrollAnimation } from "@/hooks/use-scroll-animation"
 
@@ -19,6 +19,7 @@ interface CarCardProps {
 export function CarCard({ car, showBadge, badgeText, badgeVariant = "default", delay = 0 }: CarCardProps) {
   const isSoldOut = car.category === "sold-out"
   const isComingSoon = car.category === "coming-soon"
+  const yearPrefix = car.year ? `${car.year} ` : ""
   const isThirdParty = car.description?.includes('[THIRD_PARTY]') || false
   const { ref, isVisible } = useScrollAnimation({ threshold: 0.1 })
   
@@ -84,7 +85,7 @@ export function CarCard({ car, showBadge, badgeText, badgeVariant = "default", d
       <div className="relative aspect-[4/3] sm:aspect-[4/3] overflow-hidden bg-muted">
         <Image
           src={car.image || "/placeholder.svg"}
-          alt={`${car.year} ${car.name}`}
+          alt={`${yearPrefix}${car.name}`}
           fill
           className={`object-cover transition-transform duration-500 group-hover:scale-105 ${isSoldOut ? "grayscale" : ""}`}
           style={shouldFlipImage ? { transform: 'scaleX(-1)' } : undefined}
@@ -143,7 +144,7 @@ export function CarCard({ car, showBadge, badgeText, badgeVariant = "default", d
         {/* Car Name */}
         <div className="mb-2 sm:mb-3">
           <h3 className="text-sm sm:text-base font-semibold text-foreground line-clamp-1 truncate">
-            {car.year} {car.name}
+            {yearPrefix}{car.name}
           </h3>
         </div>
 
@@ -174,11 +175,17 @@ export function CarCard({ car, showBadge, badgeText, badgeVariant = "default", d
           )}
         </div>
 
-        {/* Listed Date - Hidden on mobile */}
-        <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground mb-3">
-          <Calendar className="w-3.5 h-3.5" />
-          <span>Listed on {car.year}</span>
-        </div>
+        {/* Condition - Hidden on mobile */}
+        {car.condition && (
+          <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground mb-3">
+            <Tag className="w-3.5 h-3.5 shrink-0" />
+            <span className="capitalize">
+              {car.condition.toLowerCase() === "new"
+                ? "Brand New"
+                : car.condition.replace(/_/g, " ")}
+            </span>
+          </div>
+        )}
 
         {/* Description - Hidden on mobile */}
         {cleanSummary && (

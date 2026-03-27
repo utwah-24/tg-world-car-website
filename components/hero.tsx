@@ -8,11 +8,11 @@ export function Hero({ heroImage = "/placeholder.svg" }: HeroProps) {
   return (
     <section className="relative">
       {/* Hero Image Background */}
-      <div className="relative h-[500px] sm:h-[600px] lg:h-[700px] xl:h-[750px]">
+      <div className="relative h-screen">
         <img
           src={heroImage}
           alt="Premium car showcase"
-          className="absolute inset-0 w-full h-full object-cover bg-muted"
+          className="absolute inset-0 w-full h-full object-cover bg-muted scale-x-[-1]"
           onError={(e) => {
             // Fallback to placeholder if image fails to load
             (e.target as HTMLImageElement).src = "/placeholder.svg"

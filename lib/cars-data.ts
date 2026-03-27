@@ -3,11 +3,15 @@ import { fetchCars, fetchCarsByCategory, fetchThirdPartyCars, type CarFromAPI } 
 export interface Car {
   id: string
   name: string
-  year: number
+  year?: number
   price: string
   image: string
   images?: string[]
   category: "top-selling" | "coming-soon" | "sold-out"
+  type?: string
+  condition?: string
+  company?: string
+  brand?: string
   mileage?: string
   transmission?: string
   fuel?: string
@@ -145,7 +149,7 @@ export const cars: Car[] = [
     features: ["Driver Bed", "FM Radio", "Fog Lights", "AC", "Sports Lights"],
     description: "2004 SCANIA DUMP TRUCK 124C-380. Powerful 8x4 dump truck with 25-ton carrying capacity. Perfect for construction and mining operations."
   },
-  // Sold Out Cars
+  // Previously sold cars — sold status now comes from API (is_sold field) only
   {
     id: "8",
     name: "Subaru Forester SJ5",
@@ -153,7 +157,7 @@ export const cars: Car[] = [
     price: "37,500,000 TZS",
     image: "/placeholder.svg",
     images: ["/placeholder.svg"],
-    category: "sold-out",
+    category: "top-selling",
     mileage: "58,000 km",
     transmission: "Automatic",
     fuel: "Petrol",
@@ -171,7 +175,7 @@ export const cars: Car[] = [
     price: "37,500,000 TZS",
     image: "/placeholder.svg",
     images: ["/placeholder.svg"],
-    category: "sold-out",
+    category: "top-selling",
     mileage: "47,518 km",
     transmission: "Automatic",
     fuel: "Petrol",
@@ -189,7 +193,7 @@ export const cars: Car[] = [
     price: "152,500,000 TZS",
     image: "/placeholder.svg",
     images: ["/placeholder.svg"],
-    category: "sold-out",
+    category: "top-selling",
     mileage: "Low Mileage",
     transmission: "Automatic",
     fuel: "Petrol",

@@ -14,6 +14,7 @@ interface CarDetailsContentProps {
 export function CarDetailsContent({ car }: CarDetailsContentProps) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const images = car.images && car.images.length > 0 ? car.images : [car.image]
+  const yearPrefix = car.year ? `${car.year} ` : ""
 
   const nextImage = () => {
     setSelectedImageIndex((prev) => (prev + 1) % images.length)
@@ -30,7 +31,7 @@ export function CarDetailsContent({ car }: CarDetailsContentProps) {
         <div className="mb-6 text-sm text-muted-foreground animate-fade-in-up">
           <a href="/" className="hover:text-primary">Home</a>
           <span className="mx-2">/</span>
-          <span className="text-foreground">{car.year} {car.name}</span>
+          <span className="text-foreground">{yearPrefix}{car.name}</span>
         </div>
 
         {/* Main Content Grid */}
@@ -42,7 +43,7 @@ export function CarDetailsContent({ car }: CarDetailsContentProps) {
               <div className="flex items-start justify-between mb-2">
                 <div>
                   <h1 className="text-3xl font-bold text-foreground">
-                    {car.year} {car.name}
+                    {yearPrefix}{car.name}
                   </h1>
                   <div className="flex items-center gap-3 mt-2">
                     <div className="flex items-center gap-1">
@@ -62,7 +63,7 @@ export function CarDetailsContent({ car }: CarDetailsContentProps) {
             <div className="relative bg-muted rounded-2xl overflow-hidden mb-4 animate-scale-in" style={{ aspectRatio: "16/10", animationDelay: "0.2s", opacity: 0, animationFillMode: "forwards" }}>
               <Image
                 src={images[selectedImageIndex]}
-                alt={`${car.year} ${car.name}`}
+                alt={`${yearPrefix}${car.name}`}
                 fill
                 className="object-cover"
                 unoptimized={images[selectedImageIndex]?.startsWith('http')}

@@ -1,52 +1,84 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import type { Car } from "@/lib/cars-data"
 import { Search, X } from "lucide-react"
 
 interface SearchBoxProps {
+  cars?: Car[]
+  selectedCompany?: string
+  selectedBrand?: string
   onSearch?: (query: string) => void
+  onCompanyChange?: (company: string) => void
+  onBrandChange?: (brand: string) => void
 }
 
-export function SearchBox({ onSearch }: SearchBoxProps) {
+export function SearchBox({
+  cars = [],
+  selectedCompany = "",
+  selectedBrand = "",
+  onSearch,
+  onCompanyChange,
+  onBrandChange,
+}: SearchBoxProps) {
   const [searchQuery, setSearchQuery] = useState("")
 
+  const companyOptions = useMemo(() => {
+    const set = new Set<string>()
+    cars.forEach(car => { if (car.company) set.add(car.company) })
+    return Array.from(set).sort()
+  }, [cars])
+
+  const brandOptions = useMemo(() => {
+    const source = selectedCompany
+      ? cars.filter(c => (c.company || "").toLowerCase() === selectedCompany.toLowerCase())
+      : cars
+    const set = new Set<string>()
+    source.forEach(car => { if (car.brand) set.add(car.brand) })
+    return Array.from(set).sort()
+  }, [cars, selectedCompany])
+
   const handleSearch = () => {
-    if (onSearch) {
-      onSearch(searchQuery)
-    }
-    // Scroll to results
-    const element = document.getElementById("search-results")
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth", block: "start" })
-    }
+    onSearch?.(searchQuery)
+    document.getElementById("search-results")?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
 
   const handleClear = () => {
     setSearchQuery("")
-    if (onSearch) {
-      onSearch("")
-    }
+    onSearch?.("")
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSearch()
-    }
+    if (e.key === "Enter") handleSearch()
   }
+
+  const handleCompanyChange = (value: string) => {
+    const company = value === "__all__" ? "" : value
+    onCompanyChange?.(company)
+    onBrandChange?.("")   // reset brand when company changes
+  }
+
+  const handleBrandChange = (value: string) => {
+    onBrandChange?.(value === "__all__" ? "" : value)
+  }
+
+  const hasAnyFilter = !!searchQuery || !!selectedCompany || !!selectedBrand
 
   return (
     <section className="py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
         <div className="bg-card rounded-2xl sm:rounded-3xl shadow-xl p-5 sm:p-6 border border-border">
-          {/* Search Input */}
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+
+          {/* Row 1: Search + Search button */}
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-3">
             <div className="flex-1 relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
                 type="text"
-                placeholder="Search by car name, make, model, or year (e.g., Toyota Land Cruiser 2024)"
+                placeholder="Search by car name, make, model, or year…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyPress={handleKeyPress}
@@ -61,8 +93,8 @@ export function SearchBox({ onSearch }: SearchBoxProps) {
                 </button>
               )}
             </div>
-            
-            <Button 
+
+            <Button
               onClick={handleSearch}
               className="h-14 px-8 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl text-base font-medium whitespace-nowrap"
             >
@@ -70,11 +102,38 @@ export function SearchBox({ onSearch }: SearchBoxProps) {
               Search Cars
             </Button>
           </div>
-          
-          {/* Search Tips */}
-          {!searchQuery && (
+
+          {/* Row 2: Company + Brand dropdowns */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Select value={selectedCompany || "__all__"} onValueChange={handleCompanyChange}>
+              <SelectTrigger className="h-11 flex-1 rounded-xl border-border bg-muted/50 text-sm">
+                <SelectValue placeholder="All Companies" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">All Companies</SelectItem>
+                {companyOptions.map(c => (
+                  <SelectItem key={c} value={c}>{c}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={selectedBrand || "__all__"} onValueChange={handleBrandChange}>
+              <SelectTrigger className="h-11 flex-1 rounded-xl border-border bg-muted/50 text-sm">
+                <SelectValue placeholder="All Brands" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">All Brands</SelectItem>
+                {brandOptions.map(b => (
+                  <SelectItem key={b} value={b}>{b}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Tips / active filter hint */}
+          {!hasAnyFilter && (
             <div className="mt-4 text-sm text-muted-foreground text-center">
-              Try searching: "Land Cruiser", "2024 Range Rover", "Fortuner", "Subaru"
+              Try searching: &ldquo;Land Cruiser&rdquo;, &ldquo;2024 Range Rover&rdquo;, &ldquo;Fortuner&rdquo;, &ldquo;Subaru&rdquo;
             </div>
           )}
         </div>

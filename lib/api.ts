@@ -4,9 +4,17 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://tgworld.e-
 interface RawCarFromAPI {
   car_id: number
   car_name: string
+  year?: number
   car_pic: string[] // Now an array of image paths
   car_price: string
   car_description: string
+  type?: string
+  condition?: string
+  company?: string
+  brand?: string
+  is_coming_soon?: string
+  arrival_date?: string
+  is_sold?: "available" | "sold"
   category?: string
   created_at: string
   updated_at: string
@@ -20,11 +28,15 @@ interface APIResponse {
 export interface CarFromAPI {
   id: string
   name: string
-  year: number
+  year?: number
   price: string
   image: string
   images?: string[]
   category: "top-selling" | "coming-soon" | "sold-out"
+  type?: string
+  condition?: string
+  company?: string
+  brand?: string
   mileage?: string
   transmission?: string
   fuel?: string
@@ -64,47 +76,31 @@ function transformCarData(rawCar: RawCarFromAPI): CarFromAPI {
     ? carPics.map(path => `${API_BASE_URL}/public/${path}`)
     : ['/placeholder.svg']
   
-  // Extract year from car name (e.g., "2024 Toyota...")
+  // Extract year — prefer the API's dedicated year field, then try car_name prefix
   const carName = rawCar.car_name || 'Unknown Car'
   const yearMatch = carName.match(/^(\d{4})/)
-  const year = yearMatch ? parseInt(yearMatch[1]) : new Date().getFullYear()
-  
-  // Remove year from name to get clean car name
+  const year: number | undefined = rawCar.year
+    ? rawCar.year
+    : yearMatch
+    ? parseInt(yearMatch[1])
+    : undefined
+
+  // Remove year prefix from name if present
   const name = carName.replace(/^\d{4}\s+/, '')
   
-  // Determine category based on API category field or description
+  // Determine category — sold status comes ONLY from is_sold field
   let category: "top-selling" | "coming-soon" | "sold-out" = "top-selling"
-  
-  if (rawCar.category) {
-    // Map API categories to our app categories
-    const apiCategory = rawCar.category.toUpperCase()
-    
-    // Map based on your API categories
-    switch(apiCategory) {
-      case 'TRUCKS':
-        category = "coming-soon"
-        break
-      case 'SUV':
-        // Distribute SUVs across categories based on year
-        if (year >= 2023) {
-          category = "top-selling"
-        } else if (year >= 2015) {
-          category = "coming-soon"
-        } else {
-          category = "sold-out"
-        }
-        break
-      case 'SOLD':
-      case 'SOLD-OUT':
-        category = "sold-out"
-        break
-      default:
-        category = "top-selling"
-    }
-  } else if (rawCar.car_description && rawCar.car_description.toLowerCase().includes('sold')) {
+
+  if (rawCar.is_sold === "sold") {
     category = "sold-out"
-  } else if (rawCar.car_description && rawCar.car_description.toLowerCase().includes('coming soon')) {
+  } else if (rawCar.is_coming_soon === "set") {
     category = "coming-soon"
+  } else if (rawCar.category) {
+    const apiCategory = rawCar.category.toUpperCase()
+    if (apiCategory === "TRUCKS") {
+      category = "coming-soon"
+    }
+    // All other category values default to "top-selling"
   }
   
   // Extract additional info from description (with null checks)
@@ -125,9 +121,13 @@ function transformCarData(rawCar: RawCarFromAPI): CarFromAPI {
     name,
     year,
     price: cleanPrice,
-    image: mainImageUrl, // Always use Front.jpeg
-    images: allImageUrls, // All images available
+    image: mainImageUrl,
+    images: allImageUrls,
     category,
+    type: rawCar.type,
+    condition: rawCar.condition,
+    company: rawCar.company,
+    brand: rawCar.brand,
     transmission,
     fuel,
     mileage,
@@ -142,7 +142,7 @@ function transformCarData(rawCar: RawCarFromAPI): CarFromAPI {
 export async function fetchCars(): Promise<CarFromAPI[]> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/cars`, {
-      next: { revalidate: 60 }, // Revalidate every 60 seconds
+      cache: 'no-store',
       headers: {
         'Accept': 'application/json',
       }
@@ -172,7 +172,7 @@ export async function fetchCars(): Promise<CarFromAPI[]> {
 export async function fetchCarById(id: string): Promise<CarFromAPI | null> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/cars/${id}`, {
-      next: { revalidate: 60 },
+      cache: 'no-store',
       headers: {
         'Accept': 'application/json',
       }
@@ -224,7 +224,7 @@ interface LogosAPIResponse {
 export async function fetchThirdPartyCars(): Promise<CarFromAPI[]> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/third-party`, {
-      next: { revalidate: 60 },
+      cache: 'no-store',
       headers: {
         'Accept': 'application/json',
       }
@@ -285,7 +285,7 @@ export interface ContentVideo {
 export async function fetchContent(): Promise<ContentVideo[]> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/content`, {
-      next: { revalidate: 300 }, // Revalidate every 5 minutes
+      cache: 'no-store',
       headers: {
         'Accept': 'application/json',
       }
@@ -320,7 +320,7 @@ export async function fetchContent(): Promise<ContentVideo[]> {
 export async function fetchLogos(): Promise<{ light: string; dark: string }> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/logos`, {
-      next: { revalidate: 3600 }, // Revalidate every hour (logos don't change often)
+      cache: 'no-store',
       headers: {
         'Accept': 'application/json',
       }
@@ -332,10 +332,17 @@ export async function fetchLogos(): Promise<{ light: string; dark: string }> {
     
     const apiResponse: LogosAPIResponse = await response.json()
     
-    // Find light and dark logos
-    const lightLogo = apiResponse.data.find(logo => logo.name.includes('light'))
-    const darkLogo = apiResponse.data.find(logo => logo.name.includes('dark'))
-    
+    // Find light and dark logos (case-insensitive match)
+    const lightLogo = apiResponse.data.find(logo =>
+      logo.name.toLowerCase().includes('light')
+    ) ?? apiResponse.data[0]  // fall back to first logo if no 'light' match
+
+    const darkLogo = apiResponse.data.find(logo =>
+      logo.name.toLowerCase().includes('dark')
+    ) ?? apiResponse.data[1] ?? apiResponse.data[0]
+
+    console.log('📸 Logos from API:', apiResponse.data.map(l => `${l.name} → ${l.path}`))
+
     return {
       light: lightLogo ? `${API_BASE_URL}/public/${lightLogo.path}` : '/placeholder-logo.svg',
       dark: darkLogo ? `${API_BASE_URL}/public/${darkLogo.path}` : '/placeholder-logo.svg',

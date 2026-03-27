@@ -12,41 +12,75 @@ interface CarSearchPageProps {
   topSellingCars: Car[]
   comingSoonCars: Car[]
   soldOutCars: Car[]
+  allCars: Car[]
   contentVideos: ContentVideo[]
 }
 
-export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, contentVideos }: CarSearchPageProps) {
+export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, allCars, contentVideos }: CarSearchPageProps) {
   const [searchQuery, setSearchQuery] = useState("")
+  const [selectedCompany, setSelectedCompany] = useState("")
+  const [selectedBrand, setSelectedBrand] = useState("")
 
-  // Combine all cars for searching
-  const allCars = useMemo(() => {
+  // All cars combined for search (uses category-split lists)
+  const searchableCars = useMemo(() => {
     return [...topSellingCars, ...comingSoonCars, ...soldOutCars]
   }, [topSellingCars, comingSoonCars, soldOutCars])
 
-  // Filter cars based on search query
+  // Companies always derived from the FULL car list directly from the DB
+  const companies = useMemo(() => {
+    const set = new Set<string>()
+    allCars.forEach(car => { if (car.company) set.add(car.company) })
+    return Array.from(set)
+  }, [allCars])
+
+  const hasFilters = !!searchQuery.trim() || !!selectedCompany || !!selectedBrand
+
+  // Filter cars based on search query + company + brand
   const filteredCars = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return null // Return null to show all categories
+    if (!hasFilters) return null // null = show all category sections
+
+    let result = searchableCars
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim()
+      result = result.filter(car => {
+        const searchText = `${car.name} ${car.year} ${car.fuel} ${car.transmission} ${car.description} ${car.company} ${car.brand}`.toLowerCase()
+        return searchText.includes(query)
+      })
     }
 
-    const query = searchQuery.toLowerCase().trim()
-    return allCars.filter(car => {
-      const searchText = `${car.name} ${car.year} ${car.fuel} ${car.transmission} ${car.description}`.toLowerCase()
-      return searchText.includes(query)
-    })
-  }, [searchQuery, allCars])
+    if (selectedCompany) {
+      result = result.filter(car => (car.company || "").toLowerCase() === selectedCompany.toLowerCase())
+    }
 
-  const handleSearch = (query: string) => {
-    setSearchQuery(query)
-  }
+    if (selectedBrand) {
+      result = result.filter(car => (car.brand || "").toLowerCase() === selectedBrand.toLowerCase())
+    }
+
+    return result
+  }, [searchQuery, selectedCompany, selectedBrand, allCars, hasFilters])
+
+  const activeLabel = [
+    searchQuery.trim() ? `"${searchQuery}"` : "",
+    selectedCompany,
+    selectedBrand,
+  ].filter(Boolean).join(" · ")
+
 
   return (
     <>
       {/* Search Box */}
-      <SearchBox onSearch={handleSearch} />
+      <SearchBox
+        cars={searchableCars}
+        selectedCompany={selectedCompany}
+        selectedBrand={selectedBrand}
+        onSearch={setSearchQuery}
+        onCompanyChange={setSelectedCompany}
+        onBrandChange={setSelectedBrand}
+      />
 
-      {/* Info Cards Section */}
-      <InfoCards />
+      {/* Brand grid */}
+      <InfoCards companies={companies} />
       
       {/* Search Results or Category Sections */}
       {filteredCars !== null ? (
@@ -54,14 +88,14 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, con
         <div id="search-results">
           <CarSection
             id="search-results"
-            title={`Search Results for "${searchQuery}"`}
-            subtitle={`Found ${filteredCars.length} ${filteredCars.length === 1 ? 'car' : 'cars'} matching your search`}
+            title={`Results for ${activeLabel}`}
+            subtitle={`Found ${filteredCars.length} ${filteredCars.length === 1 ? "car" : "cars"} matching your search`}
             cars={filteredCars}
           />
           {filteredCars.length === 0 && (
             <div className="text-center py-12">
               <p className="text-muted-foreground">
-                No cars found matching "{searchQuery}". Try a different search term.
+                No cars found matching {activeLabel}. Try a different search term or filter.
               </p>
             </div>
           )}
@@ -75,7 +109,7 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, con
             title="Popular cars"
             subtitle="Browse cars by category to find what suits you best."
             cars={topSellingCars}
-            showFilters
+            maxCars={6}
             showBadge
             badgeText="Best Seller"
             badgeVariant="default"

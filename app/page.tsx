@@ -3,18 +3,17 @@ import { HeroWrapper } from "@/components/hero-wrapper"
 import { CarSearchPage } from "@/components/car-search-page"
 import { ContactSection } from "@/components/contact-section"
 import { FooterWrapper } from "@/components/footer-wrapper"
-import { getTopSellingCars, getComingSoonCars, getSoldOutCars } from "@/lib/cars-data"
+import { getTopSellingCars, getComingSoonCars, getSoldOutCars, getAllCars } from "@/lib/cars-data"
 import { fetchContent } from "@/lib/api"
 
-// Revalidate this page every 60 seconds
-export const revalidate = 60
+export const revalidate = 0
 
 export default async function Home() {
-  // Fetch cars and content from API (with fallback to static data)
-  const [topSellingCars, comingSoonCars, soldOutCars, contentVideos] = await Promise.all([
+  const [topSellingCars, comingSoonCars, soldOutCars, allCars, contentVideos] = await Promise.all([
     getTopSellingCars(),
     getComingSoonCars(),
     getSoldOutCars(),
+    getAllCars(),
     fetchContent(),
   ])
 
@@ -28,6 +27,7 @@ export default async function Home() {
         topSellingCars={topSellingCars}
         comingSoonCars={comingSoonCars}
         soldOutCars={soldOutCars}
+        allCars={allCars}
         contentVideos={contentVideos}
       />
 

@@ -5,91 +5,141 @@ import Image from "next/image"
 import { CarCard } from "./car-card"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 import type { Car } from "@/lib/cars-data"
-import { Car as CarIcon, Sparkles, Search, X } from "lucide-react"
+import { Car as CarIcon, Search, X, RotateCcw } from "lucide-react"
 
 interface ShopContentProps {
   cars: Car[]
 }
 
-const categories = [
-  { id: "all", label: "All Vehicles", icon: Sparkles, isImage: false },
-  { id: "suv", label: "SUV", iconPath: "/icons/suv.png", isImage: true, apiCategory: "SUV" },
-  { id: "trucks", label: "Trucks", iconPath: "/icons/trucks.png", isImage: true, apiCategory: "TRUCKS" },
-  { id: "third-party", label: "Third Party", iconPath: "/icons/third-party.png", isImage: true, apiCategory: "THIRD_PARTY" },
+const typeFilters = [
+  { id: "suv",    label: "SUV",    iconPath: "/icons/suv.png",    apiType: "suv" },
+  { id: "pickup", label: "Pickup", iconPath: "/icons/pickup.png", apiType: "pickup" },
+  { id: "sedan",  label: "Sedan",  iconPath: "/icons/sedan.png",  apiType: "sedan" },
+  { id: "van",    label: "Van",    iconPath: "/icons/van.png",    apiType: "van" },
+  { id: "trucks", label: "Trucks", iconPath: "/icons/trucks.png", apiType: "trucks" },
 ]
 
+const conditionFilters = [
+  { id: "new",         label: "New",         apiCondition: "new" },
+  { id: "second_hand", label: "Second Hand", apiCondition: "second_hand" },
+  { id: "third_party", label: "Third Party", iconPath: "/icons/third-party.png", apiCondition: "third_party" },
+]
+
+function filterByType(cars: Car[], typeId: string | null): Car[] {
+  if (!typeId) return cars
+  return cars.filter(car => (car.type || "").toLowerCase() === typeId)
+}
+
+function filterByCondition(cars: Car[], conditionId: string | null): Car[] {
+  if (!conditionId) return cars
+  if (conditionId === "third_party") {
+    return cars.filter(car => (car.description || "").toLowerCase().includes("[third_party]"))
+  }
+  return cars.filter(car => (car.condition || "").toLowerCase() === conditionId)
+}
+
+function filterByCompany(cars: Car[], company: string): Car[] {
+  if (!company) return cars
+  return cars.filter(car => (car.company || "").toLowerCase() === company.toLowerCase())
+}
+
+function filterByBrand(cars: Car[], brand: string): Car[] {
+  if (!brand) return cars
+  return cars.filter(car => (car.brand || "").toLowerCase() === brand.toLowerCase())
+}
+
 export function ShopContent({ cars }: ShopContentProps) {
-  const [activeCategory, setActiveCategory] = useState("all")
+  const [activeType, setActiveType] = useState<string | null>(null)
+  const [activeCondition, setActiveCondition] = useState<string | null>(null)
+  const [selectedCompany, setSelectedCompany] = useState("")
+  const [selectedBrand, setSelectedBrand] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
 
-  // Read category from URL on mount
+  const hasActiveFilters = activeType !== null || activeCondition !== null || !!selectedCompany || !!selectedBrand
+
+  // Unique sorted company list from all cars
+  const companyOptions = useMemo(() => {
+    const set = new Set<string>()
+    cars.forEach(car => { if (car.company) set.add(car.company) })
+    return Array.from(set).sort()
+  }, [cars])
+
+  // Brand list filtered to only brands that belong to the selected company (or all brands)
+  const brandOptions = useMemo(() => {
+    const source = selectedCompany ? filterByCompany(cars, selectedCompany) : cars
+    const set = new Set<string>()
+    source.forEach(car => { if (car.brand) set.add(car.brand) })
+    return Array.from(set).sort()
+  }, [cars, selectedCompany])
+
+  // Read filters from URL on mount
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    const category = params.get('category')
-    if (category && categories.some(c => c.id === category)) {
-      setActiveCategory(category)
+
+    const category = params.get("category")
+    if (category && typeFilters.some(f => f.id === category)) {
+      setActiveType(category)
+    }
+
+    const company = params.get("company")
+    if (company) {
+      setSelectedCompany(decodeURIComponent(company))
     }
   }, [])
 
-  // Filter cars by category AND search query
   const filteredCars = useMemo(() => {
-    let filtered = cars
+    let filtered = filterByType(cars, activeType)
+    filtered = filterByCondition(filtered, activeCondition)
+    filtered = filterByCompany(filtered, selectedCompany)
+    filtered = filterByBrand(filtered, selectedBrand)
 
-    // First filter by category
-    if (activeCategory !== "all") {
-      const selectedCategory = categories.find(c => c.id === activeCategory)
-      if (selectedCategory?.apiCategory) {
-        filtered = filtered.filter(car => {
-          const carCategory = car.description?.toUpperCase() || ""
-          const carName = car.name.toUpperCase()
-          
-          if (selectedCategory.apiCategory === "SUV") {
-            return carCategory.includes("SUV") || carName.includes("CRUISER") || 
-                   carName.includes("FORTUNER") || carName.includes("RANGER") ||
-                   carName.includes("FORESTER") || carName.includes("HARRIER") ||
-                   carName.includes("RANGE ROVER")
-          } else if (selectedCategory.apiCategory === "TRUCKS") {
-            return carName.includes("TRUCK") || carCategory.includes("TRUCK")
-          } else if (selectedCategory.apiCategory === "THIRD_PARTY") {
-            // Check for third-party marker
-            return carCategory.includes("[THIRD_PARTY]")
-          }
-          
-          return false
-        })
-      }
-    }
-
-    // Then filter by search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim()
       filtered = filtered.filter(car => {
-        const searchText = `${car.name} ${car.year} ${car.fuel} ${car.transmission} ${car.description}`.toLowerCase()
+        const searchText = `${car.name} ${car.year} ${car.fuel} ${car.transmission} ${car.description} ${car.company} ${car.brand}`.toLowerCase()
         return searchText.includes(query)
       })
     }
 
     return filtered
-  }, [cars, activeCategory, searchQuery])
+  }, [cars, activeType, activeCondition, selectedCompany, selectedBrand, searchQuery])
 
-  const handleClearSearch = () => {
-    setSearchQuery("")
+  const handleClearFilters = () => {
+    setActiveType(null)
+    setActiveCondition(null)
+    setSelectedCompany("")
+    setSelectedBrand("")
   }
+
+  // When company changes, reset brand selection
+  const handleCompanyChange = (value: string) => {
+    setSelectedCompany(value === "__all__" ? "" : value)
+    setSelectedBrand("")
+  }
+
+  const handleBrandChange = (value: string) => {
+    setSelectedBrand(value === "__all__" ? "" : value)
+  }
+
+  const handleClearSearch = () => setSearchQuery("")
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      // Search is automatic, just scroll to results
-      document.getElementById('results')?.scrollIntoView({ behavior: 'smooth' })
+    if (e.key === "Enter") {
+      document.getElementById("results")?.scrollIntoView({ behavior: "smooth" })
     }
   }
+
+  const activeTypeLabel = typeFilters.find(f => f.id === activeType)?.label
+  const activeConditionLabel = conditionFilters.find(f => f.id === activeCondition)?.label
 
   return (
     <div className="pt-24 pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Page Header */}
         <div className="mb-8 animate-fade-in-up">
-          <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-2">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-foreground mb-2 tracking-tight">
             Shop All Vehicles
           </h1>
           <p className="text-muted-foreground">
@@ -97,14 +147,15 @@ export function ShopContent({ cars }: ShopContentProps) {
           </p>
         </div>
 
-        {/* Search Box */}
+        {/* Search + Company + Brand */}
         <div className="mb-8 animate-fade-in-up" style={{ animationDelay: "0.1s", opacity: 0, animationFillMode: "forwards" }}>
-          <div className="max-w-2xl">
-            <div className="relative">
+          <div className="flex flex-col sm:flex-row gap-3">
+            {/* Search */}
+            <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
                 type="text"
-                placeholder="Search by car name, make, model, or year (e.g., Toyota Land Cruiser 2024)"
+                placeholder="Search by name, make, model or year…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyPress={handleKeyPress}
@@ -119,75 +170,128 @@ export function ShopContent({ cars }: ShopContentProps) {
                 </button>
               )}
             </div>
+
+            {/* Company dropdown */}
+            <Select value={selectedCompany || "__all__"} onValueChange={handleCompanyChange}>
+              <SelectTrigger className="h-14 w-full sm:w-44 rounded-xl border-border bg-card text-sm">
+                <SelectValue placeholder="Company" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">All Companies</SelectItem>
+                {companyOptions.map(company => (
+                  <SelectItem key={company} value={company}>{company}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Brand dropdown — filtered by selected company */}
+            <Select value={selectedBrand || "__all__"} onValueChange={handleBrandChange}>
+              <SelectTrigger className="h-14 w-full sm:w-44 rounded-xl border-border bg-card text-sm">
+                <SelectValue placeholder="Brand" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">All Brands</SelectItem>
+                {brandOptions.map(brand => (
+                  <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
-        {/* Category Filters */}
-        <div className="mb-8 animate-fade-in-up" style={{ animationDelay: "0.2s", opacity: 0, animationFillMode: "forwards" }}>
-          <div className="flex flex-wrap items-center gap-3">
-            {categories.map((category) => {
-              const categoryCount = category.id === "all" 
-                ? cars.length 
-                : cars.filter(car => {
-                    const carName = car.name.toUpperCase()
-                    const carDesc = (car.description || "").toUpperCase()
-                    
-                    if (category.apiCategory === "SUV") {
-                      return carName.includes("CRUISER") || 
-                             carName.includes("FORTUNER") || 
-                             carName.includes("RANGER") ||
-                             carName.includes("FORESTER") || 
-                             carName.includes("HARRIER") ||
-                             carName.includes("RANGE ROVER")
-                    } else if (category.apiCategory === "TRUCKS") {
-                      return carName.includes("TRUCK")
-                    } else if (category.apiCategory === "THIRD_PARTY") {
-                      return carDesc.includes("[THIRD_PARTY]")
-                    }
-                    return false
-                  }).length
+        {/* Filters — Type + Condition */}
+        <div className="mb-8 space-y-4 animate-fade-in-up" style={{ animationDelay: "0.2s", opacity: 0, animationFillMode: "forwards" }}>
 
+          {/* Type row */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground w-full sm:w-auto sm:mr-1">
+              Type
+            </span>
+            {typeFilters.map((filter) => {
+              const count = filterByCondition(cars, activeCondition).filter(
+                car => (car.type || "").toLowerCase() === filter.apiType
+              ).length
+              const isActive = activeType === filter.id
               return (
                 <Button
-                  key={category.id}
-                  variant={activeCategory === category.id ? "default" : "outline"}
-                  size="lg"
-                  onClick={() => setActiveCategory(category.id)}
-                  className={`rounded-full h-12 px-6 text-base font-medium transition-all duration-300 ${
-                    activeCategory === category.id 
-                      ? "bg-primary text-primary-foreground shadow-lg scale-105" 
+                  key={filter.id}
+                  variant={isActive ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setActiveType(isActive ? null : filter.id)}
+                  className={`rounded-full h-10 px-4 text-sm font-medium transition-all duration-200 ${
+                    isActive
+                      ? "bg-primary text-primary-foreground shadow-md scale-105"
                       : "bg-transparent border-border text-foreground hover:bg-muted hover:scale-105"
                   }`}
                 >
-                  {category.isImage && category.iconPath ? (
-                    <Image 
-                      src={category.iconPath} 
-                      alt={category.label}
-                      width={20}
-                      height={20}
-                      className="mr-2"
-                    />
-                  ) : category.icon ? (
-                    <category.icon className="w-5 h-5 mr-2" />
-                  ) : null}
-                  {category.label}
-                  <span className="ml-2 text-sm opacity-70">({categoryCount})</span>
+                  <Image src={filter.iconPath} alt={filter.label} width={18} height={18} className="mr-1.5" />
+                  {filter.label}
+                  <span className="ml-1.5 text-xs opacity-70">({count})</span>
                 </Button>
               )
             })}
           </div>
+
+          {/* Condition row */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground w-full sm:w-auto sm:mr-1">
+              Condition
+            </span>
+            {conditionFilters.map((filter) => {
+              const count = filterByType(cars, activeType).filter(car => {
+                if (filter.apiCondition === "third_party") {
+                  return (car.description || "").toLowerCase().includes("[third_party]")
+                }
+                return (car.condition || "").toLowerCase() === filter.apiCondition
+              }).length
+              const isActive = activeCondition === filter.id
+              return (
+                <Button
+                  key={filter.id}
+                  variant={isActive ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setActiveCondition(isActive ? null : filter.id)}
+                  className={`rounded-full h-10 px-4 text-sm font-medium transition-all duration-200 ${
+                    isActive
+                      ? "bg-primary text-primary-foreground shadow-md scale-105"
+                      : "bg-transparent border-border text-foreground hover:bg-muted hover:scale-105"
+                  }`}
+                >
+                  {"iconPath" in filter && (
+                    <Image src={(filter as { iconPath: string }).iconPath} alt={filter.label} width={18} height={18} className="mr-1.5" />
+                  )}
+                  {filter.label}
+                  <span className="ml-1.5 text-xs opacity-70">({count})</span>
+                </Button>
+              )
+            })}
+          </div>
+
+          {/* Clear filters */}
+          {hasActiveFilters && (
+            <div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearFilters}
+                className="rounded-full h-9 px-4 text-sm text-muted-foreground hover:text-foreground border border-dashed border-border"
+              >
+                <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
+                Clear filters
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Results Count */}
         <div id="results" className="mb-6 animate-fade-in" style={{ animationDelay: "0.3s", opacity: 0, animationFillMode: "forwards" }}>
           <p className="text-sm text-muted-foreground">
-            Showing {filteredCars.length} {filteredCars.length === 1 ? 'vehicle' : 'vehicles'}
-            {activeCategory !== "all" && (
-              <span> in {categories.find(c => c.id === activeCategory)?.label}</span>
-            )}
-            {searchQuery && (
-              <span> matching "{searchQuery}"</span>
-            )}
+            Showing {filteredCars.length} {filteredCars.length === 1 ? "vehicle" : "vehicles"}
+            {activeTypeLabel && <span> · {activeTypeLabel}</span>}
+            {activeConditionLabel && <span> · {activeConditionLabel}</span>}
+            {selectedCompany && <span> · {selectedCompany}</span>}
+            {selectedBrand && <span> · {selectedBrand}</span>}
+            {searchQuery && <span> matching &ldquo;{searchQuery}&rdquo;</span>}
           </p>
         </div>
 

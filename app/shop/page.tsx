@@ -3,7 +3,7 @@ import { FooterWrapper } from "@/components/footer-wrapper"
 import { ShopContent } from "@/components/shop-content"
 import { getAllCars } from "@/lib/cars-data"
 
-export const revalidate = 60
+export const revalidate = 0
 
 export default async function ShopPage() {
   // Fetch all cars from API

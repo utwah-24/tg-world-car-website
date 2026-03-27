@@ -10,6 +10,7 @@ interface CarSectionProps {
   title: string
   subtitle?: string
   cars: Car[]
+  maxCars?: number
   showBadge?: boolean
   badgeText?: string
   badgeVariant?: "default" | "secondary" | "destructive" | "outline"
@@ -19,11 +20,13 @@ export function CarSection({
   id, 
   title, 
   subtitle, 
-  cars, 
+  cars,
+  maxCars,
   showBadge, 
   badgeText, 
   badgeVariant
 }: CarSectionProps) {
+  const displayedCars = maxCars ? cars.slice(0, maxCars) : cars
   const { ref: headerRef, isVisible: headerVisible } = useScrollAnimation({ threshold: 0.2 })
 
   return (
@@ -50,7 +53,7 @@ export function CarSection({
 
         {/* Cars Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 lg:gap-6">
-          {cars.map((car, index) => (
+          {displayedCars.map((car, index) => (
             <CarCard 
               key={car.id} 
               car={car} 
