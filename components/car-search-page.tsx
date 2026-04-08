@@ -6,7 +6,7 @@ import { InfoCards } from "./info-cards"
 import { CarSection } from "./car-section"
 import { ContentReviewsSection } from "./content-reviews-section"
 import type { Car } from "@/lib/cars-data"
-import type { ContentVideo } from "@/lib/api"
+import type { ContentVideo, CompanyLogo } from "@/lib/api"
 
 interface CarSearchPageProps {
   topSellingCars: Car[]
@@ -14,9 +14,10 @@ interface CarSearchPageProps {
   soldOutCars: Car[]
   allCars: Car[]
   contentVideos: ContentVideo[]
+  companyLogos?: CompanyLogo[]
 }
 
-export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, allCars, contentVideos }: CarSearchPageProps) {
+export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, allCars, contentVideos, companyLogos = [] }: CarSearchPageProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCompany, setSelectedCompany] = useState("")
   const [selectedBrand, setSelectedBrand] = useState("")
@@ -80,7 +81,7 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, all
       />
 
       {/* Brand grid */}
-      <InfoCards companies={companies} />
+      <InfoCards companies={companies} companyLogos={companyLogos} />
       
       {/* Search Results or Category Sections */}
       {filteredCars !== null ? (

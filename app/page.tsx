@@ -4,17 +4,18 @@ import { CarSearchPage } from "@/components/car-search-page"
 import { ContactSection } from "@/components/contact-section"
 import { FooterWrapper } from "@/components/footer-wrapper"
 import { getTopSellingCars, getComingSoonCars, getSoldOutCars, getAllCars } from "@/lib/cars-data"
-import { fetchContent } from "@/lib/api"
+import { fetchContent, fetchCompanyLogos } from "@/lib/api"
 
 export const revalidate = 0
 
 export default async function Home() {
-  const [topSellingCars, comingSoonCars, soldOutCars, allCars, contentVideos] = await Promise.all([
+  const [topSellingCars, comingSoonCars, soldOutCars, allCars, contentVideos, companyLogos] = await Promise.all([
     getTopSellingCars(),
     getComingSoonCars(),
     getSoldOutCars(),
     getAllCars(),
     fetchContent(),
+    fetchCompanyLogos(),
   ])
 
   return (
@@ -29,6 +30,7 @@ export default async function Home() {
         soldOutCars={soldOutCars}
         allCars={allCars}
         contentVideos={contentVideos}
+        companyLogos={companyLogos}
       />
 
       {/* Contact Section */}

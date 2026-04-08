@@ -356,3 +356,59 @@ export async function fetchLogos(): Promise<{ light: string; dark: string }> {
     }
   }
 }
+
+export interface CompanyLogo {
+  company: string
+  logoUrl: string
+}
+
+/**
+ * Fetch car company logos from the API
+ */
+export async function fetchCompanyLogos(): Promise<CompanyLogo[]> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/companies`, {
+      cache: 'no-store',
+      headers: {
+        Accept: 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      console.log(`Companies API returned ${response.status}`)
+      return []
+    }
+
+    const json = await response.json()
+    const rows = Array.isArray(json?.data) ? json.data : Array.isArray(json) ? json : []
+
+    const logos: CompanyLogo[] = rows
+      .map((row: Record<string, unknown>) => {
+        const name =
+          (typeof row.company_label === 'string' && row.company_label) ||
+          (typeof row.company === 'string' && row.company) ||
+          (typeof row.name === 'string' && row.name) ||
+          (typeof row.company_name === 'string' && row.company_name) ||
+          ''
+        const pathRaw =
+          (typeof row.company_logo_path === 'string' && row.company_logo_path) ||
+          (typeof row.logo === 'string' && row.logo) ||
+          (typeof row.company_logo === 'string' && row.company_logo) ||
+          (typeof row.logo_path === 'string' && row.logo_path) ||
+          (typeof row.path === 'string' && row.path) ||
+          ''
+        if (!name || !pathRaw) return null
+        const logoUrl = pathRaw.startsWith('http')
+          ? pathRaw
+          : `${API_BASE_URL}/public/${pathRaw.replace(/^\//, '')}`
+        return { company: name.trim(), logoUrl }
+      })
+      .filter(Boolean) as CompanyLogo[]
+
+    console.log(`✅ Successfully fetched ${logos.length} company logos from API`)
+    return logos
+  } catch (error) {
+    console.error('❌ Error fetching company logos from API:', error)
+    return []
+  }
+}
