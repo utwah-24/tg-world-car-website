@@ -1,4 +1,4 @@
-import type { Car } from "@/lib/cars-data"
+import { isThirdPartyCar, type Car } from "@/lib/cars-data"
 
 export function normalizeType(t: string): string {
   const x = t.toLowerCase().trim()
@@ -53,7 +53,7 @@ export function filterCarsByCriteria(cars: Car[], c: FindCarCriteria): Car[] {
       if (carModelLabel(car) !== c.modelName.trim()) return false
     }
     if (c.condition === "third_party") {
-      if (!(car.description || "").toLowerCase().includes("[third_party]")) return false
+      if (!isThirdPartyCar(car)) return false
     } else if (c.condition) {
       if ((car.condition || "").toLowerCase() !== c.condition.toLowerCase()) return false
     }

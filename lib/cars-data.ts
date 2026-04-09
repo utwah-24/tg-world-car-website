@@ -27,6 +27,12 @@ export interface Car {
   createdAt?: string
 }
 
+/** Third-party: `condition` from the main API and/or `[THIRD_PARTY]` from the partner feed */
+export function isThirdPartyCar(car: Car): boolean {
+  if ((car.condition || "").toLowerCase().trim() === "third_party") return true
+  return (car.description || "").toLowerCase().includes("[third_party]")
+}
+
 // Type alias for compatibility
 export type { CarFromAPI }
 

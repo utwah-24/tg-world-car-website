@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Fuel, Gauge, MapPin, Star, Car, Tag } from "lucide-react"
 import type { Car as CarType } from "@/lib/cars-data"
+import { isThirdPartyCar } from "@/lib/cars-data"
 import { useScrollAnimation } from "@/hooks/use-scroll-animation"
 
 interface CarCardProps {
@@ -20,7 +21,7 @@ export function CarCard({ car, showBadge, badgeText, badgeVariant = "default", d
   const isSoldOut = car.category === "sold-out"
   const isComingSoon = car.category === "coming-soon"
   const yearPrefix = car.year ? `${car.year} ` : ""
-  const isThirdParty = car.description?.includes('[THIRD_PARTY]') || false
+  const isThirdParty = isThirdPartyCar(car)
   const { ref, isVisible } = useScrollAnimation({ threshold: 0.1 })
   
   // Check if this car's image should be flipped

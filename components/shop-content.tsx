@@ -6,7 +6,7 @@ import { CarCard } from "./car-card"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
-import type { Car } from "@/lib/cars-data"
+import { isThirdPartyCar, type Car } from "@/lib/cars-data"
 import { Car as CarIcon, Search, X, RotateCcw } from "lucide-react"
 
 interface ShopContentProps {
@@ -43,7 +43,7 @@ function filterByType(cars: Car[], typeId: string | null): Car[] {
 function filterByCondition(cars: Car[], conditionId: string | null): Car[] {
   if (!conditionId) return cars
   if (conditionId === "third_party") {
-    return cars.filter(car => (car.description || "").toLowerCase().includes("[third_party]"))
+    return cars.filter(isThirdPartyCar)
   }
   return cars.filter(car => (car.condition || "").toLowerCase() === conditionId)
 }
@@ -247,7 +247,7 @@ export function ShopContent({ cars }: ShopContentProps) {
             {conditionFilters.map((filter) => {
               const count = filterByType(cars, activeType).filter(car => {
                 if (filter.apiCondition === "third_party") {
-                  return (car.description || "").toLowerCase().includes("[third_party]")
+                  return isThirdPartyCar(car)
                 }
                 return (car.condition || "").toLowerCase() === filter.apiCondition
               }).length
