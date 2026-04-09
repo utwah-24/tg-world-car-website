@@ -12,6 +12,8 @@ interface RawCarFromAPI {
   condition?: string
   company?: string
   brand?: string
+  /** Short model code from API (e.g. X3M); distinct from marketing car_name */
+  model?: string
   is_coming_soon?: string
   arrival_date?: string
   is_sold?: "available" | "sold"
@@ -37,6 +39,8 @@ export interface CarFromAPI {
   condition?: string
   company?: string
   brand?: string
+  /** Short model code when API provides it (e.g. X3M) */
+  model?: string
   mileage?: string
   transmission?: string
   fuel?: string
@@ -47,6 +51,8 @@ export interface CarFromAPI {
   drive?: string
   features?: string[]
   description?: string
+  /** ISO timestamp from API — used for “Latest cars” (30-day window) */
+  createdAt?: string
 }
 
 /**
@@ -128,11 +134,13 @@ function transformCarData(rawCar: RawCarFromAPI): CarFromAPI {
     condition: rawCar.condition,
     company: rawCar.company,
     brand: rawCar.brand,
+    model: rawCar.model?.trim() || undefined,
     transmission,
     fuel,
     mileage,
     color,
     description,
+    createdAt: rawCar.created_at,
   }
 }
 

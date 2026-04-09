@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { Phone, Mail, MapPin, Send, ArrowRight } from "lucide-react"
+import { Phone, Mail, MapPin, Send } from "lucide-react"
 import { useState } from "react"
 import { useScrollAnimation } from "@/hooks/use-scroll-animation"
 
@@ -149,21 +149,6 @@ export function ContactSection() {
                   <p className="text-muted-foreground text-sm mt-1">123 Auto Plaza</p>
                   <p className="text-muted-foreground text-sm">Dar es Salaam, Tanzania</p>
                 </div>
-              </div>
-
-              {/* CTA */}
-              <div className="p-6 bg-[#1a7e7e] rounded-2xl text-white">
-                <span className="text-xs text-white/80">Connect with verified dealers offering</span>
-                <span className="text-xs text-white/80 block">the best selection and deals.</span>
-                <h4 className="text-xl font-bold mt-3">Trusted</h4>
-                <h4 className="text-xl font-bold">Dealerships</h4>
-                <h4 className="text-xl font-bold">Near You</h4>
-                <Button 
-                  className="mt-4 bg-white text-[#1a7e7e] hover:bg-white/90 rounded-full"
-                >
-                  Find Dealers
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
               </div>
             </div>
           </div>

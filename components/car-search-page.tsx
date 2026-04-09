@@ -7,6 +7,7 @@ import { CarSection } from "./car-section"
 import { ContentReviewsSection } from "./content-reviews-section"
 import type { Car } from "@/lib/cars-data"
 import type { ContentVideo, CompanyLogo } from "@/lib/api"
+import { filterLatestCars } from "@/lib/latest-cars"
 
 interface CarSearchPageProps {
   topSellingCars: Car[]
@@ -32,6 +33,12 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, all
     const set = new Set<string>()
     allCars.forEach(car => { if (car.company) set.add(car.company) })
     return Array.from(set)
+  }, [allCars])
+
+  /** New listings: stay in this section for 30 days after upload (from API created_at) */
+  const latestCars = useMemo(() => {
+    const list = filterLatestCars(allCars)
+    return list.slice(0, 6)
   }, [allCars])
 
   const hasFilters = !!searchQuery.trim() || !!selectedCompany || !!selectedBrand
@@ -104,6 +111,19 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, all
       ) : (
         // Show all category sections
         <>
+          {/* Latest cars — only if at least one listing is within 30 days of upload */}
+          {latestCars.length > 0 && (
+            <CarSection
+              id="latest"
+              title="Latest cars"
+              subtitle="New listings from the last 30 days. Each vehicle stays here for one month after it goes live."
+              cars={latestCars}
+              showBadge
+              badgeText="New"
+              badgeVariant="default"
+            />
+          )}
+
           {/* Popular Cars */}
           <CarSection
             id="popular"
@@ -127,14 +147,6 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, all
             title="Top Picks for You"
             subtitle="Explore the most popular listings handpicked from trusted sellers."
             cars={comingSoonCars}
-          />
-
-          {/* Recently Sold */}
-          <CarSection
-            id="sold"
-            title="Recently Sold"
-            subtitle="These exceptional vehicles have found their new homes. Browse to see the quality we deliver."
-            cars={soldOutCars}
           />
         </>
       )}

@@ -14,11 +14,11 @@ interface ShopContentProps {
 }
 
 const typeFilters = [
-  { id: "suv",    label: "SUV",    iconPath: "/icons/suv.png",    apiType: "suv" },
-  { id: "pickup", label: "Pickup", iconPath: "/icons/pickup.png", apiType: "pickup" },
-  { id: "sedan",  label: "Sedan",  iconPath: "/icons/sedan.png",  apiType: "sedan" },
-  { id: "van",    label: "Van",    iconPath: "/icons/van.png",    apiType: "van" },
-  { id: "trucks", label: "Trucks", iconPath: "/icons/trucks.png", apiType: "trucks" },
+  { id: "suv",    label: "SUV",    apiType: "suv" },
+  { id: "pickup", label: "Pickup", apiType: "pickup" },
+  { id: "sedan",  label: "Sedan",  apiType: "sedan" },
+  { id: "van",    label: "Van",    apiType: "van" },
+  { id: "trucks", label: "Trucks", apiType: "truck" },
 ]
 
 const conditionFilters = [
@@ -27,9 +27,17 @@ const conditionFilters = [
   { id: "third_party", label: "Third Party", iconPath: "/icons/third-party.png", apiCondition: "third_party" },
 ]
 
+/** API may use "Truck" / "truck" or "trucks" — normalize for comparison */
+function normalizeType(t: string): string {
+  const x = t.toLowerCase().trim()
+  if (x === "trucks") return "truck"
+  return x
+}
+
 function filterByType(cars: Car[], typeId: string | null): Car[] {
   if (!typeId) return cars
-  return cars.filter(car => (car.type || "").toLowerCase() === typeId)
+  const want = normalizeType(typeId)
+  return cars.filter(car => normalizeType(car.type || "") === want)
 }
 
 function filterByCondition(cars: Car[], conditionId: string | null): Car[] {
@@ -209,7 +217,7 @@ export function ShopContent({ cars }: ShopContentProps) {
             </span>
             {typeFilters.map((filter) => {
               const count = filterByCondition(cars, activeCondition).filter(
-                car => (car.type || "").toLowerCase() === filter.apiType
+                car => normalizeType(car.type || "") === normalizeType(filter.apiType)
               ).length
               const isActive = activeType === filter.id
               return (
@@ -224,7 +232,6 @@ export function ShopContent({ cars }: ShopContentProps) {
                       : "bg-transparent border-border text-foreground hover:bg-muted hover:scale-105"
                   }`}
                 >
-                  <Image src={filter.iconPath} alt={filter.label} width={18} height={18} className="mr-1.5" />
                   {filter.label}
                   <span className="ml-1.5 text-xs opacity-70">({count})</span>
                 </Button>

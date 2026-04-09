@@ -12,6 +12,8 @@ export interface Car {
   condition?: string
   company?: string
   brand?: string
+  /** Short model code from API (e.g. X3M); preferred over full name for filters */
+  model?: string
   mileage?: string
   transmission?: string
   fuel?: string
@@ -22,6 +24,7 @@ export interface Car {
   drive?: string
   features?: string[]
   description?: string
+  createdAt?: string
 }
 
 // Type alias for compatibility

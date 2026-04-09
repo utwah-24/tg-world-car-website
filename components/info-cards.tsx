@@ -26,7 +26,7 @@ export function InfoCards({ companies = [], companyLogos = [] }: InfoCardsProps)
     <section className="py-10 px-4 sm:px-6 lg:px-8 border-b border-border">
       <div className="max-w-7xl mx-auto">
         <h2 className="text-lg font-semibold text-foreground mb-6">
-          Browse by Brand
+          Browse by Company
         </h2>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">

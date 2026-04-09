@@ -14,6 +14,7 @@ interface CarSectionProps {
   showBadge?: boolean
   badgeText?: string
   badgeVariant?: "default" | "secondary" | "destructive" | "outline"
+  hideSeeMore?: boolean
 }
 
 export function CarSection({ 
@@ -24,7 +25,8 @@ export function CarSection({
   maxCars,
   showBadge, 
   badgeText, 
-  badgeVariant
+  badgeVariant,
+  hideSeeMore,
 }: CarSectionProps) {
   const displayedCars = maxCars ? cars.slice(0, maxCars) : cars
   const { ref: headerRef, isVisible: headerVisible } = useScrollAnimation({ threshold: 0.2 })
@@ -66,16 +68,18 @@ export function CarSection({
         </div>
 
         {/* See More Button */}
-        <div className="mt-10 text-center">
-          <a href="/shop">
-            <Button 
-              variant="outline" 
-              className="rounded-full px-8 h-11 border-primary text-primary hover:bg-primary hover:text-primary-foreground bg-transparent"
-            >
-              See More {title}
-            </Button>
-          </a>
-        </div>
+        {!hideSeeMore && (
+          <div className="mt-10 text-center">
+            <a href="/shop">
+              <Button 
+                variant="outline" 
+                className="rounded-full px-8 h-11 border-primary text-primary hover:bg-primary hover:text-primary-foreground bg-transparent"
+              >
+                See More {title}
+              </Button>
+            </a>
+          </div>
+        )}
       </div>
     </section>
   )

@@ -111,7 +111,7 @@ export function CarCard({ car, showBadge, badgeText, badgeVariant = "default", d
 
         {/* Status Badges */}
         {(isSoldOut || isComingSoon || isThirdParty || (showBadge && badgeText)) && (
-          <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 flex gap-2">
+          <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 flex flex-wrap gap-2">
             {/* Third Party Badge - Always show if it's third party */}
             {isThirdParty && (
               <Badge className="text-[10px] sm:text-xs font-medium bg-purple-600 text-white px-2 py-0.5 sm:px-2.5 sm:py-1">

@@ -4,10 +4,11 @@ import { Phone, Mail, MapPin, Clock } from "lucide-react"
 import Image from "next/image"
 
 interface FooterProps {
-  logoLight?: string
+  /** From /api/logos — e.g. logo-dark.jpeg for dark footer bar */
+  logoDark?: string
 }
 
-export function Footer({ logoLight = "/placeholder-logo.svg" }: FooterProps) {
+export function Footer({ logoDark = "/placeholder-logo.svg" }: FooterProps) {
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId)
     if (element) {
@@ -23,11 +24,11 @@ export function Footer({ logoLight = "/placeholder-logo.svg" }: FooterProps) {
           <div className="lg:col-span-1">
             <div className="relative h-10 w-32 mb-4">
               <Image
-                src={logoLight}
+                src={logoDark}
                 alt="TG World"
                 fill
-                className="object-contain object-left brightness-0 invert"
-                unoptimized={logoLight?.startsWith('http')}
+                className="object-contain object-left"
+                unoptimized={logoDark?.startsWith('http')}
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = "/placeholder-logo.svg"
                 }}
