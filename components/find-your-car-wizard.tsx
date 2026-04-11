@@ -284,30 +284,43 @@ export function FindYourCarWizard({ cars, companyLogos }: FindYourCarWizardProps
 
   return (
     <div className="max-w-3xl mx-auto">
-      {/* Progress */}
-      <div className="flex items-center justify-center gap-2 mb-10">
-        {Array.from({ length: STEPS }, (_, i) => i + 1).map((n) => (
-          <div key={n} className="flex items-center gap-2">
-            <div
-              className={cn(
-                "flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold transition-all duration-300",
-                step >= n
-                  ? "bg-primary text-primary-foreground shadow-md scale-105"
-                  : "bg-muted text-muted-foreground"
-              )}
-            >
-              {step > n ? <Check className="w-4 h-4" /> : n}
-            </div>
-            {n < STEPS && (
+      {/* Progress — compact on small screens so it fits without clipping */}
+      <div className="mb-10 w-full min-w-0">
+        <div
+          className={cn(
+            "overflow-x-auto overflow-y-hidden py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+            "-mx-1 px-1 sm:mx-0 sm:px-0"
+          )}
+        >
+          <div
+            className={cn(
+              "mx-auto flex w-max max-w-none items-center justify-center gap-0.5 sm:gap-2"
+            )}
+          >
+          {Array.from({ length: STEPS }, (_, i) => i + 1).map((n) => (
+            <div key={n} className="flex shrink-0 items-center gap-0.5 sm:gap-2">
               <div
                 className={cn(
-                  "h-0.5 w-6 sm:w-10 rounded-full transition-colors duration-300",
-                  step > n ? "bg-primary" : "bg-border"
+                  "flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold transition-all duration-300 sm:h-9 sm:w-9 sm:text-sm",
+                  step >= n
+                    ? "bg-primary text-primary-foreground shadow-md sm:scale-105"
+                    : "bg-muted text-muted-foreground"
                 )}
-              />
-            )}
+              >
+                {step > n ? <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> : n}
+              </div>
+              {n < STEPS && (
+                <div
+                  className={cn(
+                    "h-0.5 w-3 shrink-0 rounded-full transition-colors duration-300 sm:w-8 md:w-10",
+                    step > n ? "bg-primary" : "bg-border"
+                  )}
+                />
+              )}
+            </div>
+          ))}
           </div>
-        ))}
+        </div>
       </div>
 
       <div className="mb-6">{selectionSummary}</div>
