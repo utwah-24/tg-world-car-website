@@ -151,9 +151,99 @@ export function FindYourCarWizard({ cars, companyLogos }: FindYourCarWizardProps
     }
   }
 
+  const summaryChips = useMemo(() => {
+    const chips: { key: string; label: string; value: string; logoUrl?: string }[] = []
+    // Show each field only after the user has moved past that step (step > n)
+    if (step >= 2 && selectedType) {
+      chips.push({ key: "type", label: "Type", value: formatTypeLabel(selectedType) })
+    }
+    if (step >= 3 && selectedCompany) {
+      const logoUrl = logoMap.get(selectedCompany.trim().toLowerCase())
+      chips.push({ key: "company", label: "Company", value: selectedCompany, logoUrl })
+    }
+    if (step >= 4 && selectedBrand) chips.push({ key: "brand", label: "Brand", value: selectedBrand })
+    if (step >= 5 && selectedModel) chips.push({ key: "model", label: "Model", value: selectedModel })
+
+    if (selectedCondition && step >= 5) {
+      const c = CONDITIONS.find((x) => x.id === selectedCondition)
+      chips.push({ key: "condition", label: "Condition", value: c?.label ?? String(selectedCondition) })
+    } else if ((showResults || step >= 6) && !selectedCondition) {
+      chips.push({ key: "condition", label: "Condition", value: "Any condition" })
+    }
+
+    const pastBudgetStep = showResults || step >= 6
+    if (pastBudgetStep) {
+      const budgetBits: string[] = []
+      if (priceMin.trim()) budgetBits.push(`from ${priceMin}M`)
+      if (priceMax.trim()) budgetBits.push(`to ${priceMax}M`)
+      if (budgetBits.length) {
+        chips.push({
+          key: "budget",
+          label: "Budget",
+          value: `${budgetBits.join(" · ")} Million Tshs`,
+        })
+      }
+      const ymin = yearMin.trim()
+      const ymax = yearMax.trim()
+      if (ymin && ymax) {
+        chips.push({ key: "year", label: "Year", value: `${ymin}–${ymax}` })
+      } else if (ymin) {
+        chips.push({ key: "year", label: "Year", value: `from ${ymin}` })
+      } else if (ymax) {
+        chips.push({ key: "year", label: "Year", value: `to ${ymax}` })
+      }
+    }
+
+    return chips
+  }, [
+    selectedType,
+    selectedCompany,
+    selectedBrand,
+    selectedModel,
+    selectedCondition,
+    step,
+    showResults,
+    priceMin,
+    priceMax,
+    yearMin,
+    yearMax,
+    logoMap,
+  ])
+
+  const selectionSummary = (
+    <div
+      className={cn(
+        "rounded-2xl border border-border/80 bg-muted/30 px-3 py-3 sm:px-4 sm:py-3.5 transition-all duration-300",
+        summaryChips.length > 0 ? "animate-in fade-in slide-in-from-top-1 duration-300" : "hidden"
+      )}
+    >
+      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">Your selections</p>
+      <div className="flex flex-wrap gap-2">
+        {summaryChips.map((chip) => (
+          <div
+            key={chip.key}
+            className="inline-flex items-center gap-2 rounded-full border border-border bg-background/90 px-3 py-1.5 text-sm shadow-sm"
+          >
+            <span className="text-muted-foreground text-xs">{chip.label}</span>
+            <span className="font-semibold text-foreground tabular-nums flex items-center gap-1.5">
+              {chip.logoUrl ? (
+                <span className="relative h-5 w-5 shrink-0 overflow-hidden rounded-md border border-border/60 bg-white">
+                  <Image src={chip.logoUrl} alt="" width={20} height={20} className="object-contain p-0.5" unoptimized />
+                </span>
+              ) : null}
+              {chip.value}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+
   if (showResults) {
     return (
       <div className="animate-in fade-in duration-500 max-w-6xl mx-auto">
+        <div className="mb-8">{selectionSummary}</div>
+
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
           <div>
             <h2 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">Your matches</h2>
@@ -219,6 +309,8 @@ export function FindYourCarWizard({ cars, companyLogos }: FindYourCarWizardProps
           </div>
         ))}
       </div>
+
+      <div className="mb-6">{selectionSummary}</div>
 
       <div
         key={step}
