@@ -1,10 +1,12 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useRef } from "react"
 import Image from "next/image"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Play, Pause, Volume2, VolumeX, Maximize, ChevronLeft, ChevronRight, X } from "lucide-react"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 import type { ContentVideo } from "@/lib/api"
+import { ContentVideoCard } from "@/components/content-video-card"
 
 interface ContentReviewsSectionProps {
   videos: ContentVideo[]
@@ -15,13 +17,13 @@ export function ContentReviewsSection({ videos }: ContentReviewsSectionProps) {
 
   const scrollLeft = () => {
     if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: -320, behavior: 'smooth' })
+      scrollContainerRef.current.scrollBy({ left: -320, behavior: "smooth" })
     }
   }
 
   const scrollRight = () => {
     if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: 320, behavior: 'smooth' })
+      scrollContainerRef.current.scrollBy({ left: 320, behavior: "smooth" })
     }
   }
 
@@ -30,11 +32,10 @@ export function ContentReviewsSection({ videos }: ContentReviewsSectionProps) {
   }
 
   return (
-    <section className="py-12 lg:py-20 bg-black">
+    <section id="content" className="py-12 lg:py-20 bg-black scroll-mt-20 lg:scroll-mt-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="flex items-start gap-6 mb-10">
-          {/* Sharif's Photo */}
           <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-4 border-primary shadow-xl shrink-0">
             <Image
               src="/SHARIF.jpeg"
@@ -44,8 +45,7 @@ export function ContentReviewsSection({ videos }: ContentReviewsSectionProps) {
               className="w-full h-full object-cover"
             />
           </div>
-          
-          {/* Text */}
+
           <div className="flex-1">
             <h2 className="text-2xl sm:text-3xl font-bold text-background mb-4">
               Expert Car Reviews & Insights
@@ -56,26 +56,25 @@ export function ContentReviewsSection({ videos }: ContentReviewsSectionProps) {
               </span>
             </div>
             <p className="text-background/80 text-sm sm:text-base max-w-3xl leading-relaxed">
-              Welcome to TG World's exclusive car review collection! Watch authentic, detailed reviews of every vehicle in our inventory. From powerful engines to luxurious interiors, I personally showcase each car's features, performance, and unique qualities to help you make the best decision. Real cars, real reviews, real value.
+              Welcome to TG World&apos;s exclusive car review collection! Watch authentic, detailed reviews of every vehicle in our inventory. From powerful engines to luxurious interiors, I personally showcase each car&apos;s features, performance, and unique qualities to help you make the best decision. Real cars, real reviews, real value.
             </p>
           </div>
         </div>
 
-        {/* Most Popular Reviews Title */}
         <h3 className="text-xl font-semibold text-background mb-6">CONTENT REVIEWS 🔥</h3>
 
-        {/* Video Carousel */}
         <div className="relative">
-          {/* Navigation Buttons */}
           {videos.length > 3 && (
             <>
               <button
+                type="button"
                 onClick={scrollLeft}
                 className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-background/90 backdrop-blur-sm flex items-center justify-center hover:bg-background transition-colors -ml-5"
               >
                 <ChevronLeft className="w-6 h-6 text-foreground" />
               </button>
               <button
+                type="button"
                 onClick={scrollRight}
                 className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-background/90 backdrop-blur-sm flex items-center justify-center hover:bg-background transition-colors -mr-5"
               >
@@ -84,195 +83,26 @@ export function ContentReviewsSection({ videos }: ContentReviewsSectionProps) {
             </>
           )}
 
-          {/* Videos Scroll Container */}
           <div
             ref={scrollContainerRef}
             className="flex gap-4 overflow-x-auto scrollbar-thin pb-4"
-            style={{ scrollbarColor: 'rgba(255,255,255,0.3) transparent' }}
+            style={{ scrollbarColor: "rgba(255,255,255,0.3) transparent" }}
           >
             {videos.map((video) => (
-              <VideoCard key={video.id} video={video} />
+              <ContentVideoCard key={video.id} video={video} layout="carousel" />
             ))}
           </div>
         </div>
 
-        {/* Read More Button */}
         <div className="mt-8 text-center">
-          <Button className="bg-background text-foreground hover:bg-background/90 rounded-full px-8 h-12 font-medium">
-            Read more reviews
+          <Button
+            asChild
+            className="bg-background text-foreground hover:bg-background/90 rounded-full px-8 h-12 font-medium"
+          >
+            <Link href="/content">Show more content</Link>
           </Button>
         </div>
       </div>
     </section>
-  )
-}
-
-function VideoCard({ video }: { video: ContentVideo }) {
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [isMuted, setIsMuted] = useState(true)
-  const [showControls, setShowControls] = useState(false)
-  const [isExpanded, setIsExpanded] = useState(false)
-
-  const togglePlay = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause()
-      } else {
-        videoRef.current.play()
-      }
-      setIsPlaying(!isPlaying)
-    }
-  }
-
-  const toggleMute = () => {
-    if (videoRef.current) {
-      videoRef.current.muted = !isMuted
-      setIsMuted(!isMuted)
-    }
-  }
-
-  const toggleExpanded = () => {
-    setIsExpanded(!isExpanded)
-  }
-
-  const closeExpanded = () => {
-    setIsExpanded(false)
-  }
-
-  return (
-    <>
-      <div
-        className="relative shrink-0 w-[280px] sm:w-[320px] rounded-2xl overflow-hidden bg-background/10 group"
-        onMouseEnter={() => setShowControls(true)}
-        onMouseLeave={() => setShowControls(false)}
-      >
-        {/* Video Player - Vertical aspect ratio for mobile/TikTok style */}
-        <div className="relative" style={{ aspectRatio: "9/16" }}>
-          <video
-            ref={videoRef}
-            src={video.videoUrl}
-            className="w-full h-full object-cover"
-            loop
-            muted={isMuted}
-            playsInline
-            onEnded={() => setIsPlaying(false)}
-          />
-
-          {/* Play/Pause Overlay */}
-          <button
-            onClick={togglePlay}
-            className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-all"
-          >
-            {!isPlaying && (
-              <div className="w-16 h-16 rounded-full bg-primary/90 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Play className="w-8 h-8 text-white ml-1" />
-              </div>
-            )}
-          </button>
-
-          {/* Video Controls */}
-          <div
-            className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 transition-opacity duration-300 ${
-              showControls || !isPlaying ? "opacity-100" : "opacity-0"
-            }`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              {/* Title */}
-              <h4 className="text-white text-sm font-medium line-clamp-2 flex-1">
-                {video.title}
-              </h4>
-            </div>
-
-            {/* Control Buttons */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={togglePlay}
-                className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-colors"
-              >
-                {isPlaying ? (
-                  <Pause className="w-4 h-4 text-white" />
-                ) : (
-                  <Play className="w-4 h-4 text-white ml-0.5" />
-                )}
-              </button>
-
-              <button
-                onClick={toggleMute}
-                className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-colors"
-              >
-                {isMuted ? (
-                  <VolumeX className="w-4 h-4 text-white" />
-                ) : (
-                  <Volume2 className="w-4 h-4 text-white" />
-                )}
-              </button>
-
-              <div className="flex-1" />
-
-              <button
-                onClick={toggleExpanded}
-                className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-colors"
-              >
-                <Maximize className="w-4 h-4 text-white" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Expanded Modal Overlay */}
-      {isExpanded && (
-        <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-lg animate-fade-in p-4 sm:p-8"
-          onClick={closeExpanded}
-        >
-          {/* Close Button */}
-          <button
-            onClick={closeExpanded}
-            className="absolute top-4 right-4 z-[10000] w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center hover:bg-white/20 transition-all hover:scale-110"
-          >
-            <X className="w-6 h-6 text-white" />
-          </button>
-
-          {/* Two Column Layout */}
-          <div
-            className="flex flex-col lg:flex-row items-center gap-6 lg:gap-8 max-w-7xl w-full animate-scale-in"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Left: Video Player */}
-            <div
-              className="relative flex-shrink-0"
-              style={{ height: "80vh", aspectRatio: "9/16" }}
-            >
-              <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-2xl">
-                <video
-                  src={video.videoUrl}
-                  className="w-full h-full object-cover"
-                  loop
-                  muted={isMuted}
-                  playsInline
-                  autoPlay
-                  controls
-                />
-              </div>
-            </div>
-
-            {/* Right: Title and Button */}
-            <div className="flex flex-col justify-center gap-8 max-w-md lg:max-w-lg">
-              <h3 className="text-white text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold leading-tight">
-                {video.title}
-              </h3>
-              
-              <a href={video.carId ? `/car/${video.carId}` : '/shop'}>
-                <Button className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-10 h-14 text-lg font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-105 w-fit">
-                  Show
-                </Button>
-              </a>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
   )
 }

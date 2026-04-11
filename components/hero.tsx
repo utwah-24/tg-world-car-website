@@ -6,7 +6,7 @@ interface HeroProps {
 
 export function Hero({ heroImage = "/placeholder.svg" }: HeroProps) {
   return (
-    <section className="relative">
+    <section id="home" className="relative scroll-mt-20 lg:scroll-mt-24">
       {/* Hero Image Background */}
       <div className="relative h-screen">
         <img

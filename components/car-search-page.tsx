@@ -111,8 +111,8 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, all
       ) : (
         // Show all category sections
         <>
-          {/* Latest cars — only if at least one listing is within 30 days of upload */}
-          {latestCars.length > 0 && (
+          {/* Latest cars — anchor #latest always exists for header nav */}
+          {latestCars.length > 0 ? (
             <CarSection
               id="latest"
               title="Latest cars"
@@ -122,6 +122,12 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, all
               badgeText="New"
               badgeVariant="default"
             />
+          ) : (
+            <section id="latest" className="scroll-mt-20 lg:scroll-mt-24 py-10 lg:py-12" aria-label="Latest cars">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-muted-foreground text-sm">
+                No listings from the last 30 days right now — browse Popular or Top Picks below.
+              </div>
+            </section>
           )}
 
           {/* Popular Cars */}
@@ -136,9 +142,19 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, all
             badgeVariant="default"
           />
 
-          {/* Content Reviews Section - Right after Popular Cars */}
-          {contentVideos.length > 0 && (
+          {/* Content — #content anchor always present for header nav */}
+          {contentVideos.length > 0 ? (
             <ContentReviewsSection videos={contentVideos} />
+          ) : (
+            <section
+              id="content"
+              className="scroll-mt-20 lg:scroll-mt-24 py-12 lg:py-16 bg-black border-t border-white/5"
+              aria-label="Video content"
+            >
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white/50 text-sm">
+                Video reviews will appear here when available.
+              </div>
+            </section>
           )}
 
           {/* Top Picks for You */}

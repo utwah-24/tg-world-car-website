@@ -32,7 +32,7 @@ export function CarSection({
   const { ref: headerRef, isVisible: headerVisible } = useScrollAnimation({ threshold: 0.2 })
 
   return (
-    <section id={id} className="py-12 lg:py-20">
+    <section id={id} className="py-12 lg:py-20 scroll-mt-20 lg:scroll-mt-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div
