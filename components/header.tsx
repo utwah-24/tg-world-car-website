@@ -18,21 +18,11 @@ interface HeaderProps {
   logoDark?: string
 }
 
-const navBtn = (scrolled: boolean) =>
-  cn(
-    "text-sm font-medium rounded-md px-2 py-1.5 transition-colors outline-none",
-    scrolled
-      ? "text-foreground hover:text-primary hover:bg-muted"
-      : "text-white/90 hover:text-white hover:bg-white/10"
-  )
+const navBtnClass =
+  "text-sm font-medium rounded-md px-2 py-1.5 transition-colors outline-none text-black hover:text-neutral-900 hover:bg-muted"
 
-const dropdownTriggerClass = (scrolled: boolean) =>
-  cn(
-    "inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-sm font-medium transition-colors outline-none data-[state=open]:bg-white/15",
-    scrolled
-      ? "text-foreground hover:bg-muted data-[state=open]:bg-muted"
-      : "text-white/90 hover:bg-white/10"
-  )
+const dropdownTriggerClass =
+  "inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-sm font-medium transition-colors outline-none text-black hover:bg-muted data-[state=open]:bg-muted data-[state=open]:text-black"
 
 export function Header({ logoLight = "/placeholder-logo.svg", logoDark = "/placeholder-logo.svg" }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -106,12 +96,12 @@ export function Header({ logoLight = "/placeholder-logo.svg", logoDark = "/place
           {/* Nav + Sign In + menu — right (same cluster as Sign In) */}
           <div className="flex items-center gap-1 sm:gap-2 md:gap-3 ml-auto shrink-0">
             <nav className="hidden lg:flex items-center justify-end gap-1 xl:gap-2">
-              <button type="button" onClick={() => goToSection("home")} className={navBtn(scrolled)}>
+              <button type="button" onClick={() => goToSection("home")} className={navBtnClass}>
                 Home
               </button>
 
               <DropdownMenu>
-                <DropdownMenuTrigger className={dropdownTriggerClass(scrolled)}>
+                <DropdownMenuTrigger className={dropdownTriggerClass}>
                   Cars
                   <ChevronDown className="h-4 w-4 opacity-70" />
                 </DropdownMenuTrigger>
@@ -122,11 +112,11 @@ export function Header({ logoLight = "/placeholder-logo.svg", logoDark = "/place
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <button type="button" onClick={() => goToSection("content")} className={navBtn(scrolled)}>
+              <button type="button" onClick={() => goToSection("content")} className={navBtnClass}>
                 Content
               </button>
 
-              <button type="button" onClick={() => goToSection("contact")} className={navBtn(scrolled)}>
+              <button type="button" onClick={() => goToSection("contact")} className={navBtnClass}>
                 Get in touch
               </button>
             </nav>
@@ -134,19 +124,14 @@ export function Header({ logoLight = "/placeholder-logo.svg", logoDark = "/place
             <Button
               variant="outline"
               onClick={() => router.push("/signin")}
-              className={cn(
-                "hidden md:inline-flex rounded-full px-6 font-bold h-10",
-                scrolled
-                  ? "border-border text-foreground hover:bg-muted"
-                  : "border-transparent bg-transparent text-white hover:bg-white hover:text-black hover:border-white"
-              )}
+              className="hidden md:inline-flex rounded-full border-black/25 bg-transparent px-6 font-bold h-10 text-black hover:bg-muted hover:text-black"
             >
               Sign In
             </Button>
 
             <button
               type="button"
-              className={cn("lg:hidden p-2 shrink-0", scrolled ? "text-foreground" : "text-white")}
+              className="lg:hidden p-2 shrink-0 text-black"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               aria-expanded={isMenuOpen}
               aria-label={isMenuOpen ? "Close menu" : "Open menu"}

@@ -53,12 +53,13 @@ export function CarSection({
           )}
         </div>
 
-        {/* Cars Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 lg:gap-6">
+        {/* Cars Grid — up to 5 columns on large screens with compact cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3 lg:gap-3">
           {displayedCars.map((car, index) => (
             <CarCard 
               key={car.id} 
               car={car} 
+              compact
               showBadge={showBadge}
               badgeText={badgeText}
               badgeVariant={badgeVariant}
