@@ -4,9 +4,10 @@ import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Fuel, Gauge, MapPin, Star, Car, Tag } from "lucide-react"
+import { Fuel, Gauge, MapPin, Car, Tag } from "lucide-react"
 import type { Car as CarType } from "@/lib/cars-data"
 import { isThirdPartyCar } from "@/lib/cars-data"
+import { inferRegistered } from "@/lib/api"
 import { useScrollAnimation } from "@/hooks/use-scroll-animation"
 import { cn } from "@/lib/utils"
 
@@ -74,6 +75,11 @@ export function CarCard({ car, compact, showBadge, badgeText, badgeVariant = "de
 
   const cleanSummary = car.description ? getCleanSummary(car.description) : ''
 
+  const registration =
+    car.registered !== undefined
+      ? car.registered
+      : inferRegistered(car.price, car.description ?? "")
+
   return (
     <div
       ref={ref}
@@ -112,7 +118,7 @@ export function CarCard({ car, compact, showBadge, badgeText, badgeVariant = "de
           unoptimized={car.image?.startsWith('http')}
         />
         
-        {/* Location & Rating Badge */}
+        {/* Location (top-left) & registration tag (top-right) */}
         <div
           className={cn(
             "absolute flex flex-wrap",
@@ -137,29 +143,28 @@ export function CarCard({ car, compact, showBadge, badgeText, badgeVariant = "de
           </div>
         </div>
         
-        <div
-          className={cn(
-            "absolute",
-            compact ? "top-1.5 right-1.5" : "top-2 right-2 sm:top-3 sm:right-3",
-          )}
-        >
+        {registration !== undefined && (
           <div
             className={cn(
-              "flex items-center bg-foreground/80 backdrop-blur-sm text-white rounded-full",
-              compact
-                ? "gap-0.5 text-[9px] px-1 py-0.5"
-                : "gap-0.5 sm:gap-1 text-[10px] sm:text-xs px-1.5 py-1 sm:px-2.5 sm:py-1.5",
+              "absolute",
+              compact ? "top-1.5 right-1.5" : "top-2 right-2 sm:top-3 sm:right-3",
             )}
           >
-            <Star
+            <div
               className={cn(
-                "fill-yellow-400 text-yellow-400",
-                compact ? "w-2 h-2" : "w-2.5 h-2.5 sm:w-3 sm:h-3",
+                "flex items-center rounded-full font-medium backdrop-blur-sm",
+                registration
+                  ? "bg-emerald-600/95 text-white"
+                  : "bg-background/90 text-foreground border border-border/80 shadow-sm",
+                compact
+                  ? "text-[9px] px-1.5 py-0.5"
+                  : "text-[10px] sm:text-xs px-1.5 py-1 sm:px-2.5 sm:py-1.5",
               )}
-            />
-            <span>4.8</span>
+            >
+              {registration ? "Registered" : "Unregistered"}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Status Badges */}
         {(isSoldOut || isComingSoon || isThirdParty || (showBadge && badgeText)) && (

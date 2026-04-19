@@ -4,11 +4,11 @@ import { Phone, Mail, MapPin, Clock } from "lucide-react"
 import Image from "next/image"
 
 interface FooterProps {
-  /** From /api/logos — e.g. logo-dark.jpeg for dark footer bar */
+  /** Primary site logo (`public/tg-world-logo.png`) */
   logoDark?: string
 }
 
-export function Footer({ logoDark = "/placeholder-logo.svg" }: FooterProps) {
+export function Footer({ logoDark = "/tg-world-logo.png" }: FooterProps) {
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId)
     if (element) {

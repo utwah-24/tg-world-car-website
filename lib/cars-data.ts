@@ -25,6 +25,8 @@ export interface Car {
   features?: string[]
   description?: string
   createdAt?: string
+  /** When set, car cards show Registered / Unregistered instead of a star rating */
+  registered?: boolean
 }
 
 /** Third-party: `condition` from the main API and/or `[THIRD_PARTY]` from the partner feed */

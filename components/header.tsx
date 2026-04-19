@@ -24,7 +24,7 @@ const navBtnClass =
 const dropdownTriggerClass =
   "inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-sm font-medium transition-colors outline-none text-black hover:bg-muted data-[state=open]:bg-muted data-[state=open]:text-black"
 
-export function Header({ logoLight = "/placeholder-logo.svg", logoDark = "/placeholder-logo.svg" }: HeaderProps) {
+export function Header({ logoLight = "/tg-world-logo.png", logoDark = "/tg-world-logo.png" }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const router = useRouter()
@@ -89,6 +89,7 @@ export function Header({ logoLight = "/placeholder-logo.svg", logoDark = "/place
                 onError={(e) => {
                   ;(e.target as HTMLImageElement).src = "/placeholder-logo.svg"
                 }}
+                sizes="(max-width: 640px) 128px, 160px"
               />
             </a>
           </div>

@@ -53,6 +53,23 @@ export interface CarFromAPI {
   description?: string
   /** ISO timestamp from API — used for “Latest cars” (30-day window) */
   createdAt?: string
+  /** Inferred from price/description (e.g. “With New Registration”) */
+  registered?: boolean
+}
+
+/** Infer registration from raw price + description (e.g. “With New Registration”) */
+export function inferRegistered(rawPrice: string, description: string): boolean | undefined {
+  const combined = `${rawPrice}\n${description}`.toLowerCase()
+  if (/\b(unregistered|without registration|no registration)\b/.test(combined)) return false
+  if (
+    /\bwith\s+new\s+registration\b/.test(combined) ||
+    /\bwith\s+registration\b/.test(combined) ||
+    /\bincludes?\s+registration\b/.test(combined) ||
+    /\bnew\s+registration\b/.test(combined)
+  ) {
+    return true
+  }
+  return undefined
 }
 
 /**
@@ -116,6 +133,8 @@ function transformCarData(rawCar: RawCarFromAPI): CarFromAPI {
   const mileage = description.match(/Mileage\s*:\s*([^\r\n]+)/i)?.[1]?.trim()
   const color = description.match(/Colou?r\s*:\s*([^\r\n]+)/i)?.[1]?.trim()
   
+  const registered = inferRegistered(rawCar.car_price || '', description)
+
   // Clean up price - remove "With New Registration" and other common suffixes
   let cleanPrice = rawCar.car_price || 'Contact for price'
   cleanPrice = cleanPrice.replace(/\s*With New Registration\s*/gi, '')
@@ -127,6 +146,7 @@ function transformCarData(rawCar: RawCarFromAPI): CarFromAPI {
     name,
     year,
     price: cleanPrice,
+    registered,
     image: mainImageUrl,
     images: allImageUrls,
     category,
@@ -211,19 +231,6 @@ export async function fetchCarsByCategory(category: "top-selling" | "coming-soon
     console.error(`❌ Error fetching cars for category ${category}:`, error)
     return []
   }
-}
-
-// Logo API interfaces
-interface LogoFromAPI {
-  id: number
-  name: string
-  path: string
-  created_at: string
-  updated_at: string
-}
-
-interface LogosAPIResponse {
-  data: LogoFromAPI[]
 }
 
 /**
@@ -322,47 +329,14 @@ export async function fetchContent(): Promise<ContentVideo[]> {
   }
 }
 
+/** Primary TG WORLD International logo (`public/tg-world-logo.png`) */
+export const SITE_LOGO_PATH = "/tg-world-logo.png"
+
 /**
- * Fetch logos from the API
+ * Site header/footer logos (static asset; replaces legacy /api/logos).
  */
 export async function fetchLogos(): Promise<{ light: string; dark: string }> {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/logos`, {
-      cache: 'no-store',
-      headers: {
-        'Accept': 'application/json',
-      }
-    })
-    
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`)
-    }
-    
-    const apiResponse: LogosAPIResponse = await response.json()
-    
-    // Find light and dark logos (case-insensitive match)
-    const lightLogo = apiResponse.data.find(logo =>
-      logo.name.toLowerCase().includes('light')
-    ) ?? apiResponse.data[0]  // fall back to first logo if no 'light' match
-
-    const darkLogo = apiResponse.data.find(logo =>
-      logo.name.toLowerCase().includes('dark')
-    ) ?? apiResponse.data[1] ?? apiResponse.data[0]
-
-    console.log('📸 Logos from API:', apiResponse.data.map(l => `${l.name} → ${l.path}`))
-
-    return {
-      light: lightLogo ? `${API_BASE_URL}/public/${lightLogo.path}` : '/placeholder-logo.svg',
-      dark: darkLogo ? `${API_BASE_URL}/public/${darkLogo.path}` : '/placeholder-logo.svg',
-    }
-  } catch (error) {
-    console.error('❌ Error fetching logos from API:', error)
-    // Return placeholder on error
-    return {
-      light: '/placeholder-logo.svg',
-      dark: '/placeholder-logo.svg',
-    }
-  }
+  return { light: SITE_LOGO_PATH, dark: SITE_LOGO_PATH }
 }
 
 export interface CompanyLogo {
