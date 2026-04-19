@@ -18,6 +18,7 @@ import {
   normalizeType,
   type FindCarCriteria,
 } from "@/lib/find-your-car-filter"
+import { labelForCanonicalCarType } from "@/lib/car-type"
 import { ArrowLeft, ArrowRight, Check, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -29,11 +30,8 @@ const CONDITIONS: { id: FindCarCriteria["condition"]; label: string; desc: strin
   { id: "third_party", label: "Third party", desc: "Trusted partner listings" },
 ]
 
-function formatTypeLabel(raw: string): string {
-  const t = raw.toLowerCase()
-  if (t === "suv") return "SUV"
-  if (t === "truck" || t === "trucks") return "Trucks"
-  return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase()
+function formatTypeLabel(canonical: string): string {
+  return labelForCanonicalCarType(normalizeType(canonical))
 }
 
 interface FindYourCarWizardProps {

@@ -15,18 +15,11 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
+import { buildShopTypeFilterRows, normalizeCarType } from "@/lib/car-type"
 
 interface ShopContentProps {
   cars: Car[]
 }
-
-const typeFilters = [
-  { id: "suv",    label: "SUV",    apiType: "suv" },
-  { id: "pickup", label: "Pickup", apiType: "pickup" },
-  { id: "sedan",  label: "Sedan",  apiType: "sedan" },
-  { id: "van",    label: "Van",    apiType: "van" },
-  { id: "trucks", label: "Trucks", apiType: "truck" },
-]
 
 const conditionFilters = [
   { id: "new",         label: "New",         apiCondition: "new" },
@@ -34,17 +27,10 @@ const conditionFilters = [
   { id: "third_party", label: "Third Party", iconPath: "/icons/third-party.png", apiCondition: "third_party" },
 ]
 
-/** API may use "Truck" / "truck" or "trucks" — normalize for comparison */
-function normalizeType(t: string): string {
-  const x = t.toLowerCase().trim()
-  if (x === "trucks") return "truck"
-  return x
-}
-
 function filterByType(cars: Car[], typeId: string | null): Car[] {
   if (!typeId) return cars
-  const want = normalizeType(typeId)
-  return cars.filter(car => normalizeType(car.type || "") === want)
+  const want = normalizeCarType(typeId)
+  return cars.filter((car) => normalizeCarType(car.type || "") === want)
 }
 
 function filterByCondition(cars: Car[], conditionId: string | null): Car[] {
@@ -104,20 +90,24 @@ export function ShopContent({ cars }: ShopContentProps) {
     return Array.from(set).sort()
   }, [cars, selectedCompany])
 
-  // Read filters from URL on mount
+  /** Type filters: built from live inventory so any new API `type` appears after normalizeCarType(). */
+  const typeFilters = useMemo(() => buildShopTypeFilterRows(cars), [cars])
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
+    const company = params.get("company")
+    if (company) setSelectedCompany(decodeURIComponent(company))
+  }, [])
 
+  // Apply ?category= once inventory lists that type (new API types included automatically)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
     const category = params.get("category")
-    if (category && typeFilters.some(f => f.id === category)) {
+    const rows = buildShopTypeFilterRows(cars)
+    if (category && rows.some((f) => f.id === category)) {
       setActiveType(category)
     }
-
-    const company = params.get("company")
-    if (company) {
-      setSelectedCompany(decodeURIComponent(company))
-    }
-  }, [])
+  }, [cars])
 
   const filteredCars = useMemo(() => {
     let filtered = filterByType(cars, activeType)
@@ -221,7 +211,8 @@ export function ShopContent({ cars }: ShopContentProps) {
         <div className="flex flex-col gap-2">
           {typeFilters.map((filter) => {
             const count = filterByCondition(cars, activeCondition).filter(
-              car => normalizeType(car.type || "") === normalizeType(filter.apiType)
+                (car) =>
+                  normalizeCarType(car.type || "") === normalizeCarType(filter.apiType)
             ).length
             const isActive = activeType === filter.id
             return (

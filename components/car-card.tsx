@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { Fuel, Gauge, MapPin, Car, Tag } from "lucide-react"
 import type { Car as CarType } from "@/lib/cars-data"
 import { isThirdPartyCar } from "@/lib/cars-data"
-import { inferRegistered } from "@/lib/api"
 import { useScrollAnimation } from "@/hooks/use-scroll-animation"
 import { cn } from "@/lib/utils"
 
@@ -75,10 +74,7 @@ export function CarCard({ car, compact, showBadge, badgeText, badgeVariant = "de
 
   const cleanSummary = car.description ? getCleanSummary(car.description) : ''
 
-  const registration =
-    car.registered !== undefined
-      ? car.registered
-      : inferRegistered(car.price, car.description ?? "")
+  const registration = car.registered
 
   return (
     <div

@@ -18,17 +18,28 @@ interface HeaderProps {
   logoDark?: string
 }
 
-const navBtnClass =
-  "text-sm font-medium rounded-md px-2 py-1.5 transition-colors outline-none text-black hover:text-neutral-900 hover:bg-muted"
-
-const dropdownTriggerClass =
-  "inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-sm font-medium transition-colors outline-none text-black hover:bg-muted data-[state=open]:bg-muted data-[state=open]:text-black"
-
-export function Header({ logoLight = "/tg-world-logo.png", logoDark = "/tg-world-logo.png" }: HeaderProps) {
+export function Header({ logoLight = "/tg-world-logo.png", logoDark: _logoDark = "/tg-world-logo.png" }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
+  const isHome = pathname === "/"
+  /** Home hero: transparent bar over imagery — light nav; scrolled bar uses dark text like other pages */
+  const heroContrast = isHome && !scrolled
+
+  const navBtnClass = cn(
+    "text-sm rounded-md px-2 py-1.5 transition-colors outline-none",
+    heroContrast
+      ? "font-bold text-white hover:bg-white/10 hover:text-white"
+      : "font-medium text-black hover:bg-muted hover:text-neutral-900",
+  )
+
+  const dropdownTriggerClass = cn(
+    "inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-sm transition-colors outline-none",
+    heroContrast
+      ? "font-bold text-white hover:bg-white/10 data-[state=open]:bg-white/15 data-[state=open]:text-white"
+      : "font-medium text-black hover:bg-muted data-[state=open]:bg-muted data-[state=open]:text-black",
+  )
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10)
@@ -125,14 +136,19 @@ export function Header({ logoLight = "/tg-world-logo.png", logoDark = "/tg-world
             <Button
               variant="outline"
               onClick={() => router.push("/signin")}
-              className="hidden md:inline-flex rounded-full border-black/25 bg-transparent px-6 font-bold h-10 text-black hover:bg-muted hover:text-black"
+              className={cn(
+                "hidden md:inline-flex rounded-full bg-transparent px-6 font-bold h-10",
+                heroContrast
+                  ? "border-white/40 text-white hover:bg-white/10 hover:text-white"
+                  : "border-black/25 text-black hover:bg-muted hover:text-black",
+              )}
             >
               Sign In
             </Button>
 
             <button
               type="button"
-              className="lg:hidden p-2 shrink-0 text-black"
+              className={cn("lg:hidden p-2 shrink-0", heroContrast ? "text-white" : "text-black")}
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               aria-expanded={isMenuOpen}
               aria-label={isMenuOpen ? "Close menu" : "Open menu"}

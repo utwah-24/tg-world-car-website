@@ -17,6 +17,8 @@ interface RawCarFromAPI {
   is_coming_soon?: string
   arrival_date?: string
   is_sold?: "available" | "sold"
+  /** `"registered"` | `"unregistered"` from Laravel API */
+  registration?: string
   category?: string
   created_at: string
   updated_at: string
@@ -53,22 +55,16 @@ export interface CarFromAPI {
   description?: string
   /** ISO timestamp from API — used for “Latest cars” (30-day window) */
   createdAt?: string
-  /** Inferred from price/description (e.g. “With New Registration”) */
+  /** From API `registration` when present (`registered` / `unregistered`) */
   registered?: boolean
 }
 
-/** Infer registration from raw price + description (e.g. “With New Registration”) */
-export function inferRegistered(rawPrice: string, description: string): boolean | undefined {
-  const combined = `${rawPrice}\n${description}`.toLowerCase()
-  if (/\b(unregistered|without registration|no registration)\b/.test(combined)) return false
-  if (
-    /\bwith\s+new\s+registration\b/.test(combined) ||
-    /\bwith\s+registration\b/.test(combined) ||
-    /\bincludes?\s+registration\b/.test(combined) ||
-    /\bnew\s+registration\b/.test(combined)
-  ) {
-    return true
-  }
+/** Map Laravel `registration` string to boolean; unknown/missing → undefined (no UI badge). */
+function registrationFromApi(value: string | undefined | null): boolean | undefined {
+  if (value == null || typeof value !== "string") return undefined
+  const v = value.trim().toLowerCase()
+  if (v === "registered") return true
+  if (v === "unregistered") return false
   return undefined
 }
 
@@ -133,7 +129,7 @@ function transformCarData(rawCar: RawCarFromAPI): CarFromAPI {
   const mileage = description.match(/Mileage\s*:\s*([^\r\n]+)/i)?.[1]?.trim()
   const color = description.match(/Colou?r\s*:\s*([^\r\n]+)/i)?.[1]?.trim()
   
-  const registered = inferRegistered(rawCar.car_price || '', description)
+  const registered = registrationFromApi(rawCar.registration)
 
   // Clean up price - remove "With New Registration" and other common suffixes
   let cleanPrice = rawCar.car_price || 'Contact for price'

@@ -1,9 +1,8 @@
 import { isThirdPartyCar, type Car } from "@/lib/cars-data"
+import { normalizeCarType, orderedCanonicalTypesInInventory } from "@/lib/car-type"
 
 export function normalizeType(t: string): string {
-  const x = t.toLowerCase().trim()
-  if (x === "trucks") return "truck"
-  return x
+  return normalizeCarType(t)
 }
 
 /** Model label for wizard + filtering: API model code when present, else full name */
@@ -78,12 +77,9 @@ export function filterCarsByCriteria(cars: Car[], c: FindCarCriteria): Car[] {
   })
 }
 
+/** One entry per canonical type present in inventory (same ordering as shop filters). */
 export function uniqueTypes(cars: Car[]): string[] {
-  const s = new Set<string>()
-  cars.forEach((car) => {
-    if (car.type?.trim()) s.add(car.type.trim())
-  })
-  return Array.from(s).sort((a, b) => a.localeCompare(b))
+  return orderedCanonicalTypesInInventory(cars)
 }
 
 export function uniqueCompanies(cars: Car[], type?: string): string[] {

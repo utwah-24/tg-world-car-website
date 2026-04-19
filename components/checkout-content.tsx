@@ -1,53 +1,127 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
-import { ArrowLeft, MapPin, User, CheckCircle, FileText, FileCheck } from "lucide-react"
+import { ArrowLeft, MapPin, User, CheckCircle } from "lucide-react"
 import type { Car } from "@/lib/cars-data"
+import {
+  checkoutDraftFromStorage,
+  checkoutDraftStorageKey,
+  EMPTY_CHECKOUT_FORM,
+  type CheckoutFormData,
+} from "@/lib/checkout-draft"
+import {
+  PROFORMA_STORAGE_KEY,
+  type ProformaInvoicePayload,
+} from "@/lib/proforma-types"
+import { extractChassisFromText, generateInvoiceNo } from "@/lib/proforma-utils"
 
 interface CheckoutContentProps {
   car: Car
 }
 
 export function CheckoutContent({ car }: CheckoutContentProps) {
-  const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
-    phone: "",
-    address: "",
-    city: "Dar es Salaam",
-    region: "",
-    postalCode: "",
-    additionalInfo: "",
-    agreeToTerms: false,
-  })
+  const router = useRouter()
+  const [formData, setFormData] = useState<CheckoutFormData>(() => ({
+    ...EMPTY_CHECKOUT_FORM,
+  }))
+  const [draftHydrated, setDraftHydrated] = useState(false)
+  const skipNextPersist = useRef(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+  useEffect(() => {
+    skipNextPersist.current = true
+    const key = checkoutDraftStorageKey(car.id)
+    try {
+      setFormData(checkoutDraftFromStorage(sessionStorage.getItem(key)))
+    } catch {
+      setFormData({ ...EMPTY_CHECKOUT_FORM })
+    }
+    setDraftHydrated(true)
+  }, [car.id])
+
+  useEffect(() => {
+    if (!draftHydrated) return
+    if (skipNextPersist.current) {
+      skipNextPersist.current = false
+      return
+    }
+    const key = checkoutDraftStorageKey(car.id)
+    try {
+      sessionStorage.setItem(key, JSON.stringify(formData))
+    } catch {
+      /* private mode / quota */
+    }
+  }, [formData, car.id, draftHydrated])
+
+  const handleRequestProforma = () => {
     if (!formData.agreeToTerms) {
       alert("Please agree to the terms and conditions")
       return
     }
-    // Handle checkout submission
-    alert("Thank you for your purchase inquiry! We will contact you shortly.")
+    const missing: string[] = []
+    if (!formData.fullName.trim()) missing.push("Full name")
+    if (!formData.phone.trim()) missing.push("Phone")
+    if (!formData.email.trim()) missing.push("Email")
+    if (missing.length) {
+      alert(`Please fill in: ${missing.join(", ")}`)
+      return
+    }
+
+    const additionalTrimmed = formData.additionalInfo.trim()
+    const payload: ProformaInvoicePayload = {
+      buyer: {
+        fullName: formData.fullName.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+      },
+      delivery: {
+        address: formData.address.trim(),
+        city: formData.city.trim(),
+        region: formData.region.trim(),
+        postalCode: formData.postalCode.trim(),
+      },
+      ...(additionalTrimmed ? { additionalInfo: additionalTrimmed } : {}),
+      car: {
+        id: car.id,
+        name: car.name,
+        year: car.year,
+        price: car.price,
+        image: car.image,
+        color: car.color,
+        description: car.description,
+      },
+      chassis: extractChassisFromText(car.description),
+      invoiceNo: generateInvoiceNo(),
+      invoiceDate: new Date().toISOString(),
+    }
+
+    try {
+      sessionStorage.setItem(PROFORMA_STORAGE_KEY, JSON.stringify(payload))
+    } catch {
+      alert("Could not save invoice data. Please try again or disable private mode.")
+      return
+    }
+    router.push("/proforma-invoice")
   }
 
   return (
     <div className="pt-20 pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Back Button */}
-        <button 
-          onClick={() => window.history.back()}
-          className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors animate-fade-in-up"
+        {/* Back to this vehicle’s detail page (history.back() is unreliable after proforma / deep links) */}
+        <Link
+          href={`/car/${car.id}`}
+          className="mb-6 flex items-center gap-2 text-muted-foreground transition-colors animate-fade-in-up hover:text-foreground"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="h-4 w-4 shrink-0" />
           <span>Back to car details</span>
-        </button>
+        </Link>
 
         {/* Page Title */}
         <h1 className="text-3xl font-bold text-foreground mb-8 animate-fade-in-up" style={{ animationDelay: "0.1s", opacity: 0, animationFillMode: "forwards" }}>Checkout</h1>
@@ -64,29 +138,33 @@ export function CheckoutContent({ car }: CheckoutContentProps) {
               
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="fullName">Full Name *</Label>
-                    <Input
-                      id="fullName"
-                      placeholder="John Doe"
-                      value={formData.fullName}
-                      onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                      required
-                      className="h-11"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number *</Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      placeholder="+255 123 456 789"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      required
-                      className="h-11"
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="fullName">Full Name *</Label>
+                  <Input
+                    id="fullName"
+                    placeholder="JOHN DOE"
+                    autoCapitalize="characters"
+                    value={formData.fullName}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        fullName: e.target.value.toLocaleUpperCase(),
+                      })
+                    }
+                    className="h-11"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone Number *</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="+255 123 456 789"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className="h-11"
+                  />
+                </div>
                 </div>
 
                 <div className="space-y-2">
@@ -97,7 +175,6 @@ export function CheckoutContent({ car }: CheckoutContentProps) {
                     placeholder="john@example.com"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    required
                     className="h-11"
                   />
                 </div>
@@ -110,40 +187,40 @@ export function CheckoutContent({ car }: CheckoutContentProps) {
                 <MapPin className="w-5 h-5" />
                 Delivery Address (Tanzania)
               </h2>
+              <p className="mb-4 text-sm text-muted-foreground">
+                Optional — add if you want delivery details on the proforma.
+              </p>
               
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="address">Street Address *</Label>
+                  <Label htmlFor="address">Street Address</Label>
                   <Input
                     id="address"
                     placeholder="123 Main Street"
                     value={formData.address}
                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    required
                     className="h-11"
                   />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="city">City *</Label>
+                    <Label htmlFor="city">City</Label>
                     <Input
                       id="city"
                       placeholder="Dar es Salaam"
                       value={formData.city}
                       onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                      required
                       className="h-11"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="region">Region *</Label>
+                    <Label htmlFor="region">Region</Label>
                     <Input
                       id="region"
                       placeholder="Kinondoni"
                       value={formData.region}
                       onChange={(e) => setFormData({ ...formData, region: e.target.value })}
-                      required
                       className="h-11"
                     />
                   </div>
@@ -161,41 +238,10 @@ export function CheckoutContent({ car }: CheckoutContentProps) {
               </div>
             </div>
 
-            {/* Request Documents */}
-            <div className="bg-card rounded-2xl p-6 border border-border animate-fade-in-up" style={{ animationDelay: "0.4s", opacity: 0, animationFillMode: "forwards" }}>
-              <h2 className="text-xl font-bold mb-4 text-foreground flex items-center gap-2">
-                <FileText className="w-5 h-5" />
-                Request Documents
-              </h2>
-              
-              <p className="text-sm text-muted-foreground mb-6">Get detailed pricing and documentation for this vehicle</p>
-              
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Button 
-                  type="button"
-                  variant="outline"
-                  className="flex-1 h-12 rounded-xl font-medium hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all"
-                  onClick={() => alert('Proforma invoice request will be sent. Our team will contact you shortly.')}
-                >
-                  <FileText className="w-4 h-4 mr-2" />
-                  Request Proforma Invoice
-                </Button>
-                
-                <Button 
-                  type="button"
-                  variant="outline"
-                  className="flex-1 h-12 rounded-xl font-medium hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all"
-                  onClick={() => alert('Quotation request will be sent. Our team will contact you shortly.')}
-                >
-                  <FileCheck className="w-4 h-4 mr-2" />
-                  Request Quotation
-                </Button>
-              </div>
-            </div>
-
             {/* Additional Information */}
             <div className="bg-card rounded-2xl p-6 border border-border animate-fade-in-up" style={{ animationDelay: "0.5s", opacity: 0, animationFillMode: "forwards" }}>
               <h2 className="text-xl font-bold mb-4 text-foreground">Additional Information</h2>
+              <p className="mb-4 text-sm text-muted-foreground">Optional.</p>
               
               <div className="space-y-2">
                 <Label htmlFor="additionalInfo">Special Requests or Questions</Label>
@@ -223,12 +269,13 @@ export function CheckoutContent({ car }: CheckoutContentProps) {
               </div>
 
               <Button 
-                onClick={handleSubmit}
+                type="button"
+                onClick={handleRequestProforma}
                 disabled={!formData.agreeToTerms}
                 className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-14 rounded-xl text-lg font-semibold"
               >
                 <CheckCircle className="w-5 h-5 mr-2" />
-                Submit Purchase Inquiry
+                Request Proforma Invoice
               </Button>
             </div>
           </div>
