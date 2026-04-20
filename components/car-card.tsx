@@ -4,7 +4,7 @@ import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Fuel, Gauge, MapPin, Car, Tag } from "lucide-react"
+import { Fuel, Gauge, MapPin, Tag } from "lucide-react"
 import type { Car as CarType } from "@/lib/cars-data"
 import { isThirdPartyCar } from "@/lib/cars-data"
 import { useScrollAnimation } from "@/hooks/use-scroll-animation"
@@ -20,6 +20,37 @@ interface CarCardProps {
   delay?: number
 }
 
+function mileageFromDescription(description: string): string | null {
+  if (!description) return null
+  const m = description.match(/Mileage\s*:\s*([^\r\n]+)/i)
+  return m ? m[1].trim() : null
+}
+
+function fuelFromDescription(description: string): string | null {
+  if (!description) return null
+  const m = description.match(/Fuel\s*:\s*([^\r\n]+)/i)
+  return m ? m[1].trim() : null
+}
+
+function normalizeFuelDisplay(raw: string | null | undefined): string | null {
+  if (!raw?.trim()) return null
+  const l = raw.trim().toLowerCase()
+  if (l.includes("diesel")) return "Diesel"
+  if (l.includes("petrol") || l.includes("gasoline")) return "Petrol"
+  if (l.includes("electric")) return "Electric"
+  if (l.includes("hybrid")) return "Hybrid"
+  return raw.trim().charAt(0).toUpperCase() + raw.trim().slice(1)
+}
+
+function conditionLabel(car: CarType): string {
+  if (isThirdPartyCar(car)) return "Third Party"
+  const c = (car.condition || "").toLowerCase().trim()
+  if (!c) return "—"
+  if (c === "new") return "Brand New"
+  if (c === "second_hand") return "Second Hand"
+  return (car.condition || "").replace(/_/g, " ").replace(/\b\w/g, (x) => x.toUpperCase())
+}
+
 export function CarCard({ car, compact, showBadge, badgeText, badgeVariant = "default", delay = 0 }: CarCardProps) {
   const isSoldOut = car.category === "sold-out"
   const isComingSoon = car.category === "coming-soon"
@@ -33,46 +64,55 @@ export function CarCard({ car, compact, showBadge, badgeText, badgeVariant = "de
                           carNameUpper.includes('SCANIA DUMP TRUCK') ||
                           (carNameUpper.includes('SCANIA') && carNameUpper.includes('94C'))
 
-  // Generate a clean summary from the description
   const getCleanSummary = (description: string): string => {
-    if (!description) return ''
-    
-    // Remove [THIRD_PARTY] marker
-    let clean = description.replace('[THIRD_PARTY] ', '')
-    
-    // Extract key details that aren't already shown in specs
-    const engineMatch = clean.match(/Engine Size\s*:\s*([^\n]+)/i)
+    if (!description) return ""
+
+    const clean = description.replace("[THIRD_PARTY] ", "")
+
+    const engineMatch = clean.match(/Engine Size\s*:\s*([^\r\n]+)/i)
+    const transMatch = clean.match(/Transmission\s*:\s*([^\r\n]+)/i)
     const driveMatch = clean.match(/Drive\s*:\s*(AWD|4WD|FWD|RWD)/i)
     const seatsMatch = clean.match(/Seat Capacity\s*:\s*(\d+)/i)
-    const colorMatch = clean.match(/Color\s*:\s*([^\n]+)/i)
-    
-    const details = []
-    if (engineMatch) details.push(engineMatch[1].trim().split(' ')[0]) // Just the size like "3,000cc"
+    const colorMatch = clean.match(/Colou?r\s*:\s*([^\r\n]+)/i)
+    const bodyMatch = clean.match(/Body Type\s*:\s*([^\r\n]+)/i)
+
+    const details: string[] = []
+    if (engineMatch) details.push(engineMatch[1].trim().split(/\s+/)[0])
+    if (transMatch) {
+      const t = transMatch[1].trim()
+      details.push(t.replace(/Automatic.*/i, "Auto").replace(/Manual.*/i, "Manual"))
+    }
     if (driveMatch) details.push(driveMatch[1])
-    if (seatsMatch) details.push(`${seatsMatch[1]} Seats`)
-    if (colorMatch && !colorMatch[1].includes('Price') && !colorMatch[1].includes('Engine')) {
-      details.push(colorMatch[1].trim().split('\n')[0])
+    if (seatsMatch) details.push(`${seatsMatch[1]} seats`)
+    if (bodyMatch) details.push(bodyMatch[1].trim())
+    if (colorMatch && !colorMatch[1].includes("Price") && !colorMatch[1].includes("Engine")) {
+      details.push(colorMatch[1].trim().split("\n")[0])
     }
-    
-    // If we have details, format them nicely
-    if (details.length > 0) {
-      return details.slice(0, 3).join(' • ')
-    }
-    
-    // Otherwise, try to get a clean first line without repetitive info
-    const lines = clean.split('\n').filter(line => 
-      !line.includes('Price :') && 
-      !line.includes('Transmission :') && 
-      !line.includes('Fuel :') && 
-      !line.includes('Mileage :') &&
-      !line.includes('Location :') &&
-      line.trim().length > 0
-    )
-    
-    return lines[0] ? lines[0].trim().substring(0, 80) : ''
+
+    if (details.length > 0) return details.slice(0, 4).join(" · ")
+
+    const lines = clean
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(
+        (line) =>
+          line.length > 0 &&
+          !/^price\s*:/i.test(line) &&
+          !/^mileage\s*:/i.test(line) &&
+          !/^fuel\s*:/i.test(line) &&
+          !/^transmission\s*:/i.test(line) &&
+          !/^location\s*:/i.test(line),
+      )
+    return lines[0] ? lines[0].substring(0, 90) : ""
   }
 
-  const cleanSummary = car.description ? getCleanSummary(car.description) : ''
+  const desc = car.description || ""
+  const mileageDisplay =
+    (car.mileage && car.mileage.trim()) || mileageFromDescription(desc) || "—"
+  const fuelDisplay =
+    normalizeFuelDisplay(car.fuel || fuelFromDescription(desc)) || "—"
+  const conditionDisplay = conditionLabel(car)
+  const cleanSummary = desc ? getCleanSummary(desc) : ""
 
   const registration = car.registered
 
@@ -253,64 +293,41 @@ export function CarCard({ car, compact, showBadge, badgeText, badgeVariant = "de
           </span>
         </div>
 
-        {/* Specs Row */}
+        {/* Mileage · fuel · condition — always shown; values parsed from description when API fields are empty */}
         <div
           className={cn(
             "flex flex-wrap items-center text-muted-foreground",
             compact
-              ? "gap-1.5 mb-1.5 text-[9px] sm:text-[10px]"
-              : "gap-2 sm:gap-3 mb-2 sm:mb-3 text-[10px] sm:text-xs",
+              ? "gap-x-2 gap-y-1 mb-1.5 text-[9px] sm:text-[10px]"
+              : "gap-x-2 sm:gap-x-3 gap-y-1 mb-2 sm:mb-3 text-[10px] sm:text-xs",
           )}
         >
-          {car.mileage && (
-            <div className="flex items-center gap-0.5 min-w-0">
-              <Gauge className={cn("shrink-0", compact ? "w-2.5 h-2.5" : "w-3 h-3 sm:w-3.5 sm:h-3.5")} />
-              <span className="truncate">{car.mileage}</span>
-            </div>
-          )}
-          {car.fuel && (
-            <div className="flex items-center gap-0.5">
-              <Fuel className={cn("shrink-0", compact ? "w-2.5 h-2.5" : "w-3 h-3 sm:w-3.5 sm:h-3.5")} />
-              <span className="truncate">{car.fuel}</span>
-            </div>
-          )}
-          {car.transmission && (
-            <div className={cn("flex items-center gap-0.5", compact && "lg:hidden")}>
-              <Car className={cn("shrink-0", compact ? "w-2.5 h-2.5" : "w-3 h-3 sm:w-3.5 sm:h-3.5")} />
-              <span className="truncate">{car.transmission.replace(/Automatic.*/, "Auto")}</span>
-            </div>
-          )}
+          <div className="flex items-center gap-0.5 min-w-0 max-w-full">
+            <Gauge className={cn("shrink-0", compact ? "w-2.5 h-2.5" : "w-3 h-3 sm:w-3.5 sm:h-3.5")} />
+            <span className="truncate">{mileageDisplay}</span>
+          </div>
+          <div className="flex items-center gap-0.5 min-w-0 max-w-full">
+            <Fuel className={cn("shrink-0", compact ? "w-2.5 h-2.5" : "w-3 h-3 sm:w-3.5 sm:h-3.5")} />
+            <span className="truncate">{fuelDisplay}</span>
+          </div>
+          <div className="flex items-center gap-0.5 min-w-0 max-w-full">
+            <Tag className={cn("shrink-0", compact ? "w-2.5 h-2.5" : "w-3 h-3 sm:w-3.5 sm:h-3.5")} />
+            <span className="truncate">{conditionDisplay}</span>
+          </div>
         </div>
 
-        {/* Condition - Hidden on mobile */}
-        {car.condition && (
-          <div
-            className={cn(
-              "items-center gap-1.5 text-muted-foreground",
-              compact
-                ? "hidden xl:flex text-[10px] mb-2"
-                : "hidden sm:flex text-xs mb-3",
-            )}
-          >
-            <Tag className={cn("shrink-0", compact ? "w-3 h-3" : "w-3.5 h-3.5")} />
-            <span className="capitalize truncate">
-              {car.condition.toLowerCase() === "new"
-                ? "Brand New"
-                : car.condition.replace(/_/g, " ")}
-            </span>
-          </div>
-        )}
-
-        {/* Description - Hidden on mobile */}
-        {cleanSummary && (
+        {/* Extra detail from description (transmission, engine, color, etc.) */}
+        {cleanSummary ? (
           <p
             className={cn(
-              "text-muted-foreground line-clamp-1",
-              compact ? "hidden xl:block text-[10px] mb-2" : "hidden sm:block text-xs mb-4",
+              "text-muted-foreground line-clamp-2 leading-snug",
+              compact ? "text-[9px] sm:text-[10px] mb-2" : "text-xs mb-4",
             )}
           >
             {cleanSummary}
           </p>
+        ) : (
+          <div className={cn(compact ? "mb-1" : "mb-2")} aria-hidden />
         )}
 
         {/* CTA Button */}

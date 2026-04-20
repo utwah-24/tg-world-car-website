@@ -12,16 +12,42 @@ export function carModelLabel(car: Car): string {
   return (car.name || "").trim()
 }
 
-/** Extract millions from strings like "37.5 Million Tshs" or "155Million" */
+/**
+ * Extract price in **millions of TZS** from display strings, e.g.:
+ * "185 Million Tshs", "155Million", "375000000 TZS", "SH 37.5 Million"
+ */
 export function parsePriceMillions(priceStr: string): number | null {
   if (!priceStr) return null
-  const normalized = priceStr.replace(/,/g, "")
+  if (/\b(contact|call|request|tbd|poa|negotiable|n\/a)\b/i.test(priceStr)) return null
+
+  let normalized = priceStr.replace(/,/g, "").trim()
+  normalized = normalized.replace(/^sh\s+/i, "")
+
   const million = normalized.match(/([\d.]+)\s*Million/i)
-  if (million) return parseFloat(million[1])
-  const plain = normalized.match(/^[\d.]+$/)
-  if (plain) return parseFloat(normalized)
+  if (million) {
+    const v = parseFloat(million[1])
+    return Number.isFinite(v) ? v : null
+  }
+
+  const withTzs = normalized.match(/([\d.]+)\s*(?:tshs?|tzs)\b/i)
+  if (withTzs) {
+    const n = parseFloat(withTzs[1])
+    if (!Number.isFinite(n)) return null
+    return n >= 1_000_000 ? n / 1_000_000 : n
+  }
+
+  const plain = normalized.match(/^([\d.]+)$/)
+  if (plain) {
+    const n = parseFloat(plain[1])
+    if (!Number.isFinite(n)) return null
+    if (n >= 1_000_000) return n / 1_000_000
+    return n
+  }
+
   const anyNum = normalized.match(/([\d.]+)/)
-  return anyNum ? parseFloat(anyNum[1]) : null
+  if (!anyNum) return null
+  const n = parseFloat(anyNum[1])
+  return Number.isFinite(n) ? n : null
 }
 
 export interface FindCarCriteria {

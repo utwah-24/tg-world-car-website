@@ -1,6 +1,7 @@
 import type { ProformaInvoicePayload } from "@/lib/proforma-types"
 import { PROFORMA_BANK, PROFORMA_COMPANY } from "@/lib/proforma-company"
 import { formatInvoiceDateDisplay } from "@/lib/proforma-utils"
+import { proformaCarImageSrcForCapture } from "@/lib/proforma-image-url"
 
 const ink = "text-[#152a45]"
 const inkMuted = "text-[#1e3a5f]"
@@ -30,6 +31,7 @@ export function ProformaInvoiceView({ data }: { data: ProformaInvoicePayload }) 
   const vehicleLine = lineVehicleTitle(data.car)
   const color = (data.car.color || "—").toUpperCase()
   const deliveryBlock = formatDeliveryLines(data.delivery)
+  const carImageSrc = proformaCarImageSrcForCapture(data.car.image)
 
   return (
     <div className="bg-white text-black shadow-sm print:shadow-none">
@@ -115,11 +117,12 @@ export function ProformaInvoiceView({ data }: { data: ProformaInvoicePayload }) 
 
         <div className="grid grid-cols-[1fr_auto] gap-4 py-6 text-sm">
           <div className="space-y-3 leading-relaxed sm:flex sm:gap-5">
-            {data.car.image ? (
+            {carImageSrc ? (
               <div className="shrink-0 overflow-hidden rounded-md border border-neutral-200 bg-neutral-50 sm:w-[220px]">
-                {/* eslint-disable-next-line @next/next/no-img-element -- remote URLs + html2canvas PDF capture */}
+                {/* Same-origin proxy for API images so html2canvas includes the photo in PDFs */}
+                {/* eslint-disable-next-line @next/next/no-img-element -- print/PDF capture */}
                 <img
-                  src={data.car.image}
+                  src={carImageSrc}
                   alt=""
                   className="aspect-[4/3] w-full object-cover sm:aspect-[3/2] sm:h-[147px] sm:w-[220px]"
                   width={220}

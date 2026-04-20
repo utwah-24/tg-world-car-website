@@ -16,6 +16,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { buildShopTypeFilterRows, normalizeCarType } from "@/lib/car-type"
+import { parsePriceMillions } from "@/lib/find-your-car-filter"
 
 interface ShopContentProps {
   cars: Car[]
@@ -51,15 +52,43 @@ function filterByBrand(cars: Car[], brand: string): Car[] {
   return cars.filter(car => (car.brand || "").toLowerCase() === brand.toLowerCase())
 }
 
+/** Shop sidebar buckets: under 15M, then 25M-wide bands through 140M, then over 140M */
+const PRICE_BUCKETS: { id: string; label: string; match: (pm: number) => boolean }[] = [
+  { id: "price-under-15", label: "Under 15 million Tshs", match: (pm) => pm < 15 },
+  { id: "price-15-40", label: "15 million - 40 million Tshs", match: (pm) => pm >= 15 && pm < 40 },
+  { id: "price-40-65", label: "40 million - 65 million Tshs", match: (pm) => pm >= 40 && pm < 65 },
+  { id: "price-65-90", label: "65 million - 90 million Tshs", match: (pm) => pm >= 65 && pm < 90 },
+  { id: "price-90-115", label: "90 million - 115 million Tshs", match: (pm) => pm >= 90 && pm < 115 },
+  { id: "price-115-140", label: "115 million - 140 million Tshs", match: (pm) => pm >= 115 && pm < 140 },
+  { id: "price-over-140", label: "Over 140 million Tshs", match: (pm) => pm >= 140 },
+]
+
+function filterByPriceBucket(cars: Car[], bucketId: string | null): Car[] {
+  if (!bucketId) return cars
+  const bucket = PRICE_BUCKETS.find((b) => b.id === bucketId)
+  if (!bucket) return cars
+  return cars.filter((car) => {
+    const pm = parsePriceMillions(car.price || "")
+    if (pm == null) return false
+    return bucket.match(pm)
+  })
+}
+
 export function ShopContent({ cars }: ShopContentProps) {
   const [activeType, setActiveType] = useState<string | null>(null)
   const [activeCondition, setActiveCondition] = useState<string | null>(null)
+  const [activePriceRange, setActivePriceRange] = useState<string | null>(null)
   const [selectedCompany, setSelectedCompany] = useState("")
   const [selectedBrand, setSelectedBrand] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
 
-  const hasActiveFilters = activeType !== null || activeCondition !== null || !!selectedCompany || !!selectedBrand
+  const hasActiveFilters =
+    activeType !== null ||
+    activeCondition !== null ||
+    activePriceRange !== null ||
+    !!selectedCompany ||
+    !!selectedBrand
 
   // Prevent document scroll; only the car list panel scrolls (see layout: h-[100dvh] overflow-hidden).
   useEffect(() => {
@@ -109,7 +138,7 @@ export function ShopContent({ cars }: ShopContentProps) {
     }
   }, [cars])
 
-  const filteredCars = useMemo(() => {
+  const carsMatchingFiltersExceptPrice = useMemo(() => {
     let filtered = filterByType(cars, activeType)
     filtered = filterByCondition(filtered, activeCondition)
     filtered = filterByCompany(filtered, selectedCompany)
@@ -117,7 +146,7 @@ export function ShopContent({ cars }: ShopContentProps) {
 
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim()
-      filtered = filtered.filter(car => {
+      filtered = filtered.filter((car) => {
         const searchText = `${car.name} ${car.year} ${car.fuel} ${car.transmission} ${car.description} ${car.company} ${car.brand}`.toLowerCase()
         return searchText.includes(query)
       })
@@ -126,9 +155,15 @@ export function ShopContent({ cars }: ShopContentProps) {
     return filtered
   }, [cars, activeType, activeCondition, selectedCompany, selectedBrand, searchQuery])
 
+  const filteredCars = useMemo(
+    () => filterByPriceBucket(carsMatchingFiltersExceptPrice, activePriceRange),
+    [carsMatchingFiltersExceptPrice, activePriceRange],
+  )
+
   const handleClearFilters = () => {
     setActiveType(null)
     setActiveCondition(null)
+    setActivePriceRange(null)
     setSelectedCompany("")
     setSelectedBrand("")
   }
@@ -153,6 +188,7 @@ export function ShopContent({ cars }: ShopContentProps) {
 
   const activeTypeLabel = typeFilters.find(f => f.id === activeType)?.label
   const activeConditionLabel = conditionFilters.find(f => f.id === activeCondition)?.label
+  const activePriceLabel = PRICE_BUCKETS.find((b) => b.id === activePriceRange)?.label
 
   const filterPanel = (
     <div className="space-y-6">
@@ -206,6 +242,39 @@ export function ShopContent({ cars }: ShopContentProps) {
 
       <div className="space-y-3">
         <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground block">
+          Shop by price
+        </span>
+        <div className="flex flex-col gap-2">
+          {PRICE_BUCKETS.map((bucket) => {
+            const count = carsMatchingFiltersExceptPrice.filter((car) => {
+              const pm = parsePriceMillions(car.price || "")
+              return pm != null && bucket.match(pm)
+            }).length
+            const isActive = activePriceRange === bucket.id
+            return (
+              <Button
+                key={bucket.id}
+                variant={isActive ? "default" : "outline"}
+                size="sm"
+                onClick={() => setActivePriceRange(isActive ? null : bucket.id)}
+                className={`group w-full justify-between rounded-xl h-10 px-3 text-sm font-medium transition-all duration-200 ${
+                  isActive
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "border-border bg-transparent text-foreground hover:!bg-white hover:!text-black"
+                }`}
+              >
+                <span className="min-w-0 truncate text-left">{bucket.label}</span>
+                <span className="text-xs opacity-70 tabular-nums shrink-0 group-hover:opacity-100">
+                  ({count})
+                </span>
+              </Button>
+            )
+          })}
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground block">
           Type
         </span>
         <div className="flex flex-col gap-2">
@@ -221,14 +290,14 @@ export function ShopContent({ cars }: ShopContentProps) {
                 variant={isActive ? "default" : "outline"}
                 size="sm"
                 onClick={() => setActiveType(isActive ? null : filter.id)}
-                className={`w-full justify-between rounded-xl h-10 px-3 text-sm font-medium transition-all duration-200 ${
+                className={`group w-full justify-between rounded-xl h-10 px-3 text-sm font-medium transition-all duration-200 ${
                   isActive
                     ? "bg-primary text-primary-foreground shadow-md"
-                    : "bg-transparent border-border text-foreground hover:bg-muted"
+                    : "border-border bg-transparent text-foreground hover:!bg-white hover:!text-black"
                 }`}
               >
                 <span>{filter.label}</span>
-                <span className="text-xs opacity-70 tabular-nums">({count})</span>
+                <span className="text-xs opacity-70 tabular-nums group-hover:opacity-100">({count})</span>
               </Button>
             )
           })}
@@ -254,17 +323,17 @@ export function ShopContent({ cars }: ShopContentProps) {
                 variant={isActive ? "default" : "outline"}
                 size="sm"
                 onClick={() => setActiveCondition(isActive ? null : filter.id)}
-                className={`w-full justify-start rounded-xl h-10 px-3 text-sm font-medium transition-all duration-200 ${
+                className={`group w-full justify-start rounded-xl h-10 px-3 text-sm font-medium transition-all duration-200 ${
                   isActive
                     ? "bg-primary text-primary-foreground shadow-md"
-                    : "bg-transparent border-border text-foreground hover:bg-muted"
+                    : "border-border bg-transparent text-foreground hover:!bg-white hover:!text-black"
                 }`}
               >
                 {"iconPath" in filter && (
                   <Image src={(filter as { iconPath: string }).iconPath} alt={filter.label} width={18} height={18} className="mr-2 shrink-0" />
                 )}
                 <span className="flex-1 text-left">{filter.label}</span>
-                <span className="text-xs opacity-70 tabular-nums">({count})</span>
+                <span className="text-xs opacity-70 tabular-nums group-hover:opacity-100">({count})</span>
               </Button>
             )
           })}
@@ -298,7 +367,7 @@ export function ShopContent({ cars }: ShopContentProps) {
             <SheetHeader className="space-y-1 text-left">
               <SheetTitle>Filters</SheetTitle>
               <SheetDescription className="sr-only">
-                Narrow the vehicle list by search, company, brand, type, and condition.
+                Narrow the vehicle list by search, company, brand, price, type, and condition.
               </SheetDescription>
             </SheetHeader>
           </div>
@@ -387,6 +456,7 @@ export function ShopContent({ cars }: ShopContentProps) {
               Showing {filteredCars.length} {filteredCars.length === 1 ? "vehicle" : "vehicles"}
               {activeTypeLabel && <span> · {activeTypeLabel}</span>}
               {activeConditionLabel && <span> · {activeConditionLabel}</span>}
+              {activePriceLabel && <span> · {activePriceLabel}</span>}
               {selectedCompany && <span> · {selectedCompany}</span>}
               {selectedBrand && <span> · {selectedBrand}</span>}
               {searchQuery && <span> matching &ldquo;{searchQuery}&rdquo;</span>}

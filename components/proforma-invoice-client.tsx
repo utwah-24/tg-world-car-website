@@ -100,16 +100,37 @@ export function ProformaInvoiceClient() {
     if (receiptInputRef.current) receiptInputRef.current.value = ""
   }
 
+  function waitForImages(container: HTMLElement): Promise<void> {
+    const imgs = [...container.querySelectorAll("img")]
+    return Promise.all(
+      imgs.map(
+        (img) =>
+          new Promise<void>((resolve) => {
+            if (img.complete && img.naturalHeight > 0) {
+              resolve()
+              return
+            }
+            const done = () => resolve()
+            img.addEventListener("load", done, { once: true })
+            img.addEventListener("error", done, { once: true })
+            window.setTimeout(done, 10_000)
+          }),
+      ),
+    ).then(() => undefined)
+  }
+
   async function downloadPdf() {
     const el = printRef.current
     if (!el || !data) return
     setDownloading(true)
     try {
+      await waitForImages(el)
       const canvas = await html2canvas(el, {
         scale: 2,
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
+        imageTimeout: 15_000,
       })
       const imgData = canvas.toDataURL("image/png", 1.0)
       const pdf = new jsPDF({ orientation: "p", unit: "mm", format: "a4" })
