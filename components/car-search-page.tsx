@@ -80,6 +80,7 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, all
       {/* Search Box */}
       <SearchBox
         cars={searchableCars}
+        companyLogos={companyLogos}
         selectedCompany={selectedCompany}
         selectedBrand={selectedBrand}
         onSearch={setSearchQuery}

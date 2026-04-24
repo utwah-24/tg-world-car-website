@@ -4,11 +4,14 @@ import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { buildCompanyLogoMap, CompanyOptionRow } from "@/components/company-select-option"
 import type { Car } from "@/lib/cars-data"
+import type { CompanyLogo } from "@/lib/api"
 import { Search, X } from "lucide-react"
 
 interface SearchBoxProps {
   cars?: Car[]
+  companyLogos?: CompanyLogo[]
   selectedCompany?: string
   selectedBrand?: string
   onSearch?: (query: string) => void
@@ -18,6 +21,7 @@ interface SearchBoxProps {
 
 export function SearchBox({
   cars = [],
+  companyLogos = [],
   selectedCompany = "",
   selectedBrand = "",
   onSearch,
@@ -31,6 +35,8 @@ export function SearchBox({
     cars.forEach(car => { if (car.company) set.add(car.company) })
     return Array.from(set).sort()
   }, [cars])
+
+  const companyLogoMap = useMemo(() => buildCompanyLogoMap(companyLogos), [companyLogos])
 
   const brandOptions = useMemo(() => {
     const source = selectedCompany
@@ -106,13 +112,15 @@ export function SearchBox({
           {/* Row 2: Company + Brand dropdowns */}
           <div className="flex flex-col sm:flex-row gap-3">
             <Select value={selectedCompany || "__all__"} onValueChange={handleCompanyChange}>
-              <SelectTrigger className="h-11 flex-1 rounded-xl border-border bg-muted/50 text-sm">
+              <SelectTrigger className="h-11 flex-1 rounded-xl border-border bg-muted/50 text-sm [&>span]:flex [&>span]:min-w-0 [&>span]:items-center [&>span]:gap-2.5 [&>span]:line-clamp-none">
                 <SelectValue placeholder="All Companies" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="__all__">All Companies</SelectItem>
-                {companyOptions.map(c => (
-                  <SelectItem key={c} value={c}>{c}</SelectItem>
+                {companyOptions.map((c) => (
+                  <SelectItem key={c} value={c} className="py-2 pr-2">
+                    <CompanyOptionRow name={c} logoMap={companyLogoMap} />
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>

@@ -148,6 +148,7 @@ export function ContentVideoCard({ video, layout = "carousel" }: ContentVideoCar
                   playsInline
                   autoPlay
                   controls
+                  controlsList="nodownload"
                 />
               </div>
             </div>

@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from "react"
 import Image from "next/image"
 import { CarCard } from "./car-card"
+import { buildCompanyLogoMap, CompanyOptionRow } from "@/components/company-select-option"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
@@ -17,9 +18,11 @@ import {
 } from "@/components/ui/sheet"
 import { buildShopTypeFilterRows, normalizeCarType } from "@/lib/car-type"
 import { parsePriceMillions } from "@/lib/find-your-car-filter"
+import type { CompanyLogo } from "@/lib/api"
 
 interface ShopContentProps {
   cars: Car[]
+  companyLogos?: CompanyLogo[]
 }
 
 const conditionFilters = [
@@ -74,7 +77,7 @@ function filterByPriceBucket(cars: Car[], bucketId: string | null): Car[] {
   })
 }
 
-export function ShopContent({ cars }: ShopContentProps) {
+export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
   const [activeType, setActiveType] = useState<string | null>(null)
   const [activeCondition, setActiveCondition] = useState<string | null>(null)
   const [activePriceRange, setActivePriceRange] = useState<string | null>(null)
@@ -110,6 +113,8 @@ export function ShopContent({ cars }: ShopContentProps) {
     cars.forEach(car => { if (car.company) set.add(car.company) })
     return Array.from(set).sort()
   }, [cars])
+
+  const companyLogoMap = useMemo(() => buildCompanyLogoMap(companyLogos), [companyLogos])
 
   // Brand list filtered to only brands that belong to the selected company (or all brands)
   const brandOptions = useMemo(() => {
@@ -216,13 +221,15 @@ export function ShopContent({ cars }: ShopContentProps) {
 
       <div className="flex flex-col gap-3">
         <Select value={selectedCompany || "__all__"} onValueChange={handleCompanyChange}>
-          <SelectTrigger className="h-11 w-full rounded-xl border-border bg-card text-sm">
+          <SelectTrigger className="h-11 w-full rounded-xl border-border bg-card text-sm [&>span]:flex [&>span]:min-w-0 [&>span]:items-center [&>span]:gap-2.5 [&>span]:line-clamp-none">
             <SelectValue placeholder="Company" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="__all__">All Companies</SelectItem>
             {companyOptions.map(company => (
-              <SelectItem key={company} value={company}>{company}</SelectItem>
+              <SelectItem key={company} value={company} className="py-2 pr-2">
+                <CompanyOptionRow name={company} logoMap={companyLogoMap} />
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
