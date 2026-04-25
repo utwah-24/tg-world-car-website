@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 
+// Never let Next.js (or any CDN in front of it) cache this route at the path level.
+// Each unique car-image URL must always flow through as a distinct cache entry in the browser.
+export const dynamic = "force-dynamic"
+
 const DEFAULT_API = "https://tgworld.e-saloon.online"
 
 export async function GET(request: NextRequest) {
@@ -32,9 +36,11 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // `cache: 'no-store'` bypasses Next.js server-side data cache so the upstream
+    // image is always fetched fresh — prevents one car's photo being served for another.
     const upstream = await fetch(target.toString(), {
       headers: { Accept: "image/*,*/*" },
-      next: { revalidate: 3600 },
+      cache: "no-store",
     })
     if (!upstream.ok) {
       return NextResponse.json({ error: "Upstream fetch failed" }, { status: 502 })
@@ -44,7 +50,9 @@ export async function GET(request: NextRequest) {
     return new NextResponse(buf, {
       headers: {
         "Content-Type": contentType,
-        "Cache-Control": "public, max-age=3600",
+        // `private` — browser may cache per unique URL (safe: each car image is a UUID path),
+        // but NO shared/CDN cache can store this. This is the key fix for the wrong-image glitch.
+        "Cache-Control": "private, max-age=86400, immutable",
       },
     })
   } catch {
