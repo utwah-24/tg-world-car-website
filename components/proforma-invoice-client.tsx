@@ -49,6 +49,37 @@ function waitForImagesIn(container: HTMLElement): Promise<void> {
   ).then(() => undefined)
 }
 
+/** Convert any image File into a single-page A4 PDF Blob. */
+async function imageToPdfBlob(file: File): Promise<Blob> {
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = () => reject(new Error("Could not read file"))
+    reader.readAsDataURL(file)
+  })
+
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const el = new Image()
+    el.onload = () => resolve(el)
+    el.onerror = () => reject(new Error("Could not load image"))
+    el.src = dataUrl
+  })
+
+  const pdf = new jsPDF({ orientation: "p", unit: "mm", format: "a4" })
+  const pageW = pdf.internal.pageSize.getWidth()
+  const pageH = pdf.internal.pageSize.getHeight()
+  const margin = 8
+  const maxW = pageW - 2 * margin
+  const maxH = pageH - 2 * margin
+  const sc = Math.min(maxW / img.naturalWidth, maxH / img.naturalHeight)
+  const drawW = img.naturalWidth * sc
+  const drawH = img.naturalHeight * sc
+  const x = margin + (maxW - drawW) / 2
+  const y = margin + (maxH - drawH) / 2
+  pdf.addImage(dataUrl, "PNG", x, y, drawW, drawH, undefined, "FAST")
+  return pdf.output("blob")
+}
+
 async function renderProformaToPdfBlob(el: HTMLElement): Promise<Blob> {
   await waitForImagesIn(el)
   const canvas = await html2canvas(el, {
@@ -84,6 +115,7 @@ export function ProformaInvoiceClient() {
   const [receiptFile, setReceiptFile] = useState<File | null>(null)
   const [receiptPreviewUrl, setReceiptPreviewUrl] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [converting, setConverting] = useState(false)
   const [orderResult, setOrderResult] = useState<OrderResult | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const printRef = useRef<HTMLDivElement>(null)
@@ -132,12 +164,30 @@ export function ProformaInvoiceClient() {
   function onReceiptChosen(files: FileList | null) {
     const file = files?.[0]
     if (!file) return
-    const okType = file.type.startsWith("image/") || file.type === "application/pdf"
-    if (!okType) { alert("Please upload an image (JPG, PNG, WebP) or a PDF."); return }
-    if (file.size > 12 * 1024 * 1024) { alert("File is too large. Please use a file under 12 MB."); return }
-    setReceiptFile(file)
+    const isImage = file.type.startsWith("image/")
+    const isPdf = file.type === "application/pdf"
+    if (!isImage && !isPdf) { alert("Please upload an image (JPG, PNG, WebP, HEIC…) or a PDF."); return }
+    if (file.size > 20 * 1024 * 1024) { alert("File is too large. Please use a file under 20 MB."); return }
     setSubmitError(null)
     setOrderResult(null)
+
+    if (isPdf) {
+      setReceiptFile(file)
+      return
+    }
+
+    // Image — convert to PDF immediately so the backend always receives a PDF
+    setConverting(true)
+    void imageToPdfBlob(file)
+      .then((blob) => {
+        const pdfName = file.name.replace(/\.[^.]+$/, "") + ".pdf"
+        setReceiptFile(new File([blob], pdfName, { type: "application/pdf" }))
+      })
+      .catch(() => {
+        // Conversion failed — fall back to sending the original image
+        setReceiptFile(file)
+      })
+      .finally(() => setConverting(false))
   }
 
   function clearReceipt() {
@@ -359,7 +409,7 @@ export function ProformaInvoiceClient() {
                     id="proforma-receipt"
                     ref={receiptInputRef}
                     type="file"
-                    accept="image/jpeg,image/png,image/webp,application/pdf"
+                    accept="image/*,application/pdf"
                     className="sr-only"
                     onChange={(e) => onReceiptChosen(e.target.files)}
                   />
@@ -371,10 +421,13 @@ export function ProformaInvoiceClient() {
                       variant="outline"
                       size="sm"
                       className="gap-2"
+                      disabled={converting}
                       onClick={() => receiptInputRef.current?.click()}
                     >
-                      <Upload className="h-4 w-4" />
-                      {receiptFile ? "Replace file" : "Upload payment receipt"}
+                      {converting
+                        ? <Loader2 className="h-4 w-4 animate-spin" />
+                        : <Upload className="h-4 w-4" />}
+                      {converting ? "Converting…" : receiptFile ? "Replace file" : "Upload payment receipt"}
                     </Button>
                     {receiptFile && (
                       <Button
@@ -422,7 +475,7 @@ export function ProformaInvoiceClient() {
                       <Button
                         type="button"
                         onClick={submitOrder}
-                        disabled={submitting}
+                        disabled={submitting || converting}
                         className="w-full gap-2 disabled:opacity-70"
                       >
                         {submitting ? (
@@ -433,10 +486,14 @@ export function ProformaInvoiceClient() {
                         {submitting ? "Submitting…" : "Submit Order"}
                       </Button>
                       <p className="mt-2 text-center text-xs text-muted-foreground">
-                        This sends your proforma invoice + receipt to TG WORLD.
+                        Receipt images are converted to PDF automatically before sending.
                       </p>
                     </div>
                   )}
+
+                  <Button variant="outline" size="sm" className="w-full mt-2" asChild>
+                    <Link href="/shop">Browse more vehicles</Link>
+                  </Button>
                 </div>
               </>
             )}
