@@ -23,6 +23,22 @@ import {
 } from "@/lib/proforma-types"
 import { extractChassisFromText, generateInvoiceNo } from "@/lib/proforma-utils"
 
+/** Strip non-numeric chars (keep decimal point) and return a number, or 0. */
+function parseNumeric(raw: string): number {
+  const n = parseFloat(raw.replace(/[^0-9.]/g, ""))
+  return isNaN(n) ? 0 : n
+}
+
+/** Format a number like 45000000 → "45,000,000" */
+function fmtNum(n: number): string {
+  return n.toLocaleString("en-US", { maximumFractionDigits: 0 })
+}
+
+/** Prefix with "SH " to match the rest of the invoice */
+function fmtAmt(n: number): string {
+  return `SH ${fmtNum(n)}`
+}
+
 interface CheckoutContentProps {
   car: Car
 }
@@ -59,6 +75,12 @@ export function CheckoutContent({ car }: CheckoutContentProps) {
       /* private mode / quota */
     }
   }, [formData, car.id, draftHydrated])
+
+  // Car price is in millions from the API (e.g. "31" = 31 Million Tshs).
+  // Convert everything to exact Tshs so sub-million amounts are exact.
+  const totalTshs = parseNumeric(car.price) * 1_000_000
+  const paidTshs = parseFloat(formData.amountPaid) || 0
+  const dueTshs = Math.max(0, totalTshs - paidTshs)
 
   const handleRequestProforma = () => {
     if (!formData.agreeToTerms) {
@@ -100,6 +122,10 @@ export function CheckoutContent({ car }: CheckoutContentProps) {
       chassis: extractChassisFromText(car.description),
       invoiceNo: generateInvoiceNo(),
       invoiceDate: new Date().toISOString(),
+      ...(paidTshs > 0 ? {
+        amountPaid: `${fmtNum(paidTshs)} Tshs`,
+        amountDue: `${fmtNum(dueTshs)} Tshs`,
+      } : {}),
     }
 
     try {
@@ -129,7 +155,39 @@ export function CheckoutContent({ car }: CheckoutContentProps) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Forms */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Buyer Information */}
+            {/* Bank Details */}
+            <div className="bg-primary/5 rounded-2xl p-6 border-2 border-primary/30 animate-fade-in-up" style={{ animationDelay: "0.15s", opacity: 0, animationFillMode: "forwards" }}>
+              <h2 className="text-xl font-bold mb-1 text-primary">Bank Details</h2>
+              <p className="text-sm text-muted-foreground mb-5">Please use the details below to make your payment before submitting the order.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Account Name</span>
+                  <span className="font-semibold text-foreground">TG WORLD INTERNATIONAL LTD</span>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Bank Name</span>
+                  <span className="font-semibold text-foreground">NMB BANK</span>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Account No (TZS)</span>
+                  <span className="font-mono font-bold text-foreground text-base tracking-wide">42810004330</span>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Account No (USD)</span>
+                  <span className="font-mono font-bold text-foreground text-base tracking-wide">42810004331</span>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">SWIFT Code</span>
+                  <span className="font-mono font-semibold text-foreground">NMIBTZTZXXX</span>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Address</span>
+                  <span className="font-semibold text-foreground">16860 Dar es Salaam</span>
+                </div>
+              </div>
+            </div>
+
+          {/* Buyer Information */}
             <div className="bg-card rounded-2xl p-6 border border-border animate-fade-in-up" style={{ animationDelay: "0.2s", opacity: 0, animationFillMode: "forwards" }}>
               <h2 className="text-xl font-bold mb-6 text-foreground flex items-center gap-2">
                 <User className="w-5 h-5" />
@@ -177,6 +235,49 @@ export function CheckoutContent({ car }: CheckoutContentProps) {
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     className="h-11"
                   />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="amountPaid">Amount Paid</Label>
+                    <div className="relative">
+                      <Input
+                        id="amountPaid"
+                        type="number"
+                        min="0"
+                        step="1"
+                        placeholder="e.g. 500000"
+                        value={formData.amountPaid}
+                        onChange={(e) => setFormData({ ...formData, amountPaid: e.target.value })}
+                        className="h-11 pr-14"
+                      />
+                      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                        Tshs
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Leave blank if no deposit paid yet.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="amountDue">Amount Due</Label>
+                    <div className="relative">
+                      <Input
+                        id="amountDue"
+                        readOnly
+                        value={totalTshs > 0 ? fmtNum(dueTshs) : ""}
+                        placeholder="Auto-calculated"
+                        className="h-11 pr-14 bg-muted/50 cursor-not-allowed font-medium text-foreground"
+                      />
+                      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                        Tshs
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Total minus amount paid.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -310,12 +411,10 @@ export function CheckoutContent({ car }: CheckoutContentProps) {
                   <span className="text-muted-foreground">Vehicle Price</span>
                   <span className="font-medium text-foreground">{car.price}</span>
                 </div>
-                
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Registration Fee</span>
                   <span className="font-medium text-foreground">Included</span>
                 </div>
-                
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Documentation</span>
                   <span className="font-medium text-foreground">Included</span>
@@ -323,10 +422,28 @@ export function CheckoutContent({ car }: CheckoutContentProps) {
               </div>
 
               {/* Total */}
-              <div className="flex justify-between mt-4">
+              <div className="flex justify-between mt-4 pb-3 border-b border-border">
                 <span className="text-lg font-bold text-foreground">Total</span>
                 <span className="text-2xl font-bold text-primary">{car.price}</span>
               </div>
+
+              {/* Payment status — shown once user types an amount */}
+              {paidTshs > 0 && (
+                <div className="mt-3 space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Amount Paid</span>
+                    <span className="font-semibold text-emerald-600">
+                      {fmtNum(paidTshs)} Tshs
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Amount Due</span>
+                    <span className={`font-semibold ${dueTshs > 0 ? "text-destructive" : "text-emerald-600"}`}>
+                      {fmtNum(dueTshs)} Tshs
+                    </span>
+                  </div>
+                </div>
+              )}
 
               {/* Delivery Info */}
               <div className="mt-6 p-4 bg-muted rounded-xl">

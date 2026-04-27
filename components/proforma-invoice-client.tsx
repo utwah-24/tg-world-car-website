@@ -243,6 +243,9 @@ export function ProformaInvoiceClient() {
       form.append("email", data.buyer.email)
       form.append("buyer_email", data.buyer.email)
       form.append("buyer_phone", data.buyer.phone)
+      form.append("total_amount", data.car.price)
+      if (data.amountPaid) form.append("amount_paid", data.amountPaid)
+      if (data.amountDue) form.append("amount_due", data.amountDue)
 
       const res = await fetch(`${API_BASE_URL}/api/orders`, {
         method: "POST",

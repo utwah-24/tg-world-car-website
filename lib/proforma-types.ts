@@ -33,4 +33,7 @@ export interface ProformaInvoicePayload {
   chassis: string
   invoiceNo: string
   invoiceDate: string
+  /** Payment breakdown — all stored as formatted strings e.g. "SH 10,000,000" */
+  amountPaid?: string
+  amountDue?: string
 }

@@ -147,10 +147,33 @@ export function ProformaInvoiceView({ data }: { data: ProformaInvoicePayload }) 
           </div>
         </div>
 
-        <div className="mt-4 flex justify-end border-t border-neutral-200 pt-4">
-          <div className="text-right">
-            <p className={`text-sm font-bold ${inkMuted}`}>TOTAL</p>
-            <p className={`mt-1 text-2xl font-bold ${inkMuted}`}>{formatAmount(data.car.price)}</p>
+        <div className="mt-4 border-t border-neutral-200 pt-4">
+          <div className="ml-auto w-full max-w-xs space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className={`font-bold ${inkMuted}`}>TOTAL AMOUNT</span>
+              <span className={`font-bold tabular-nums ${inkMuted}`}>{formatAmount(data.car.price)}</span>
+            </div>
+
+            {data.amountPaid && (
+              <div className="flex justify-between">
+                <span className="font-medium text-black">AMOUNT PAID</span>
+                <span className="font-medium tabular-nums text-black">{data.amountPaid}</span>
+              </div>
+            )}
+
+            {data.amountDue !== undefined && data.amountPaid && (
+              <div className="flex justify-between border-t border-neutral-300 pt-2">
+                <span className={`text-base font-bold ${inkMuted}`}>BALANCE DUE</span>
+                <span className={`text-base font-bold tabular-nums ${inkMuted}`}>{data.amountDue}</span>
+              </div>
+            )}
+
+            {!data.amountPaid && (
+              <div className="flex justify-between border-t border-neutral-300 pt-2">
+                <span className={`text-base font-bold ${inkMuted}`}>TOTAL DUE</span>
+                <span className={`text-2xl font-bold tabular-nums ${inkMuted}`}>{formatAmount(data.car.price)}</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
