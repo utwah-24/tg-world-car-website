@@ -14,7 +14,12 @@ import {
 } from "@/lib/proforma-types"
 import { cn } from "@/lib/utils"
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://tgworld.e-saloon.online"
+/** Strip formatting ("10,000,000 Tshs" → 10000000). Returns "" when absent. */
+function rawNumericString(s: string | undefined): string {
+  if (!s?.trim()) return ""
+  const n = parseFloat(s.replace(/[^0-9.]/g, ""))
+  return isNaN(n) ? "" : String(n)
+}
 
 interface OrderResult {
   id: number
@@ -243,11 +248,21 @@ export function ProformaInvoiceClient() {
       form.append("email", data.buyer.email)
       form.append("buyer_email", data.buyer.email)
       form.append("buyer_phone", data.buyer.phone)
-      form.append("total_amount", data.car.price)
-      if (data.amountPaid) form.append("amount_paid", data.amountPaid)
-      if (data.amountDue) form.append("amount_due", data.amountDue)
 
-      const res = await fetch(`${API_BASE_URL}/api/orders`, {
+      // Send raw numbers so the backend's 'numeric' validation passes.
+      // Car price from API is in millions ("31" = 31M TSH) → multiply to full Tshs.
+      const totalRaw = rawNumericString(data.car.price)
+      const totalTshs = totalRaw ? String(parseFloat(totalRaw) * 1_000_000) : ""
+      if (totalTshs) form.append("total_amount", totalTshs)
+
+      const paidRaw = rawNumericString(data.amountPaid)
+      if (paidRaw) form.append("amount_paid", paidRaw)
+
+      const dueRaw = rawNumericString(data.amountDue)
+      if (dueRaw) form.append("amount_due", dueRaw)
+
+      // POST to the same-origin Next.js proxy to avoid CORS / redirect issues.
+      const res = await fetch("/api/orders", {
         method: "POST",
         body: form,
       })
