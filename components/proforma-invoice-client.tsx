@@ -240,8 +240,9 @@ export function ProformaInvoiceClient() {
       form.append("year", data.car.year ? String(data.car.year) : "")
       form.append("invoice_no", data.invoiceNo)
       form.append("buyer_name", data.buyer.fullName)
-      if (data.buyer.phone) form.append("buyer_phone", data.buyer.phone)
-      if (data.buyer.email) form.append("buyer_email", data.buyer.email)
+      form.append("email", data.buyer.email)
+      form.append("buyer_email", data.buyer.email)
+      form.append("buyer_phone", data.buyer.phone)
 
       const res = await fetch(`${API_BASE_URL}/api/orders`, {
         method: "POST",
