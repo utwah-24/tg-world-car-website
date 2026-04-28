@@ -1,6 +1,5 @@
 "use client"
 
-import Image from "next/image"
 import type { CompanyLogo } from "@/lib/api"
 
 export function buildCompanyLogoMap(companyLogos: CompanyLogo[]) {
@@ -20,19 +19,19 @@ export function CompanyOptionRow({
 }) {
   const logoUrl = logoMap.get(name.trim().toLowerCase())
   return (
-    <span className="flex min-w-0 items-center gap-2.5">
-      <span className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border/60 bg-background">
+    <span className="inline-flex w-full min-w-0 items-center gap-2.5">
+      <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border/60 bg-background">
         {logoUrl ? (
-          <Image
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
             src={logoUrl}
             alt=""
-            width={28}
-            height={28}
+            width={24}
+            height={24}
             className="h-full w-full object-contain p-0.5"
-            unoptimized
           />
         ) : (
-          <span className="text-[10px] font-bold text-muted-foreground">
+          <span className="text-[10px] font-bold text-muted-foreground leading-none">
             {name.charAt(0).toUpperCase()}
           </span>
         )}

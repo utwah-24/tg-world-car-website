@@ -118,7 +118,7 @@ export function SearchBox({
               <SelectContent>
                 <SelectItem value="__all__">All Companies</SelectItem>
                 {companyOptions.map((c) => (
-                  <SelectItem key={c} value={c} className="py-2 pr-2">
+                  <SelectItem key={c} value={c} className="py-2 pr-2 [&>span:last-child]:flex [&>span:last-child]:w-full [&>span:last-child]:min-w-0">
                     <CompanyOptionRow name={c} logoMap={companyLogoMap} />
                   </SelectItem>
                 ))}
