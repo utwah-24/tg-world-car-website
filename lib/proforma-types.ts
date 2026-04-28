@@ -21,6 +21,7 @@ export interface ProformaCarSnapshot {
   /** Main photo URL (absolute or site-relative) for the proforma */
   image?: string
   color?: string
+  chassis?: string
   description?: string
 }
 

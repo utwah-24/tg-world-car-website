@@ -2,7 +2,7 @@ import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import { HeaderWrapper } from "@/components/header-wrapper"
 import { FooterWrapper } from "@/components/footer-wrapper"
-import { ContentVideoCard } from "@/components/content-video-card"
+import { ContentPageClient } from "@/components/content-page-client"
 import { Button } from "@/components/ui/button"
 import { fetchContent } from "@/lib/api"
 
@@ -51,11 +51,7 @@ export default async function AllContentPage() {
               </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 lg:gap-10">
-              {videos.map((video) => (
-                <ContentVideoCard key={video.id} video={video} layout="grid" />
-              ))}
-            </div>
+            <ContentPageClient videos={videos} />
           )}
         </div>
       </div>

@@ -117,9 +117,10 @@ export function CheckoutContent({ car }: CheckoutContentProps) {
         price: car.price,
         image: car.image,
         color: car.color,
+        chassis: car.chassis,
         description: car.description,
       },
-      chassis: extractChassisFromText(car.description),
+      chassis: car.chassis || extractChassisFromText(car.description),
       invoiceNo: generateInvoiceNo(),
       invoiceDate: new Date().toISOString(),
       ...(paidTshs > 0 ? {

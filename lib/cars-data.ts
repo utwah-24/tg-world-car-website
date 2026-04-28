@@ -19,6 +19,7 @@ export interface Car {
   fuel?: string
   engineSize?: string
   color?: string
+  chassis?: string
   seats?: number
   doors?: number
   drive?: string

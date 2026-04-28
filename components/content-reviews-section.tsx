@@ -88,7 +88,7 @@ export function ContentReviewsSection({ videos }: ContentReviewsSectionProps) {
             className="flex gap-4 overflow-x-auto scrollbar-thin pb-4"
             style={{ scrollbarColor: "rgba(255,255,255,0.3) transparent" }}
           >
-            {videos.map((video) => (
+            {videos.slice(0, 4).map((video) => (
               <ContentVideoCard key={video.id} video={video} layout="carousel" />
             ))}
           </div>

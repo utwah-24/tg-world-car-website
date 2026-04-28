@@ -119,7 +119,7 @@ export function CarCard({ car, compact, showBadge, badgeText, badgeVariant = "de
   return (
     <div
       ref={ref}
-      className={`transition-all duration-700 ease-out ${
+      className={`h-full transition-all duration-700 ease-out ${
         isVisible
           ? "opacity-100 translate-y-0"
           : "opacity-0 translate-y-8"
@@ -128,7 +128,7 @@ export function CarCard({ car, compact, showBadge, badgeText, badgeVariant = "de
     >
       <Card
         className={cn(
-          "group overflow-hidden border-border bg-card hover:shadow-xl transition-all duration-300",
+          "group h-full flex flex-col overflow-hidden border-border bg-card hover:shadow-xl transition-all duration-300",
           compact ? "rounded-xl" : "rounded-2xl",
           isSoldOut && "opacity-80",
         )}
@@ -268,7 +268,7 @@ export function CarCard({ car, compact, showBadge, badgeText, badgeVariant = "de
       </div>
 
       {/* Content */}
-      <CardContent className={cn(compact ? "p-2 sm:p-2.5 lg:p-3" : "p-3 sm:p-4")}>
+      <CardContent className={cn("flex flex-col flex-1", compact ? "p-2 sm:p-2.5 lg:p-3" : "p-3 sm:p-4")}>
         {/* Car Name */}
         <div className={cn(compact ? "mb-1.5 sm:mb-2" : "mb-2 sm:mb-3")}>
           <h3
@@ -331,7 +331,7 @@ export function CarCard({ car, compact, showBadge, badgeText, badgeVariant = "de
         )}
 
         {/* CTA Button */}
-        <div className={cn(compact ? "mt-2 sm:mt-2.5" : "mt-3 sm:mt-4")}>
+        <div className={cn("mt-auto", compact ? "pt-2 sm:pt-2.5" : "pt-3 sm:pt-4")}>
           <Button 
             onClick={() => window.location.href = `/car/${car.id}`}
             className={cn(

@@ -20,6 +20,10 @@ interface RawCarFromAPI {
   /** `"registered"` | `"unregistered"` from Laravel API */
   registration?: string
   category?: string
+  /** Chassis / VIN — may come as `chassis`, `chasis`, or `chassis_no` from the API */
+  chassis?: string
+  chasis?: string
+  chassis_no?: string
   created_at: string
   updated_at: string
 }
@@ -48,6 +52,7 @@ export interface CarFromAPI {
   fuel?: string
   engineSize?: string
   color?: string
+  chassis?: string
   seats?: number
   doors?: number
   drive?: string
@@ -128,6 +133,21 @@ function transformCarData(rawCar: RawCarFromAPI): CarFromAPI {
   const fuel = description.match(/Fuel\s*:\s*([^\r\n]+)/i)?.[1]?.trim()
   const mileage = description.match(/Mileage\s*:\s*([^\r\n]+)/i)?.[1]?.trim()
   const color = description.match(/Colou?r\s*:\s*([^\r\n]+)/i)?.[1]?.trim()
+
+  // Chassis: prefer dedicated API field; fall back to parsing description text
+  const chassisFromApi =
+    (typeof rawCar.chassis === 'string' && rawCar.chassis.trim()) ||
+    (typeof rawCar.chasis === 'string' && rawCar.chasis.trim()) ||
+    (typeof rawCar.chassis_no === 'string' && rawCar.chassis_no.trim()) ||
+    undefined
+  const chassisFromDesc = (() => {
+    const t = description.replace(/\s+/g, ' ')
+    const m1 = t.match(/(?:CHASSIS|CHASIS|VIN|FRAME)\s*[:#]?\s*([A-Z0-9][A-Z0-9\s-]{5,})/i)
+    if (m1?.[1]) return m1[1].replace(/\s+/g, '').toUpperCase()
+    const m2 = t.match(/\b([A-HJ-NPR-Z0-9]{17})\b/)
+    return m2?.[1] ?? undefined
+  })()
+  const chassis = chassisFromApi || chassisFromDesc || undefined
   
   const registered = registrationFromApi(rawCar.registration)
 
@@ -155,6 +175,7 @@ function transformCarData(rawCar: RawCarFromAPI): CarFromAPI {
     fuel,
     mileage,
     color,
+    chassis,
     description,
     createdAt: rawCar.created_at,
   }

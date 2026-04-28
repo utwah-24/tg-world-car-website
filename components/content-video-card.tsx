@@ -45,7 +45,7 @@ export function ContentVideoCard({ video, layout = "carousel" }: ContentVideoCar
         className={cn(
           "relative rounded-2xl overflow-hidden bg-white/10 group",
           layout === "carousel" && "shrink-0 w-[280px] sm:w-[320px]",
-          layout === "grid" && "w-full max-w-md mx-auto"
+          layout === "grid" && "w-full"
         )}
         onMouseEnter={() => setShowControls(true)}
         onMouseLeave={() => setShowControls(false)}
@@ -67,8 +67,8 @@ export function ContentVideoCard({ video, layout = "carousel" }: ContentVideoCar
             className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-all"
           >
             {!isPlaying && (
-              <div className="w-16 h-16 rounded-full bg-primary/90 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Play className="w-8 h-8 text-white ml-1" />
+              <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-full bg-primary/90 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Play className="w-5 h-5 sm:w-7 sm:h-7 text-white ml-0.5 sm:ml-1" />
               </div>
             )}
           </button>

@@ -1,14 +1,13 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
-import Image from "next/image"
+import { useState, useMemo, useEffect, useCallback } from "react"
 import { CarCard } from "./car-card"
 import { buildCompanyLogoMap, CompanyOptionRow } from "@/components/company-select-option"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 import { isThirdPartyCar, type Car } from "@/lib/cars-data"
-import { Car as CarIcon, Search, X, RotateCcw, SlidersHorizontal } from "lucide-react"
+import { Car as CarIcon, Search, X, RotateCcw, SlidersHorizontal, ChevronDown } from "lucide-react"
 import {
   Sheet,
   SheetContent,
@@ -16,9 +15,29 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
-import { buildShopTypeFilterRows, normalizeCarType } from "@/lib/car-type"
+import { buildShopTypeFilterRows, normalizeCarType, labelForCanonicalCarType } from "@/lib/car-type"
 import { parsePriceMillions } from "@/lib/find-your-car-filter"
+import { isCarInLatestWindow } from "@/lib/latest-cars"
 import type { CompanyLogo } from "@/lib/api"
+
+/** Renders a type icon from /public/icons/, hiding itself silently on 404. */
+function ShopTypeIcon({ canon, label }: { canon: string; label: string }) {
+  const candidates = [
+    `/icons/${canon}.png`,
+    `/icons/${canon.replace(/_/g, " ")}.png`,
+    `/icons/${label.toLowerCase()}.png`,
+  ]
+  const [idx, setIdx] = useState(0)
+  const [failed, setFailed] = useState(false)
+  const onError = useCallback(() => {
+    if (idx + 1 < candidates.length) setIdx(idx + 1)
+    else setFailed(true)
+  }, [idx, candidates.length])
+
+  if (failed) return null
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={candidates[idx]} alt={label} width={18} height={18} className="shrink-0 object-contain w-[18px] h-[18px]" onError={onError} />
+}
 
 interface ShopContentProps {
   cars: Car[]
@@ -28,7 +47,7 @@ interface ShopContentProps {
 const conditionFilters = [
   { id: "new",         label: "New",         apiCondition: "new" },
   { id: "second_hand", label: "Second Hand", apiCondition: "second_hand" },
-  { id: "third_party", label: "Third Party", iconPath: "/icons/third-party.png", apiCondition: "third_party" },
+  { id: "third_party", label: "Third Party", apiCondition: "third_party" },
 ]
 
 function filterByType(cars: Car[], typeId: string | null): Car[] {
@@ -81,6 +100,9 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
   const [activeType, setActiveType] = useState<string | null>(null)
   const [activeCondition, setActiveCondition] = useState<string | null>(null)
   const [activePriceRange, setActivePriceRange] = useState<string | null>(null)
+  const [activeLatest, setActiveLatest] = useState(false)
+  const [priceOpen, setPriceOpen] = useState(false)
+  const [typeOpen, setTypeOpen] = useState(false)
   const [selectedCompany, setSelectedCompany] = useState("")
   const [selectedBrand, setSelectedBrand] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
@@ -90,6 +112,7 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
     activeType !== null ||
     activeCondition !== null ||
     activePriceRange !== null ||
+    activeLatest ||
     !!selectedCompany ||
     !!selectedBrand
 
@@ -131,6 +154,7 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
     const params = new URLSearchParams(window.location.search)
     const company = params.get("company")
     if (company) setSelectedCompany(decodeURIComponent(company))
+    if (params.get("latest") === "1") setActiveLatest(true)
   }, [])
 
   // Apply ?category= once inventory lists that type (new API types included automatically)
@@ -140,6 +164,7 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
     const rows = buildShopTypeFilterRows(cars)
     if (category && rows.some((f) => f.id === category)) {
       setActiveType(category)
+      setTypeOpen(true)
     }
   }, [cars])
 
@@ -148,6 +173,7 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
     filtered = filterByCondition(filtered, activeCondition)
     filtered = filterByCompany(filtered, selectedCompany)
     filtered = filterByBrand(filtered, selectedBrand)
+    if (activeLatest) filtered = filtered.filter((car) => isCarInLatestWindow(car.createdAt))
 
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim()
@@ -158,17 +184,24 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
     }
 
     return filtered
-  }, [cars, activeType, activeCondition, selectedCompany, selectedBrand, searchQuery])
+  }, [cars, activeType, activeCondition, selectedCompany, selectedBrand, activeLatest, searchQuery])
 
-  const filteredCars = useMemo(
-    () => filterByPriceBucket(carsMatchingFiltersExceptPrice, activePriceRange),
-    [carsMatchingFiltersExceptPrice, activePriceRange],
-  )
+  const filteredCars = useMemo(() => {
+    const results = filterByPriceBucket(carsMatchingFiltersExceptPrice, activePriceRange)
+    return [...results].sort((a, b) => {
+      const ta = a.createdAt ? Date.parse(a.createdAt) : 0
+      const tb = b.createdAt ? Date.parse(b.createdAt) : 0
+      return tb - ta
+    })
+  }, [carsMatchingFiltersExceptPrice, activePriceRange])
 
   const handleClearFilters = () => {
     setActiveType(null)
     setActiveCondition(null)
     setActivePriceRange(null)
+    setActiveLatest(false)
+    setPriceOpen(false)
+    setTypeOpen(false)
     setSelectedCompany("")
     setSelectedBrand("")
   }
@@ -227,7 +260,7 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
           <SelectContent>
             <SelectItem value="__all__">All Companies</SelectItem>
             {companyOptions.map(company => (
-              <SelectItem key={company} value={company} className="py-2 pr-2">
+              <SelectItem key={company} value={company} className="py-2 pr-2 [&>span:last-child]:flex [&>span:last-child]:w-full [&>span:last-child]:min-w-0">
                 <CompanyOptionRow name={company} logoMap={companyLogoMap} />
               </SelectItem>
             ))}
@@ -247,68 +280,117 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
         </Select>
       </div>
 
-      <div className="space-y-3">
-        <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground block">
-          Shop by price
-        </span>
-        <div className="flex flex-col gap-2">
-          {PRICE_BUCKETS.map((bucket) => {
-            const count = carsMatchingFiltersExceptPrice.filter((car) => {
-              const pm = parsePriceMillions(car.price || "")
-              return pm != null && bucket.match(pm)
-            }).length
-            const isActive = activePriceRange === bucket.id
-            return (
-              <Button
-                key={bucket.id}
-                variant={isActive ? "default" : "outline"}
-                size="sm"
-                onClick={() => setActivePriceRange(isActive ? null : bucket.id)}
-                className={`group w-full justify-between rounded-xl h-10 px-3 text-sm font-medium transition-all duration-200 ${
-                  isActive
-                    ? "bg-primary text-primary-foreground shadow-md"
-                    : "border-border bg-transparent text-foreground hover:!bg-white hover:!text-black"
-                }`}
-              >
-                <span className="min-w-0 truncate text-left">{bucket.label}</span>
-                <span className="text-xs opacity-70 tabular-nums shrink-0 group-hover:opacity-100">
-                  ({count})
-                </span>
-              </Button>
-            )
-          })}
-        </div>
+      <div className="space-y-2">
+        <button
+          type="button"
+          onClick={() => setPriceOpen((o) => !o)}
+          className="flex w-full items-center justify-between py-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <span>Shop by price</span>
+          <ChevronDown
+            className={`w-4 h-4 shrink-0 transition-transform duration-200 ${priceOpen ? "rotate-180" : ""}`}
+          />
+        </button>
+
+        {priceOpen && (
+          <div className="flex flex-col gap-2 pt-1">
+            {PRICE_BUCKETS.map((bucket) => {
+              const count = carsMatchingFiltersExceptPrice.filter((car) => {
+                const pm = parsePriceMillions(car.price || "")
+                return pm != null && bucket.match(pm)
+              }).length
+              const isActive = activePriceRange === bucket.id
+              return (
+                <Button
+                  key={bucket.id}
+                  variant={isActive ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => { setActivePriceRange(isActive ? null : bucket.id); if (!priceOpen) setPriceOpen(true) }}
+                  className={`group w-full justify-between rounded-xl h-10 px-3 text-sm font-medium transition-all duration-200 ${
+                    isActive
+                      ? "bg-primary text-primary-foreground shadow-md"
+                      : "border-border bg-transparent text-foreground hover:!bg-white hover:!text-black"
+                  }`}
+                >
+                  <span className="min-w-0 truncate text-left">{bucket.label}</span>
+                  <span className="text-xs opacity-70 tabular-nums shrink-0 group-hover:opacity-100">
+                    ({count})
+                  </span>
+                </Button>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       <div className="space-y-3">
         <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground block">
-          Type
+          Listing
         </span>
         <div className="flex flex-col gap-2">
-          {typeFilters.map((filter) => {
-            const count = filterByCondition(cars, activeCondition).filter(
-                (car) =>
-                  normalizeCarType(car.type || "") === normalizeCarType(filter.apiType)
-            ).length
-            const isActive = activeType === filter.id
+          {(() => {
+            const latestCount = cars.filter((car) => isCarInLatestWindow(car.createdAt)).length
             return (
               <Button
-                key={filter.id}
-                variant={isActive ? "default" : "outline"}
+                variant={activeLatest ? "default" : "outline"}
                 size="sm"
-                onClick={() => setActiveType(isActive ? null : filter.id)}
+                onClick={() => setActiveLatest(!activeLatest)}
                 className={`group w-full justify-between rounded-xl h-10 px-3 text-sm font-medium transition-all duration-200 ${
-                  isActive
+                  activeLatest
                     ? "bg-primary text-primary-foreground shadow-md"
                     : "border-border bg-transparent text-foreground hover:!bg-white hover:!text-black"
                 }`}
               >
-                <span>{filter.label}</span>
-                <span className="text-xs opacity-70 tabular-nums group-hover:opacity-100">({count})</span>
+                <span>Latest cars</span>
+                <span className="text-xs opacity-70 tabular-nums group-hover:opacity-100">({latestCount})</span>
               </Button>
             )
-          })}
+          })()}
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <button
+          type="button"
+          onClick={() => setTypeOpen((o) => !o)}
+          className="flex w-full items-center justify-between py-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <span>Type</span>
+          <ChevronDown
+            className={`w-4 h-4 shrink-0 transition-transform duration-200 ${typeOpen ? "rotate-180" : ""}`}
+          />
+        </button>
+
+        {typeOpen && (
+          <div className="flex flex-col gap-2 pt-1">
+            {typeFilters.map((filter) => {
+              const count = filterByCondition(cars, activeCondition).filter(
+                  (car) =>
+                    normalizeCarType(car.type || "") === normalizeCarType(filter.apiType)
+              ).length
+              const isActive = activeType === filter.id
+              return (
+                <Button
+                  key={filter.id}
+                  variant={isActive ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => { setActiveType(isActive ? null : filter.id); if (!typeOpen) setTypeOpen(true) }}
+                  className={`group w-full justify-between rounded-xl h-10 px-3 text-sm font-medium transition-all duration-200 ${
+                    isActive
+                      ? "bg-primary text-primary-foreground shadow-md"
+                      : "border-border bg-transparent text-foreground hover:!bg-white hover:!text-black"
+                  }`}
+                >
+                  <span className="flex items-center gap-2 min-w-0">
+                    <ShopTypeIcon canon={filter.id} label={labelForCanonicalCarType(filter.id)} />
+                    <span className="truncate">{filter.label}</span>
+                  </span>
+                  <span className="text-xs opacity-70 tabular-nums group-hover:opacity-100">({count})</span>
+                </Button>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       <div className="space-y-3">
@@ -336,9 +418,6 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
                     : "border-border bg-transparent text-foreground hover:!bg-white hover:!text-black"
                 }`}
               >
-                {"iconPath" in filter && (
-                  <Image src={(filter as { iconPath: string }).iconPath} alt={filter.label} width={18} height={18} className="mr-2 shrink-0" />
-                )}
                 <span className="flex-1 text-left">{filter.label}</span>
                 <span className="text-xs opacity-70 tabular-nums group-hover:opacity-100">({count})</span>
               </Button>

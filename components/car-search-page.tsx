@@ -38,7 +38,7 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, all
   /** New listings: stay in this section for 30 days after upload (from API created_at) */
   const latestCars = useMemo(() => {
     const list = filterLatestCars(allCars)
-    return list.slice(0, 6)
+    return list.slice(0, 5) // one row at 5-column desktop grid
   }, [allCars])
 
   const hasFilters = !!searchQuery.trim() || !!selectedCompany || !!selectedBrand
@@ -89,7 +89,7 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, all
       />
 
       {/* Brand grid */}
-      <InfoCards companies={companies} companyLogos={companyLogos} />
+      <InfoCards companies={companies} companyLogos={companyLogos} cars={allCars} />
       
       {/* Search Results or Category Sections */}
       {filteredCars !== null ? (
@@ -117,11 +117,12 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, all
             <CarSection
               id="latest"
               title="Latest cars"
-              subtitle="New listings from the last 30 days. Each vehicle stays here for one month after it goes live."
+              subtitle=""
               cars={latestCars}
               showBadge
-              badgeText="New"
+              badgeText="Just Added"
               badgeVariant="default"
+              seeMoreHref="/shop?latest=1"
             />
           ) : (
             <section id="latest" className="scroll-mt-20 lg:scroll-mt-24 py-10 lg:py-12" aria-label="Latest cars">
