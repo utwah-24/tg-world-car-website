@@ -13,6 +13,9 @@ import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 
+/** Header logo on `/` (`public/logos/Logo tg2.png`). Other routes use `logoLight` (tg1). */
+const HEADER_LOGO_HOME = "/logos/Logo%20tg2.png"
+
 interface HeaderProps {
   logoLight?: string
   logoDark?: string
@@ -24,6 +27,7 @@ export function Header({ logoLight = "/logos/Logo%20tg1.png", logoDark: _logoDar
   const router = useRouter()
   const pathname = usePathname()
   const isHome = pathname === "/"
+  const headerLogoSrc = isHome ? HEADER_LOGO_HOME : logoLight
   /** Home hero: transparent bar over imagery — light nav; scrolled bar uses dark text like other pages */
   const heroContrast = isHome && !scrolled
 
@@ -91,12 +95,12 @@ export function Header({ logoLight = "/logos/Logo%20tg1.png", logoDark: _logoDar
           <div className="flex items-center gap-2 shrink-0 min-w-0">
             <a href="/" className="relative h-10 w-32 sm:h-12 sm:w-40 cursor-pointer">
               <Image
-                src={logoLight}
+                src={headerLogoSrc}
                 alt="TG World"
                 fill
                 className="object-contain"
                 priority
-                unoptimized={logoLight?.startsWith("http")}
+                unoptimized={headerLogoSrc?.startsWith("http")}
                 onError={(e) => {
                   ;(e.target as HTMLImageElement).src = "/placeholder-logo.svg"
                 }}

@@ -89,7 +89,12 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, all
       />
 
       {/* Brand grid */}
-      <InfoCards companies={companies} companyLogos={companyLogos} cars={allCars} />
+      <InfoCards
+        companies={companies}
+        companyLogos={companyLogos}
+        cars={allCars}
+        collapseCompanyGrid
+      />
       
       {/* Search Results or Category Sections */}
       {filteredCars !== null ? (

@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react"
 import { ChevronDown } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import {
   normalizeCarType,
   labelForCanonicalCarType,
@@ -23,6 +24,25 @@ interface InfoCardsProps {
   companies?: string[]
   companyLogos?: CompanyLogo[]
   cars?: CarItem[]
+  /** When true, only the first grid row is shown until the user expands (main home content). */
+  collapseCompanyGrid?: boolean
+}
+
+function useResponsiveCompanyGridColumns(): number {
+  const [cols, setCols] = useState(5)
+  useEffect(() => {
+    const update = () => {
+      const w = window.innerWidth
+      if (w >= 1024) setCols(5)
+      else if (w >= 768) setCols(4)
+      else if (w >= 640) setCols(3)
+      else setCols(2)
+    }
+    update()
+    window.addEventListener("resize", update)
+    return () => window.removeEventListener("resize", update)
+  }, [])
+  return cols
 }
 
 /** Renders a type icon, hiding itself silently when the image 404s. */
@@ -49,30 +69,33 @@ function TypeIcon({ canon, label }: { canon: string; label: string }) {
   )
 }
 
-export function InfoCards({ companies = [], companyLogos = [], cars = [] }: InfoCardsProps) {
-  const [companyExpanded, setCompanyExpanded] = useState(false)
-  /** Matches Tailwind grid: cols-2 / sm:3 / md:4 / lg:5 — mobile-first until resize runs. */
-  const [columnsPerRow, setColumnsPerRow] = useState(2)
+export function InfoCards({
+  companies = [],
+  companyLogos = [],
+  cars = [],
+  collapseCompanyGrid = false,
+}: InfoCardsProps) {
+  const gridCols = useResponsiveCompanyGridColumns()
+  const [companiesExpanded, setCompaniesExpanded] = useState(false)
 
-  useEffect(() => {
-    const updateColumns = () => {
-      const w = window.innerWidth
-      if (w >= 1024) setColumnsPerRow(5)
-      else if (w >= 768) setColumnsPerRow(4)
-      else if (w >= 640) setColumnsPerRow(3)
-      else setColumnsPerRow(2)
+  const sorted = useMemo(() => [...companies].sort(), [companies])
+
+  const visibleCompanies = useMemo(() => {
+    if (companies.length === 0) return []
+    if (!collapseCompanyGrid || companiesExpanded || sorted.length <= gridCols) {
+      return sorted
     }
-    updateColumns()
-    window.addEventListener("resize", updateColumns)
-    return () => window.removeEventListener("resize", updateColumns)
-  }, [])
+    return sorted.slice(0, gridCols)
+  }, [
+    companies.length,
+    collapseCompanyGrid,
+    companiesExpanded,
+    sorted,
+    gridCols,
+  ])
 
-  if (companies.length === 0) return null
-
-  const sorted = [...companies].sort()
-  const companySliceEnd = companyExpanded ? sorted.length : Math.min(columnsPerRow, sorted.length)
-  const visibleCompanies = sorted.slice(0, companySliceEnd)
-  const hasMoreCompanies = sorted.length > columnsPerRow
+  const showCompanyExpand =
+    collapseCompanyGrid && companies.length > 0 && sorted.length > gridCols
 
   const logoMap = new Map<string, string>()
   companyLogos.forEach(({ company, logoUrl }) => {
@@ -93,6 +116,8 @@ export function InfoCards({ companies = [], companyLogos = [], cars = [] }: Info
     const key = normalizeCarType(car.type || "")
     if (key) typeCountMap.set(key, (typeCountMap.get(key) ?? 0) + 1)
   })
+
+  if (companies.length === 0) return null
 
   return (
     <section className="py-10 px-4 sm:px-6 lg:px-8 border-b border-border">
@@ -144,29 +169,24 @@ export function InfoCards({ companies = [], companyLogos = [], cars = [] }: Info
               )
             })}
           </div>
-          {hasMoreCompanies && (
+          {showCompanyExpand && (
             <div className="mt-4 flex justify-center">
-              <button
+              <Button
                 type="button"
-                onClick={() => setCompanyExpanded((v) => !v)}
-                aria-expanded={companyExpanded}
-                className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-muted hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                variant="ghost"
+                size="sm"
+                className="gap-2 rounded-full text-muted-foreground hover:text-foreground"
+                aria-expanded={companiesExpanded}
+                onClick={() => setCompaniesExpanded((e) => !e)}
               >
                 <ChevronDown
-                  className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${companyExpanded ? "rotate-180" : ""}`}
+                  className={`h-5 w-5 transition-transform duration-200 ${companiesExpanded ? "rotate-180" : ""}`}
                   aria-hidden
                 />
-                {companyExpanded ? (
-                  "Show fewer companies"
-                ) : (
-                  <>
-                    Show all companies
-                    <span className="text-muted-foreground font-normal tabular-nums">
-                      ({sorted.length - columnsPerRow} more)
-                    </span>
-                  </>
-                )}
-              </button>
+                <span className="text-sm font-medium">
+                  {companiesExpanded ? "Show fewer companies" : "Show all companies"}
+                </span>
+              </Button>
             </div>
           )}
         </div>
