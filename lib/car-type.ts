@@ -43,6 +43,36 @@ export function labelForCanonicalCarType(canonical: string): string {
     .join(" ")
 }
 
+/**
+ * Paths to try for `/public/icons/<file>.png`.
+ * Includes URI-encoded URLs so spaced / mixed-case filenames (e.g. `Crossover Suv.png`) resolve on strict servers.
+ */
+export function candidateCarTypeIconPaths(canon: string, label: string): string[] {
+  const spaced = canon.replace(/_/g, " ")
+  const titleSpaced = spaced.replace(/\b\w/g, (ch) => ch.toUpperCase())
+  const fileNames = [
+    `${canon}.png`,
+    `${spaced}.png`,
+    `${titleSpaced}.png`,
+    `${label.toLowerCase()}.png`,
+  ]
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const file of [...new Set(fileNames)]) {
+    const raw = `/icons/${file}`
+    if (!seen.has(raw)) {
+      seen.add(raw)
+      out.push(raw)
+    }
+    const encoded = `/icons/${encodeURIComponent(file)}`
+    if (!seen.has(encoded)) {
+      seen.add(encoded)
+      out.push(encoded)
+    }
+  }
+  return out
+}
+
 /** Canonical types present in inventory, ordered (known order first, then A–Z). */
 export function orderedCanonicalTypesInInventory(
   cars: { type?: string | null }[],

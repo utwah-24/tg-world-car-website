@@ -18,7 +18,7 @@ interface HeaderProps {
   logoDark?: string
 }
 
-export function Header({ logoLight = "/tg-world-logo.png", logoDark: _logoDark = "/tg-world-logo.png" }: HeaderProps) {
+export function Header({ logoLight = "/logos/Logo%20tg1.png", logoDark: _logoDark = "/logos/Logo%20tg1.png" }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const router = useRouter()

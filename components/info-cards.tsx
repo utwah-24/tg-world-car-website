@@ -1,10 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo, useEffect } from "react"
+import { ChevronDown } from "lucide-react"
 import {
   normalizeCarType,
   labelForCanonicalCarType,
   orderedCanonicalTypesInInventory,
+  candidateCarTypeIconPaths,
 } from "@/lib/car-type"
 
 interface CompanyLogo {
@@ -23,26 +25,16 @@ interface InfoCardsProps {
   cars?: CarItem[]
 }
 
-/**
- * Derive candidate icon paths from the canonical type key.
- * Tries: canonical key as-is, canonical with underscores→spaces, and lowercased label.
- * The <img> onError handler will hide the image if none resolve to a real file.
- */
-function candidateIconPaths(canon: string, label: string): string[] {
-  const candidates = new Set<string>()
-  candidates.add(`/icons/${canon}.png`)
-  candidates.add(`/icons/${canon.replace(/_/g, " ")}.png`)
-  candidates.add(`/icons/${label.toLowerCase()}.png`)
-  return Array.from(candidates)
-}
-
 /** Renders a type icon, hiding itself silently when the image 404s. */
 function TypeIcon({ canon, label }: { canon: string; label: string }) {
-  const paths = candidateIconPaths(canon, label)
+  const paths = useMemo(() => candidateCarTypeIconPaths(canon, label), [canon, label])
   const [srcIndex, setSrcIndex] = useState(0)
-  const [failed, setFailed] = useState(false)
 
-  if (failed) return null
+  useEffect(() => {
+    setSrcIndex(0)
+  }, [paths])
+
+  if (srcIndex >= paths.length) return null
 
   return (
     // eslint-disable-next-line @next/next/no-img-element
@@ -52,21 +44,35 @@ function TypeIcon({ canon, label }: { canon: string; label: string }) {
       width={40}
       height={40}
       className="object-contain w-full h-full"
-      onError={() => {
-        if (srcIndex + 1 < paths.length) {
-          setSrcIndex(srcIndex + 1)
-        } else {
-          setFailed(true)
-        }
-      }}
+      onError={() => setSrcIndex((i) => i + 1)}
     />
   )
 }
 
 export function InfoCards({ companies = [], companyLogos = [], cars = [] }: InfoCardsProps) {
+  const [companyExpanded, setCompanyExpanded] = useState(false)
+  /** Matches Tailwind grid: cols-2 / sm:3 / md:4 / lg:5 — mobile-first until resize runs. */
+  const [columnsPerRow, setColumnsPerRow] = useState(2)
+
+  useEffect(() => {
+    const updateColumns = () => {
+      const w = window.innerWidth
+      if (w >= 1024) setColumnsPerRow(5)
+      else if (w >= 768) setColumnsPerRow(4)
+      else if (w >= 640) setColumnsPerRow(3)
+      else setColumnsPerRow(2)
+    }
+    updateColumns()
+    window.addEventListener("resize", updateColumns)
+    return () => window.removeEventListener("resize", updateColumns)
+  }, [])
+
   if (companies.length === 0) return null
 
   const sorted = [...companies].sort()
+  const companySliceEnd = companyExpanded ? sorted.length : Math.min(columnsPerRow, sorted.length)
+  const visibleCompanies = sorted.slice(0, companySliceEnd)
+  const hasMoreCompanies = sorted.length > columnsPerRow
 
   const logoMap = new Map<string, string>()
   companyLogos.forEach(({ company, logoUrl }) => {
@@ -98,7 +104,7 @@ export function InfoCards({ companies = [], companyLogos = [], cars = [] }: Info
             Browse by Company
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-            {sorted.map((company) => {
+            {visibleCompanies.map((company) => {
               const key = company.trim().toLowerCase()
               const logoUrl = logoMap.get(key)
               const count = companyCountMap.get(key) ?? 0
@@ -138,6 +144,31 @@ export function InfoCards({ companies = [], companyLogos = [], cars = [] }: Info
               )
             })}
           </div>
+          {hasMoreCompanies && (
+            <div className="mt-4 flex justify-center">
+              <button
+                type="button"
+                onClick={() => setCompanyExpanded((v) => !v)}
+                aria-expanded={companyExpanded}
+                className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-muted hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              >
+                <ChevronDown
+                  className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${companyExpanded ? "rotate-180" : ""}`}
+                  aria-hidden
+                />
+                {companyExpanded ? (
+                  "Show fewer companies"
+                ) : (
+                  <>
+                    Show all companies
+                    <span className="text-muted-foreground font-normal tabular-nums">
+                      ({sorted.length - columnsPerRow} more)
+                    </span>
+                  </>
+                )}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Browse by Car Type */}

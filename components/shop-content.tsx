@@ -1,13 +1,13 @@
 "use client"
 
-import { useState, useMemo, useEffect, useCallback } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { CarCard } from "./car-card"
-import { buildCompanyLogoMap, CompanyOptionRow } from "@/components/company-select-option"
+import { buildCompanyLogoMap, BrandOptionRow, CompanyOptionRow } from "@/components/company-select-option"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 import { isThirdPartyCar, type Car } from "@/lib/cars-data"
-import { Car as CarIcon, Search, X, RotateCcw, SlidersHorizontal, ChevronDown } from "lucide-react"
+import { Car as CarIcon, Search, X, RotateCcw, SlidersHorizontal, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react"
 import {
   Sheet,
   SheetContent,
@@ -15,28 +15,34 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
-import { buildShopTypeFilterRows, normalizeCarType, labelForCanonicalCarType } from "@/lib/car-type"
+import { buildShopTypeFilterRows, normalizeCarType, labelForCanonicalCarType, candidateCarTypeIconPaths } from "@/lib/car-type"
 import { parsePriceMillions } from "@/lib/find-your-car-filter"
 import { isCarInLatestWindow } from "@/lib/latest-cars"
 import type { CompanyLogo } from "@/lib/api"
+import { cn } from "@/lib/utils"
 
 /** Renders a type icon from /public/icons/, hiding itself silently on 404. */
 function ShopTypeIcon({ canon, label }: { canon: string; label: string }) {
-  const candidates = [
-    `/icons/${canon}.png`,
-    `/icons/${canon.replace(/_/g, " ")}.png`,
-    `/icons/${label.toLowerCase()}.png`,
-  ]
+  const candidates = useMemo(() => candidateCarTypeIconPaths(canon, label), [canon, label])
   const [idx, setIdx] = useState(0)
-  const [failed, setFailed] = useState(false)
-  const onError = useCallback(() => {
-    if (idx + 1 < candidates.length) setIdx(idx + 1)
-    else setFailed(true)
-  }, [idx, candidates.length])
 
-  if (failed) return null
+  useEffect(() => {
+    setIdx(0)
+  }, [candidates])
+
+  if (idx >= candidates.length) return null
+
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src={candidates[idx]} alt={label} width={18} height={18} className="shrink-0 object-contain w-[18px] h-[18px]" onError={onError} />
+  return (
+    <img
+      src={candidates[idx]}
+      alt={label}
+      width={18}
+      height={18}
+      className="shrink-0 object-contain w-[18px] h-[18px]"
+      onError={() => setIdx((i) => i + 1)}
+    />
+  )
 }
 
 interface ShopContentProps {
@@ -48,6 +54,11 @@ const conditionFilters = [
   { id: "new",         label: "New",         apiCondition: "new" },
   { id: "second_hand", label: "Second Hand", apiCondition: "second_hand" },
   { id: "third_party", label: "Third Party", apiCondition: "third_party" },
+]
+
+const registrationFilters = [
+  { id: "registered", label: "Registered" },
+  { id: "unregistered", label: "Unregistered" },
 ]
 
 function filterByType(cars: Car[], typeId: string | null): Car[] {
@@ -72,6 +83,13 @@ function filterByCompany(cars: Car[], company: string): Car[] {
 function filterByBrand(cars: Car[], brand: string): Car[] {
   if (!brand) return cars
   return cars.filter(car => (car.brand || "").toLowerCase() === brand.toLowerCase())
+}
+
+function filterByRegistration(cars: Car[], registrationId: string | null): Car[] {
+  if (!registrationId) return cars
+  if (registrationId === "registered") return cars.filter((car) => car.registered === true)
+  if (registrationId === "unregistered") return cars.filter((car) => car.registered === false)
+  return cars
 }
 
 /** Shop sidebar buckets: under 15M, then 25M-wide bands through 140M, then over 140M */
@@ -101,18 +119,21 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
   const [activeCondition, setActiveCondition] = useState<string | null>(null)
   const [activePriceRange, setActivePriceRange] = useState<string | null>(null)
   const [activeLatest, setActiveLatest] = useState(false)
+  const [activeRegistration, setActiveRegistration] = useState<string | null>(null)
   const [priceOpen, setPriceOpen] = useState(false)
   const [typeOpen, setTypeOpen] = useState(false)
   const [selectedCompany, setSelectedCompany] = useState("")
   const [selectedBrand, setSelectedBrand] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
+  const [desktopFiltersVisible, setDesktopFiltersVisible] = useState(true)
 
   const hasActiveFilters =
     activeType !== null ||
     activeCondition !== null ||
     activePriceRange !== null ||
     activeLatest ||
+    activeRegistration !== null ||
     !!selectedCompany ||
     !!selectedBrand
 
@@ -147,6 +168,17 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
     return Array.from(set).sort()
   }, [cars, selectedCompany])
 
+  /** First inventory company per brand (for logo); when a company filter is set, logos match that dealer. */
+  const companyNameForBrand = useMemo(() => {
+    const source = selectedCompany ? filterByCompany(cars, selectedCompany) : cars
+    const m = new Map<string, string>()
+    for (const car of source) {
+      if (!car.brand || !car.company) continue
+      if (!m.has(car.brand)) m.set(car.brand, car.company)
+    }
+    return m
+  }, [cars, selectedCompany])
+
   /** Type filters: built from live inventory so any new API `type` appears after normalizeCarType(). */
   const typeFilters = useMemo(() => buildShopTypeFilterRows(cars), [cars])
 
@@ -168,7 +200,7 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
     }
   }, [cars])
 
-  const carsMatchingFiltersExceptPrice = useMemo(() => {
+  const carsMatchingFiltersExceptPriceAndRegistration = useMemo(() => {
     let filtered = filterByType(cars, activeType)
     filtered = filterByCondition(filtered, activeCondition)
     filtered = filterByCompany(filtered, selectedCompany)
@@ -186,6 +218,11 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
     return filtered
   }, [cars, activeType, activeCondition, selectedCompany, selectedBrand, activeLatest, searchQuery])
 
+  const carsMatchingFiltersExceptPrice = useMemo(
+    () => filterByRegistration(carsMatchingFiltersExceptPriceAndRegistration, activeRegistration),
+    [carsMatchingFiltersExceptPriceAndRegistration, activeRegistration],
+  )
+
   const filteredCars = useMemo(() => {
     const results = filterByPriceBucket(carsMatchingFiltersExceptPrice, activePriceRange)
     return [...results].sort((a, b) => {
@@ -200,6 +237,7 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
     setActiveCondition(null)
     setActivePriceRange(null)
     setActiveLatest(false)
+    setActiveRegistration(null)
     setPriceOpen(false)
     setTypeOpen(false)
     setSelectedCompany("")
@@ -226,6 +264,7 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
 
   const activeTypeLabel = typeFilters.find(f => f.id === activeType)?.label
   const activeConditionLabel = conditionFilters.find(f => f.id === activeCondition)?.label
+  const activeRegistrationLabel = registrationFilters.find((f) => f.id === activeRegistration)?.label
   const activePriceLabel = PRICE_BUCKETS.find((b) => b.id === activePriceRange)?.label
 
   const filterPanel = (
@@ -268,13 +307,23 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
         </Select>
 
         <Select value={selectedBrand || "__all__"} onValueChange={handleBrandChange}>
-          <SelectTrigger className="h-11 w-full rounded-xl border-border bg-card text-sm">
+          <SelectTrigger className="h-11 w-full rounded-xl border-border bg-card text-sm [&>span]:flex [&>span]:min-w-0 [&>span]:items-center [&>span]:gap-2.5 [&>span]:line-clamp-none">
             <SelectValue placeholder="Brand" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="__all__">All Brands</SelectItem>
-            {brandOptions.map(brand => (
-              <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+            {brandOptions.map((brand) => (
+              <SelectItem
+                key={brand}
+                value={brand}
+                className="py-2 pr-2 [&>span:last-child]:flex [&>span:last-child]:w-full [&>span:last-child]:min-w-0"
+              >
+                <BrandOptionRow
+                  brand={brand}
+                  logoCompanyName={companyNameForBrand.get(brand) ?? ""}
+                  logoMap={companyLogoMap}
+                />
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -346,6 +395,29 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
               </Button>
             )
           })()}
+          {registrationFilters.map((filter) => {
+            const count =
+              filter.id === "registered"
+                ? carsMatchingFiltersExceptPriceAndRegistration.filter((c) => c.registered === true).length
+                : carsMatchingFiltersExceptPriceAndRegistration.filter((c) => c.registered === false).length
+            const isActive = activeRegistration === filter.id
+            return (
+              <Button
+                key={filter.id}
+                variant={isActive ? "default" : "outline"}
+                size="sm"
+                onClick={() => setActiveRegistration(isActive ? null : filter.id)}
+                className={`group w-full justify-between rounded-xl h-10 px-3 text-sm font-medium transition-all duration-200 ${
+                  isActive
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "border-border bg-transparent text-foreground hover:!bg-white hover:!text-black"
+                }`}
+              >
+                <span>{filter.label}</span>
+                <span className="text-xs opacity-70 tabular-nums group-hover:opacity-100">({count})</span>
+              </Button>
+            )
+          })}
         </div>
       </div>
 
@@ -453,7 +525,7 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
             <SheetHeader className="space-y-1 text-left">
               <SheetTitle>Filters</SheetTitle>
               <SheetDescription className="sr-only">
-                Narrow the vehicle list by search, company, brand, price, type, and condition.
+                Narrow the vehicle list by search, company, brand, price, listing, registration, type, and condition.
               </SheetDescription>
             </SheetHeader>
           </div>
@@ -508,18 +580,55 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
 
       {/* flex-1 min-h-0 so this row gets a bounded height; only the grid panel scrolls */}
       <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden lg:flex-row">
-        <div className="hidden shrink-0 flex-col lg:flex lg:h-full lg:min-h-0 lg:w-72 lg:px-0 xl:w-80">
-          <aside
-            className="w-full rounded-2xl border border-border bg-card/60 p-5 shadow-sm
+        <div
+          className={cn(
+            "hidden shrink-0 flex-col lg:flex lg:h-full lg:min-h-0 transition-[width] duration-200 ease-out",
+            desktopFiltersVisible ? "lg:w-72 xl:w-80" : "lg:w-[52px] xl:w-[52px]",
+          )}
+        >
+          {desktopFiltersVisible ? (
+            <aside
+              className="w-full rounded-2xl border border-border bg-card/60 p-5 shadow-sm
               lg:flex lg:flex-col lg:rounded-none lg:border-0 lg:border-r lg:border-border lg:bg-muted/30 lg:shadow-none
               lg:h-full lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain
               lg:py-6 lg:pl-6 lg:pr-5 xl:pl-8"
-          >
-            <p className="hidden lg:block text-sm font-semibold text-foreground mb-4 pb-3 border-b border-border shrink-0">
-              Filters
-            </p>
-            <div className="lg:min-h-0">{filterPanel}</div>
-          </aside>
+            >
+              <div className="hidden lg:flex items-center justify-between gap-2 mb-4 pb-3 border-b border-border shrink-0">
+                <span className="text-sm font-semibold text-foreground">Filters</span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 shrink-0 rounded-lg text-muted-foreground hover:text-foreground"
+                  aria-label="Hide filters panel"
+                  onClick={() => setDesktopFiltersVisible(false)}
+                >
+                  <ChevronLeft className="h-4 w-4" aria-hidden />
+                </Button>
+              </div>
+              <div className="lg:min-h-0">{filterPanel}</div>
+            </aside>
+          ) : (
+            <div className="hidden lg:flex lg:h-full lg:min-h-0 lg:w-full lg:flex-col lg:items-center lg:border-r lg:border-border lg:bg-muted/30 lg:pt-4 lg:px-2 lg:pb-4">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-10 w-10 shrink-0 rounded-xl border-border bg-card shadow-sm"
+                aria-label="Show filters panel"
+                onClick={() => setDesktopFiltersVisible(true)}
+              >
+                <ChevronRight className="h-5 w-5" aria-hidden />
+              </Button>
+              {hasActiveFilters && (
+                <span
+                  className="mt-2 h-2 w-2 shrink-0 rounded-full bg-primary"
+                  aria-hidden
+                  title="Filters active"
+                />
+              )}
+            </div>
+          )}
         </div>
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-4 sm:px-6 lg:pl-8 lg:pr-6 xl:pr-8">
@@ -542,6 +651,7 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
               Showing {filteredCars.length} {filteredCars.length === 1 ? "vehicle" : "vehicles"}
               {activeTypeLabel && <span> · {activeTypeLabel}</span>}
               {activeConditionLabel && <span> · {activeConditionLabel}</span>}
+              {activeRegistrationLabel && <span> · {activeRegistrationLabel}</span>}
               {activePriceLabel && <span> · {activePriceLabel}</span>}
               {selectedCompany && <span> · {selectedCompany}</span>}
               {selectedBrand && <span> · {selectedBrand}</span>}

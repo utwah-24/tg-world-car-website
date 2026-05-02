@@ -346,8 +346,8 @@ export async function fetchContent(): Promise<ContentVideo[]> {
   }
 }
 
-/** Primary TG WORLD International logo (`public/tg-world-logo.png`) */
-export const SITE_LOGO_PATH = "/tg-world-logo.png"
+/** Primary TG WORLD International logo (`public/logos/Logo tg1.png`) */
+export const SITE_LOGO_PATH = "/logos/Logo%20tg1.png"
 
 /**
  * Site header/footer logos (static asset; replaces legacy /api/logos).

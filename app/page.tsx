@@ -2,6 +2,7 @@ import { HeaderWrapper } from "@/components/header-wrapper"
 import { HeroWrapper } from "@/components/hero-wrapper"
 import { CarSearchPage } from "@/components/car-search-page"
 import { ContactSection } from "@/components/contact-section"
+import { ConnectWithUsSection } from "@/components/connect-with-us-section"
 import { FooterWrapper } from "@/components/footer-wrapper"
 import { getTopSellingCars, getComingSoonCars, getSoldOutCars, getAllCars } from "@/lib/cars-data"
 import { fetchContent, fetchCompanyLogos } from "@/lib/api"
@@ -35,6 +36,8 @@ export default async function Home() {
 
       {/* Contact Section */}
       <ContactSection />
+
+      <ConnectWithUsSection />
 
       {/* Footer */}
       <FooterWrapper />

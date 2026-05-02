@@ -40,3 +40,39 @@ export function CompanyOptionRow({
     </span>
   )
 }
+
+/** Row for brand pickers: shows the inventory company’s logo with the brand name. */
+export function BrandOptionRow({
+  brand,
+  logoCompanyName,
+  logoMap,
+}: {
+  brand: string
+  logoCompanyName: string
+  logoMap: Map<string, string>
+}) {
+  const logoUrl = logoCompanyName
+    ? logoMap.get(logoCompanyName.trim().toLowerCase())
+    : undefined
+  return (
+    <span className="inline-flex w-full min-w-0 items-center gap-2.5">
+      <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border/60 bg-background">
+        {logoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={logoUrl}
+            alt=""
+            width={24}
+            height={24}
+            className="h-full w-full object-contain p-0.5"
+          />
+        ) : (
+          <span className="text-[10px] font-bold text-muted-foreground leading-none">
+            {brand.charAt(0).toUpperCase()}
+          </span>
+        )}
+      </span>
+      <span className="min-w-0 flex-1 truncate text-left font-normal">{brand}</span>
+    </span>
+  )
+}

@@ -28,6 +28,10 @@ const outfit = Outfit({
 export const metadata: Metadata = {
   title: 'TG World | Premium Car Dealership',
   description: 'Discover premium vehicles at TG World. We offer top-selling cars, upcoming arrivals, and the finest selection of luxury and reliable vehicles.',
+  icons: {
+    icon: '/tg-world-logo-proforma.png',
+    apple: '/tg-world-logo-proforma.png',
+  },
 }
 
 export default function RootLayout({

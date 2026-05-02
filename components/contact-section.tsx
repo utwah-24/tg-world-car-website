@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { Phone, Mail, MapPin, Send } from "lucide-react"
+import { Phone, Mail, MapPin, Send, ExternalLink } from "lucide-react"
 import { useState } from "react"
 import { useScrollAnimation } from "@/hooks/use-scroll-animation"
+
+const GOOGLE_MAPS_LOCATION_URL = "https://maps.app.goo.gl/MJ1xDiQjc1XpLbR29"
 
 export function ContactSection() {
   const [formData, setFormData] = useState({
@@ -35,14 +37,14 @@ export function ContactSection() {
         {/* Section Header */}
         <div
           ref={headerRef}
-          className={`text-center mb-10 lg:mb-14 transition-all duration-700 ease-out ${
+          className={`text-left mb-10 lg:mb-14 transition-all duration-700 ease-out ${
             headerVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
           }`}
         >
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-foreground">
             Get in Touch
           </h2>
-          <p className="mt-2 text-base text-muted-foreground max-w-2xl mx-auto">
+          <p className="mt-2 text-base text-muted-foreground max-w-2xl">
             Ready to find your dream car? Contact us today and let our team help you get behind the wheel.
           </p>
         </div>
@@ -124,8 +126,16 @@ export function ContactSection() {
                 </div>
                 <div>
                   <h4 className="font-semibold text-foreground">Call Us</h4>
-                  <p className="text-muted-foreground text-sm mt-1">+255 123 456 789</p>
-                  <p className="text-muted-foreground text-sm">+255 987 654 321</p>
+                  <p className="text-muted-foreground text-sm mt-1">
+                    <a href="tel:+255754441146" className="hover:text-foreground underline-offset-4 hover:underline">
+                      0754 441 146
+                    </a>
+                  </p>
+                  <p className="text-muted-foreground text-sm">
+                    <a href="tel:+255748364714" className="hover:text-foreground underline-offset-4 hover:underline">
+                      0748364714
+                    </a>
+                  </p>
                 </div>
               </div>
 
@@ -135,21 +145,39 @@ export function ContactSection() {
                 </div>
                 <div>
                   <h4 className="font-semibold text-foreground">Email Us</h4>
-                  <p className="text-muted-foreground text-sm mt-1">info@tgworld.com</p>
-                  <p className="text-muted-foreground text-sm">sales@tgworld.com</p>
+                  <p className="text-muted-foreground text-sm mt-1">
+                    <a href="mailto:info@tgworldtz.com" className="hover:text-foreground underline-offset-4 hover:underline">
+                      info@tgworldtz.com
+                    </a>
+                  </p>
                 </div>
               </div>
 
-              <div className="flex items-start gap-4 p-5 bg-card rounded-2xl border border-border">
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                  <MapPin className="w-5 h-5 text-primary" />
+              <a
+                href={GOOGLE_MAPS_LOCATION_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Open Sinza, Dar es Salaam in Google Maps"
+                className="group flex flex-col sm:flex-row sm:items-start gap-4 p-5 bg-card rounded-2xl border border-border transition-all duration-200 hover:border-primary/40 hover:bg-primary/[0.03] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              >
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 transition-colors group-hover:bg-primary/15">
+                  <MapPin className="w-5 h-5 text-primary" aria-hidden />
                 </div>
-                <div>
-                  <h4 className="font-semibold text-foreground">Visit Us</h4>
-                  <p className="text-muted-foreground text-sm mt-1">123 Auto Plaza</p>
-                  <p className="text-muted-foreground text-sm">Dar es Salaam, Tanzania</p>
+                <div className="min-w-0 flex-1 space-y-3">
+                  <div>
+                    <h4 className="font-semibold text-foreground">Visit Us</h4>
+                    <p className="text-muted-foreground text-sm mt-1">Sinza</p>
+                    <p className="text-muted-foreground text-sm">Dar es Salaam, Tanzania</p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                    <span className="inline-flex items-center gap-1.5 text-sm font-medium text-primary">
+                      Open in Google Maps
+                      <ExternalLink className="w-3.5 h-3.5 shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden />
+                    </span>
+                    <span className="text-xs text-muted-foreground">Opens in a new tab</span>
+                  </div>
                 </div>
-              </div>
+              </a>
             </div>
           </div>
         </div>
