@@ -4,11 +4,12 @@ import React, { useId } from "react"
 import { cn } from "@/lib/utils"
 import { useScrollAnimation } from "@/hooks/use-scroll-animation"
 
-/** Add URLs when ready; empty string renders a non-clickable card until then. */
+/** Official TG World social links — empty string renders a non-clickable card. */
 export const CONNECT_SOCIAL_HREFS = {
-  instagram: "",
-  facebook: "",
-  youtube: "",
+  instagram:
+    "https://www.instagram.com/tgworldimports?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==",
+  facebook: "https://www.facebook.com/tgworldimports/",
+  youtube: "https://www.youtube.com/@tgworldimports",
 } as const
 
 type PlatformId = keyof typeof CONNECT_SOCIAL_HREFS

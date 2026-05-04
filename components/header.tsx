@@ -13,8 +13,8 @@ import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 
-/** Header logo on `/` (`public/logos/Logo tg2.png`). Other routes use `logoLight` (tg1). */
-const HEADER_LOGO_HOME = "/logos/Logo%20tg2.png"
+/** Header logo for most routes (`Logo tg2.png`). `/content` uses `logoLight` (tg1) for the dark video page. */
+const HEADER_LOGO_MARKETING = "/logos/Logo%20tg2.png"
 
 interface HeaderProps {
   logoLight?: string
@@ -26,8 +26,10 @@ export function Header({ logoLight = "/logos/Logo%20tg1.png", logoDark: _logoDar
   const [scrolled, setScrolled] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
-  const isHome = pathname === "/"
-  const headerLogoSrc = isHome ? HEADER_LOGO_HOME : logoLight
+  const normalizedPath = pathname.replace(/\/$/, "") || "/"
+  const isHome = normalizedPath === "/"
+  const isContentPage = normalizedPath === "/content"
+  const headerLogoSrc = isContentPage ? logoLight : HEADER_LOGO_MARKETING
   /** Home hero: transparent bar over imagery — light nav; scrolled bar uses dark text like other pages */
   const heroContrast = isHome && !scrolled
 
@@ -72,7 +74,7 @@ export function Header({ logoLight = "/logos/Logo%20tg1.png", logoDark: _logoDar
       const el = document.getElementById(sectionId)
       if (el) el.scrollIntoView({ behavior: "smooth", block: "start" })
     }
-    if (pathname === "/") {
+    if (normalizedPath === "/") {
       scroll()
     } else {
       window.location.assign(`/#${sectionId}`)
