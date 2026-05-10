@@ -29,7 +29,7 @@ export function Hero({ heroImage = "/placeholder.svg" }: HeroProps) {
                 Find your perfect car.
               </h1>
               <p className="mt-3 text-base sm:text-lg text-white/80 animate-fade-in-up" style={{ animationDelay: "0.2s", opacity: 0, animationFillMode: "forwards" }}>
-                Search new, used, and certified cars near you.
+                TG World Import & Export Ltd — bringing you premium vehicles from across the globe, straight to your door.
               </p>
               
               {/* CTAs */}
