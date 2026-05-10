@@ -38,8 +38,31 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, all
 
   /** New listings: stay in this section for 30 days after upload (from API created_at) */
   const latestCars = useMemo(() => {
-    const list = filterLatestCars(allCars)
-    return list.slice(0, 5) // one row at 5-column desktop grid
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    // Coming-soon cars whose arrival_date has now passed — treat them as arrived
+    const arrived = allCars.filter((car) => {
+      if (!car.arrivalDate) return false
+      const d = new Date(car.arrivalDate)
+      d.setHours(0, 0, 0, 0)
+      return d <= today
+    })
+
+    // Regular "uploaded within last 30 days" cars
+    const recent = filterLatestCars(allCars)
+
+    // Merge: arrived cars first, then recent, deduplicated by id
+    const seen = new Set<string>()
+    const merged: typeof allCars = []
+    for (const car of [...arrived, ...recent]) {
+      if (!seen.has(car.id)) {
+        seen.add(car.id)
+        merged.push(car)
+      }
+    }
+
+    return merged.slice(0, 5) // one row at 5-column desktop grid
   }, [allCars])
 
   const hasFilters = !!searchQuery.trim() || !!selectedCompany || !!selectedBrand

@@ -255,23 +255,29 @@ function CarModal({ car, onClose }: { car: Car; onClose: () => void }) {
 
 // ── Section ───────────────────────────────────────────────────────────────────
 
+// How many times to repeat the card set — keeps the duplicate well off-screen
+// even on very wide displays or when only a few cards qualify.
+const REPEATS = 4
+
 export function ComingSoonSection({ cars }: ComingSoonSectionProps) {
-  const scrollRef = useRef<HTMLDivElement>(null)
+  const trackRef = useRef<HTMLDivElement>(null)
+  const offsetRef = useRef(0)
   const isPaused = useRef(false)
+  const dragStartX = useRef<number | null>(null)
+  const dragStartOffset = useRef(0)
   const [selectedCar, setSelectedCar] = useState<Car | null>(null)
   const { ref: headerRef, isVisible: headerVisible } = useScrollAnimation({ threshold: 0.2 })
 
-  if (cars.length === 0) return null
+  // Only show cars that have an arrival_date set
+  const qualified = cars.filter((c) => c.arrivalDate)
 
-  const qualified = [
-    ...cars.filter((c) => c.arrivalDate),
-    ...cars.filter((c) => !c.arrivalDate),
-  ]
+  if (qualified.length === 0) return null
 
   const row1 = qualified.filter((_, i) => i % 2 === 0)
   const row2 = qualified.filter((_, i) => i % 2 === 1)
-  const row1Loop = [...row1, ...row1]
-  const row2Loop = [...row2, ...row2]
+  // Repeat REPEATS times — ensures one set width >> viewport so duplicate is invisible
+  const row1Loop = Array.from({ length: REPEATS }, () => row1).flat()
+  const row2Loop = Array.from({ length: REPEATS }, () => row2).flat()
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const handleSelect = useCallback((car: Car) => {
@@ -285,26 +291,73 @@ export function ComingSoonSection({ cars }: ComingSoonSectionProps) {
     isPaused.current = false
   }, [])
 
+  // Auto-scroll loop
   // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
-    const el = scrollRef.current
-    if (!el) return
+    const track = trackRef.current
+    if (!track) return
     let rafId: number
     const SPEED = 0.5
+
     const step = () => {
       if (!isPaused.current) {
-        el.scrollLeft += SPEED
-        const firstRow = el.querySelector<HTMLElement>("div.flex")
-        const loopWidth = firstRow ? firstRow.scrollWidth / 2 : el.scrollWidth / 2
-        if (el.scrollLeft >= loopWidth) {
-          el.scrollLeft -= loopWidth
+        const oneSet = track.scrollWidth / REPEATS
+        if (oneSet > 0) {
+          offsetRef.current += SPEED
+          if (offsetRef.current >= oneSet) offsetRef.current -= oneSet
+          track.style.transform = `translateX(-${offsetRef.current}px)`
         }
       }
       rafId = requestAnimationFrame(step)
     }
+
     rafId = requestAnimationFrame(step)
     return () => cancelAnimationFrame(rafId)
   }, [])
+
+  // ── Drag-to-scroll (mouse) ──────────────────────────────────────────────────
+  const onMouseDown = useCallback((e: React.MouseEvent) => {
+    isPaused.current = true
+    dragStartX.current = e.clientX
+    dragStartOffset.current = offsetRef.current
+  }, [])
+
+  const onMouseMove = useCallback((e: React.MouseEvent) => {
+    if (dragStartX.current === null) return
+    const track = trackRef.current
+    if (!track) return
+    const oneSet = track.scrollWidth / REPEATS
+    const delta = dragStartX.current - e.clientX
+    offsetRef.current = ((dragStartOffset.current + delta) % oneSet + oneSet) % oneSet
+    track.style.transform = `translateX(-${offsetRef.current}px)`
+  }, [])
+
+  const onMouseUp = useCallback(() => {
+    dragStartX.current = null
+    setTimeout(() => { if (!selectedCar) isPaused.current = false }, 800)
+  }, [selectedCar])
+
+  // ── Drag-to-scroll (touch) ──────────────────────────────────────────────────
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    isPaused.current = true
+    dragStartX.current = e.touches[0].clientX
+    dragStartOffset.current = offsetRef.current
+  }, [])
+
+  const onTouchMove = useCallback((e: React.TouchEvent) => {
+    if (dragStartX.current === null) return
+    const track = trackRef.current
+    if (!track) return
+    const oneSet = track.scrollWidth / REPEATS
+    const delta = dragStartX.current - e.touches[0].clientX
+    offsetRef.current = ((dragStartOffset.current + delta) % oneSet + oneSet) % oneSet
+    track.style.transform = `translateX(-${offsetRef.current}px)`
+  }, [])
+
+  const onTouchEnd = useCallback(() => {
+    dragStartX.current = null
+    setTimeout(() => { if (!selectedCar) isPaused.current = false }, 800)
+  }, [selectedCar])
 
   const pauseScroll = () => { isPaused.current = true }
   const resumeScroll = () => { if (!selectedCar) isPaused.current = false }
@@ -338,52 +391,61 @@ export function ComingSoonSection({ cars }: ComingSoonSectionProps) {
 
           </div>
 
-          {/* Scroll strip */}
-          <div className="relative -mx-4 sm:-mx-6 lg:-mx-8">
+          {/* Scroll strip — overflow:hidden clips duplicate copies off-screen */}
+          <div
+            className="relative -mx-4 sm:-mx-6 lg:-mx-8 overflow-hidden cursor-grab active:cursor-grabbing"
+            onMouseEnter={pauseScroll}
+            onMouseLeave={(e) => { onMouseUp(); resumeScroll() }}
+            onMouseDown={onMouseDown}
+            onMouseMove={onMouseMove}
+            onMouseUp={onMouseUp}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+          >
+            {/* Left fade */}
             <div
               className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 sm:w-24"
               style={{ background: "linear-gradient(to right, #CC4D00, transparent)" }}
             />
+            {/* Right fade */}
             <div
               className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 sm:w-24"
               style={{ background: "linear-gradient(to left, #CC4D00, transparent)" }}
             />
+
+            {/* Moving track */}
             <div
-              ref={scrollRef}
-              className="overflow-x-auto pb-3 px-4 sm:px-6 lg:px-8"
-              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-              onMouseEnter={pauseScroll}
-              onMouseLeave={resumeScroll}
-              onTouchStart={pauseScroll}
-              onTouchEnd={resumeScroll}
+              ref={trackRef}
+              className="flex flex-col gap-3 sm:gap-4 pb-3 px-4 sm:px-6 lg:px-8 will-change-transform"
             >
-              <div className="flex flex-col gap-3 sm:gap-4">
-                <div className="flex gap-3 sm:gap-4">
-                  {row1Loop.map((car, i) => (
+              {/* Row 1 */}
+              <div className="flex gap-3 sm:gap-4">
+                {row1Loop.map((car, i) => (
+                  <ComingSoonCard
+                    key={`r1-${car.id}-${i}`}
+                    car={car}
+                    index={(i % row1.length) * 2}
+                    onSelect={handleSelect}
+                  />
+                ))}
+              </div>
+              {/* Row 2 — desktop only, bento stagger */}
+              {row2.length > 0 && (
+                <div
+                  className="hidden sm:flex gap-3 sm:gap-4"
+                  style={{ paddingLeft: "calc((300px + 0.75rem) / 2)" }}
+                >
+                  {row2Loop.map((car, i) => (
                     <ComingSoonCard
-                      key={`r1-${car.id}-${i}`}
+                      key={`r2-${car.id}-${i}`}
                       car={car}
-                      index={(i % row1.length) * 2}
+                      index={(i % row2.length) * 2 + 1}
                       onSelect={handleSelect}
                     />
                   ))}
                 </div>
-                {row2.length > 0 && (
-                  <div
-                    className="hidden sm:flex gap-3 sm:gap-4"
-                    style={{ paddingLeft: "calc((300px + 0.75rem) / 2)" }}
-                  >
-                    {row2Loop.map((car, i) => (
-                      <ComingSoonCard
-                        key={`r2-${car.id}-${i}`}
-                        car={car}
-                        index={(i % row2.length) * 2 + 1}
-                        onSelect={handleSelect}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
+              )}
             </div>
           </div>
         </div>
