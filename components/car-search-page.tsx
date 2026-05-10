@@ -5,6 +5,7 @@ import { SearchBox } from "./search-box"
 import { InfoCards } from "./info-cards"
 import { CarSection } from "./car-section"
 import { ContentReviewsSection } from "./content-reviews-section"
+import { ComingSoonSection } from "./coming-soon-section"
 import type { Car } from "@/lib/cars-data"
 import type { ContentVideo, CompanyLogo } from "@/lib/api"
 import { filterLatestCars } from "@/lib/latest-cars"
@@ -75,8 +76,18 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, all
   ].filter(Boolean).join(" · ")
 
 
+  // Derive coming-soon cars directly from the full deduplicated list so every
+  // car with is_coming_soon === "set" is shown, regardless of separate fetches.
+  const comingSoonForSection = useMemo(
+    () => allCars.filter((c) => c.category === "coming-soon"),
+    [allCars],
+  )
+
   return (
     <>
+      {/* Coming Soon */}
+      {!hasFilters && <ComingSoonSection cars={comingSoonForSection} />}
+
       {/* Search Box */}
       <SearchBox
         cars={searchableCars}

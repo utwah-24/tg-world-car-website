@@ -1,5 +1,11 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://tgworld.e-saloon.online'
 
+// ─── In-memory ordered-car accumulator ───────────────────────────────────────
+// Keys are ONLY ever added, never removed.
+// Within a server process lifetime a car that was once ordered stays hidden
+// even if the order is later deleted from /api/orders.
+const _orderedKeysAccumulator = new Set<string>()
+
 // API Response Interface (what the API actually returns)
 interface RawCarFromAPI {
   car_id: number
@@ -17,6 +23,10 @@ interface RawCarFromAPI {
   is_coming_soon?: string
   arrival_date?: string
   is_sold?: "available" | "sold"
+  /** Odometer or mileage label — numeric strings (`58000`, `58,000 km`) supported when present */
+  mileage?: string | number
+  /** Alternate API shape */
+  car_mileage?: string | number
   /** `"registered"` | `"unregistered"` from Laravel API */
   registration?: string
   category?: string
@@ -62,6 +72,8 @@ export interface CarFromAPI {
   createdAt?: string
   /** From API `registration` when present (`registered` / `unregistered`) */
   registered?: boolean
+  /** ISO date string from `arrival_date` — present when `is_coming_soon === "set"` */
+  arrivalDate?: string
 }
 
 /** Map Laravel `registration` string to boolean; unknown/missing → undefined (no UI badge). */
@@ -131,7 +143,16 @@ function transformCarData(rawCar: RawCarFromAPI): CarFromAPI {
   const description = rawCar.car_description || ''
   const transmission = description.match(/Transmission\s*:\s*([^\r\n]+)/i)?.[1]?.trim()
   const fuel = description.match(/Fuel\s*:\s*([^\r\n]+)/i)?.[1]?.trim()
-  const mileage = description.match(/Mileage\s*:\s*([^\r\n]+)/i)?.[1]?.trim()
+  const mileageLineFromDesc = description.match(/Mileage\s*:\s*([^\r\n]+)/i)?.[1]?.trim()
+  const mileageApiRaw =
+    rawCar.mileage ??
+    rawCar.car_mileage ??
+    undefined
+  const mileageApi =
+    mileageApiRaw != null && String(mileageApiRaw).trim() !== ""
+      ? String(mileageApiRaw).trim()
+      : undefined
+  const mileage = mileageApi ?? mileageLineFromDesc
   const color = description.match(/Colou?r\s*:\s*([^\r\n]+)/i)?.[1]?.trim()
 
   // Chassis: prefer dedicated API field; fall back to parsing description text
@@ -178,6 +199,7 @@ function transformCarData(rawCar: RawCarFromAPI): CarFromAPI {
     chassis,
     description,
     createdAt: rawCar.created_at,
+    arrivalDate: rawCar.arrival_date || undefined,
   }
 }
 
@@ -344,6 +366,58 @@ export async function fetchContent(): Promise<ContentVideo[]> {
     console.error('❌ Error fetching content from API:', error)
     return []
   }
+}
+
+// ─── Orders ──────────────────────────────────────────────────────────────────
+
+interface RawOrder {
+  id: number
+  car_name: string
+  year?: string | number | null
+  status?: boolean | null
+}
+
+/**
+ * Normalise a car name + year into a stable lookup key.
+ * Strips punctuation, collapses spaces, lower-cases everything.
+ */
+export function normalizeOrderKey(name: string, year?: string | number | null): string {
+  const n = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+  return year != null ? `${year}-${n}` : n
+}
+
+/**
+ * Returns a Set of `"year-normalizedName"` keys for every car that has EVER
+ * had an order during this server process lifetime.
+ *
+ * - Called on every request (cache: "no-store") so new orders are seen
+ *   immediately on the next page load / refresh.
+ * - Keys are only ever ADDED to `_orderedKeysAccumulator`, never removed —
+ *   so deleting an order from the API will NOT bring the car back.
+ */
+export async function fetchOrderedCarKeys(): Promise<Set<string>> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/orders`, {
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+    })
+    if (res.ok) {
+      const json = await res.json()
+      const orders: RawOrder[] = Array.isArray(json?.data) ? json.data : []
+      for (const o of orders) {
+        if (o.car_name) {
+          _orderedKeysAccumulator.add(normalizeOrderKey(o.car_name, o.year))
+        }
+      }
+    }
+  } catch {
+    // network failure — return whatever we've accumulated so far
+  }
+  return _orderedKeysAccumulator
 }
 
 /** Primary TG WORLD International logo (`public/logos/Logo tg1.png`) */

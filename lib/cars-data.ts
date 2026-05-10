@@ -1,4 +1,4 @@
-import { fetchCars, fetchCarsByCategory, fetchThirdPartyCars, type CarFromAPI } from './api'
+import { fetchCars, fetchCarsByCategory, fetchThirdPartyCars, fetchOrderedCarKeys, normalizeOrderKey, type CarFromAPI } from './api'
 
 export interface Car {
   id: string
@@ -28,6 +28,8 @@ export interface Car {
   createdAt?: string
   /** From API `registration`; when set, car cards show Registered / Unregistered */
   registered?: boolean
+  /** ISO date string — only set when car has `is_coming_soon === "set"` and `arrival_date` from the API */
+  arrivalDate?: string
 }
 
 /** Third-party: `condition` from the main API and/or `[THIRD_PARTY]` from the partner feed */
@@ -217,70 +219,87 @@ export const cars: Car[] = [
   },
 ]
 
+/** Returns true when the car has an active order and should be hidden. */
+async function buildOrderFilter(): Promise<(car: Car) => boolean> {
+  const orderedKeys = await fetchOrderedCarKeys()
+  return (car: Car) => orderedKeys.has(normalizeOrderKey(car.name, car.year))
+}
+
 // Helper functions to get cars by category (now async to support API)
 export const getTopSellingCars = async (): Promise<Car[]> => {
   try {
-    const apiCars = await fetchCarsByCategory("top-selling")
+    const [apiCars, isOrdered] = await Promise.all([
+      fetchCarsByCategory("top-selling"),
+      buildOrderFilter(),
+    ])
     if (apiCars && apiCars.length > 0) {
-      return apiCars
+      return apiCars.filter(car => !isOrdered(car))
     }
   } catch (error) {
     console.error('Error fetching top selling cars from API, falling back to static data:', error)
   }
-  // Fallback to static data if API fails
   return cars.filter(car => car.category === "top-selling")
 }
 
 export const getComingSoonCars = async (): Promise<Car[]> => {
   try {
-    const apiCars = await fetchCarsByCategory("coming-soon")
+    const [apiCars, isOrdered] = await Promise.all([
+      fetchCarsByCategory("coming-soon"),
+      buildOrderFilter(),
+    ])
     if (apiCars && apiCars.length > 0) {
-      return apiCars
+      return apiCars.filter(car => !isOrdered(car))
     }
   } catch (error) {
     console.error('Error fetching coming soon cars from API, falling back to static data:', error)
   }
-  // Fallback to static data if API fails
   return cars.filter(car => car.category === "coming-soon")
 }
 
 export const getSoldOutCars = async (): Promise<Car[]> => {
   try {
-    const apiCars = await fetchCarsByCategory("sold-out")
+    const [apiCars, isOrdered] = await Promise.all([
+      fetchCarsByCategory("sold-out"),
+      buildOrderFilter(),
+    ])
     if (apiCars && apiCars.length > 0) {
-      return apiCars
+      return apiCars.filter(car => !isOrdered(car))
     }
   } catch (error) {
     console.error('Error fetching sold out cars from API, falling back to static data:', error)
   }
-  // Fallback to static data if API fails
   return cars.filter(car => car.category === "sold-out")
 }
 
 // Function to get all cars from API or fallback to static data
 export const getAllCars = async (): Promise<Car[]> => {
   try {
-    const [apiCars, thirdPartyCars] = await Promise.all([
+    const [apiCars, thirdPartyCars, orderedKeys] = await Promise.all([
       fetchCars(),
-      fetchThirdPartyCars()
+      fetchThirdPartyCars(),
+      fetchOrderedCarKeys(),
     ])
-    
+
     // Combine and deduplicate cars by ID
     // If a car exists in both, prefer the third-party version
     const carMap = new Map<string, Car>()
-    
+
     // Add regular cars first
     apiCars?.forEach(car => {
       carMap.set(car.id, car)
     })
-    
+
     // Add/override with third-party cars (they take priority)
     thirdPartyCars?.forEach(car => {
       carMap.set(car.id, car)
     })
-    
-    const allCars = Array.from(carMap.values())
-    
+
+    // Soft-delete: remove any car that has an active order
+    const isOrdered = (car: Car) =>
+      orderedKeys.has(normalizeOrderKey(car.name, car.year))
+
+    const allCars = Array.from(carMap.values()).filter(car => !isOrdered(car))
+
     if (allCars.length > 0) {
       return allCars
     }

@@ -10,3 +10,6 @@ node_modules/
 .next/
 .env*.local
 .DS_Store
+
+# Persistent soft-delete ledger (server-side only, not for version control)
+.ordered-car-keys.json

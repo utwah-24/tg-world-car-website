@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/sheet"
 import { buildShopTypeFilterRows, normalizeCarType, labelForCanonicalCarType, candidateCarTypeIconPaths } from "@/lib/car-type"
 import { parsePriceMillions } from "@/lib/find-your-car-filter"
+import { parseMileageKm } from "@/lib/mileage-km"
 import { isCarInLatestWindow } from "@/lib/latest-cars"
 import type { CompanyLogo } from "@/lib/api"
 import { cn } from "@/lib/utils"
@@ -114,13 +115,35 @@ function filterByPriceBucket(cars: Car[], bucketId: string | null): Car[] {
   })
 }
 
+/** Shop mileage buckets (km); overlaps avoided at boundaries. */
+const MILEAGE_BUCKETS: { id: string; label: string; match: (km: number) => boolean }[] = [
+  { id: "mileage-0-20k", label: "0 km – 20,000 km", match: (km) => km >= 0 && km <= 20_000 },
+  { id: "mileage-20k-30k", label: "20,000 km – 30,000 km", match: (km) => km > 20_000 && km <= 30_000 },
+  { id: "mileage-30k-40k", label: "30,000 km – 40,000 km", match: (km) => km > 30_000 && km <= 40_000 },
+  { id: "mileage-40k-50k", label: "40,000 km – 50,000 km", match: (km) => km > 40_000 && km <= 50_000 },
+  { id: "mileage-over-50k", label: "Over 50,000 km", match: (km) => km > 50_000 },
+]
+
+function filterByMileageBucket(cars: Car[], bucketId: string | null): Car[] {
+  if (!bucketId) return cars
+  const bucket = MILEAGE_BUCKETS.find((b) => b.id === bucketId)
+  if (!bucket) return cars
+  return cars.filter((car) => {
+    const km = parseMileageKm(car.mileage)
+    if (km == null) return false
+    return bucket.match(km)
+  })
+}
+
 export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
   const [activeType, setActiveType] = useState<string | null>(null)
   const [activeCondition, setActiveCondition] = useState<string | null>(null)
   const [activePriceRange, setActivePriceRange] = useState<string | null>(null)
+  const [activeMileageRange, setActiveMileageRange] = useState<string | null>(null)
   const [activeLatest, setActiveLatest] = useState(false)
   const [activeRegistration, setActiveRegistration] = useState<string | null>(null)
   const [priceOpen, setPriceOpen] = useState(false)
+  const [mileageOpen, setMileageOpen] = useState(false)
   const [typeOpen, setTypeOpen] = useState(false)
   const [selectedCompany, setSelectedCompany] = useState("")
   const [selectedBrand, setSelectedBrand] = useState("")
@@ -132,6 +155,7 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
     activeType !== null ||
     activeCondition !== null ||
     activePriceRange !== null ||
+    activeMileageRange !== null ||
     activeLatest ||
     activeRegistration !== null ||
     !!selectedCompany ||
@@ -223,22 +247,29 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
     [carsMatchingFiltersExceptPriceAndRegistration, activeRegistration],
   )
 
+  const carsMatchingPrice = useMemo(
+    () => filterByPriceBucket(carsMatchingFiltersExceptPrice, activePriceRange),
+    [carsMatchingFiltersExceptPrice, activePriceRange],
+  )
+
   const filteredCars = useMemo(() => {
-    const results = filterByPriceBucket(carsMatchingFiltersExceptPrice, activePriceRange)
+    const results = filterByMileageBucket(carsMatchingPrice, activeMileageRange)
     return [...results].sort((a, b) => {
       const ta = a.createdAt ? Date.parse(a.createdAt) : 0
       const tb = b.createdAt ? Date.parse(b.createdAt) : 0
       return tb - ta
     })
-  }, [carsMatchingFiltersExceptPrice, activePriceRange])
+  }, [carsMatchingPrice, activeMileageRange])
 
   const handleClearFilters = () => {
     setActiveType(null)
     setActiveCondition(null)
     setActivePriceRange(null)
+    setActiveMileageRange(null)
     setActiveLatest(false)
     setActiveRegistration(null)
     setPriceOpen(false)
+    setMileageOpen(false)
     setTypeOpen(false)
     setSelectedCompany("")
     setSelectedBrand("")
@@ -266,6 +297,7 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
   const activeConditionLabel = conditionFilters.find(f => f.id === activeCondition)?.label
   const activeRegistrationLabel = registrationFilters.find((f) => f.id === activeRegistration)?.label
   const activePriceLabel = PRICE_BUCKETS.find((b) => b.id === activePriceRange)?.label
+  const activeMileageLabel = MILEAGE_BUCKETS.find((b) => b.id === activeMileageRange)?.label
 
   const filterPanel = (
     <div className="space-y-6">
@@ -355,6 +387,52 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
                   variant={isActive ? "default" : "outline"}
                   size="sm"
                   onClick={() => { setActivePriceRange(isActive ? null : bucket.id); if (!priceOpen) setPriceOpen(true) }}
+                  className={`group w-full justify-between rounded-xl h-10 px-3 text-sm font-medium transition-all duration-200 ${
+                    isActive
+                      ? "bg-primary text-primary-foreground shadow-md"
+                      : "border-border bg-transparent text-foreground hover:!bg-white hover:!text-black"
+                  }`}
+                >
+                  <span className="min-w-0 truncate text-left">{bucket.label}</span>
+                  <span className="text-xs opacity-70 tabular-nums shrink-0 group-hover:opacity-100">
+                    ({count})
+                  </span>
+                </Button>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <button
+          type="button"
+          onClick={() => setMileageOpen((o) => !o)}
+          className="flex w-full items-center justify-between py-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <span>Shop by mileage</span>
+          <ChevronDown
+            className={`w-4 h-4 shrink-0 transition-transform duration-200 ${mileageOpen ? "rotate-180" : ""}`}
+          />
+        </button>
+
+        {mileageOpen && (
+          <div className="flex flex-col gap-2 pt-1">
+            {MILEAGE_BUCKETS.map((bucket) => {
+              const count = carsMatchingPrice.filter((car) => {
+                const km = parseMileageKm(car.mileage)
+                return km != null && bucket.match(km)
+              }).length
+              const isActive = activeMileageRange === bucket.id
+              return (
+                <Button
+                  key={bucket.id}
+                  variant={isActive ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    setActiveMileageRange(isActive ? null : bucket.id)
+                    if (!mileageOpen) setMileageOpen(true)
+                  }}
                   className={`group w-full justify-between rounded-xl h-10 px-3 text-sm font-medium transition-all duration-200 ${
                     isActive
                       ? "bg-primary text-primary-foreground shadow-md"
@@ -525,7 +603,7 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
             <SheetHeader className="space-y-1 text-left">
               <SheetTitle>Filters</SheetTitle>
               <SheetDescription className="sr-only">
-                Narrow the vehicle list by search, company, brand, price, listing, registration, type, and condition.
+                Narrow the vehicle list by search, company, brand, price, mileage, listing, registration, type, and condition.
               </SheetDescription>
             </SheetHeader>
           </div>
@@ -653,6 +731,7 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
               {activeConditionLabel && <span> · {activeConditionLabel}</span>}
               {activeRegistrationLabel && <span> · {activeRegistrationLabel}</span>}
               {activePriceLabel && <span> · {activePriceLabel}</span>}
+              {activeMileageLabel && <span> · {activeMileageLabel}</span>}
               {selectedCompany && <span> · {selectedCompany}</span>}
               {selectedBrand && <span> · {selectedBrand}</span>}
               {searchQuery && <span> matching &ldquo;{searchQuery}&rdquo;</span>}
