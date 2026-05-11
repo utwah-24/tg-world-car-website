@@ -13,7 +13,7 @@ import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 
-/** Header logo for most routes (`Logo tg2.png`). `/content` uses `logoLight` (tg1) for the dark video page. */
+/** Header logo once the nav turns white on scroll (`Logo tg2.png`). */
 const HEADER_LOGO_MARKETING = "/logos/Logo%20tg2.png"
 
 interface HeaderProps {
@@ -29,7 +29,11 @@ export function Header({ logoLight = "/logos/Logo%20tg1.png", logoDark: _logoDar
   const normalizedPath = pathname.replace(/\/$/, "") || "/"
   const isHome = normalizedPath === "/"
   const isContentPage = normalizedPath === "/content"
-  const headerLogoSrc = isContentPage ? logoLight : HEADER_LOGO_MARKETING
+  const headerLogoSrc = isContentPage
+    ? (scrolled ? HEADER_LOGO_MARKETING : logoLight)
+    : isHome
+    ? (scrolled ? HEADER_LOGO_MARKETING : logoLight)
+    : HEADER_LOGO_MARKETING
   /** Home hero: transparent bar over imagery — light nav; scrolled bar uses dark text like other pages */
   const heroContrast = isHome && !scrolled
 
@@ -95,7 +99,7 @@ export function Header({ logoLight = "/logos/Logo%20tg1.png", logoDark: _logoDar
         <div className="flex items-center justify-between h-16 lg:h-18 gap-4 w-full min-w-0">
           {/* Logo — left */}
           <div className="flex items-center gap-2 shrink-0 min-w-0">
-            <a href="/" className="relative h-10 w-32 sm:h-12 sm:w-40 cursor-pointer">
+            <a href="/" className="relative h-12 w-40 sm:h-14 sm:w-48 cursor-pointer">
               <Image
                 src={headerLogoSrc}
                 alt="TG World"

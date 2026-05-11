@@ -199,7 +199,11 @@ function transformCarData(rawCar: RawCarFromAPI): CarFromAPI {
     chassis,
     description,
     createdAt: rawCar.created_at,
-    arrivalDate: rawCar.arrival_date || undefined,
+    arrivalDate: (() => {
+      const d = rawCar.arrival_date
+      if (!d || d.startsWith("0000")) return undefined
+      return d
+    })(),
   }
 }
 

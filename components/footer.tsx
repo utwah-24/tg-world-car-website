@@ -52,11 +52,12 @@ export function Footer({ logoDark = "/logos/Logo%20tg1.png" }: FooterProps) {
                 </button>
               </li>
               <li>
-                <button 
-                  onClick={() => scrollToSection("coming-soon")}
+                <button
+                  type="button"
+                  onClick={() => scrollToSection("home-slots")}
                   className="text-sm text-background/70 hover:text-primary transition-colors"
                 >
-                  Coming Soon
+                  Highlights
                 </button>
               </li>
               <li>

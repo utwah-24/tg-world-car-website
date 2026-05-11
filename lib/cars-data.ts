@@ -248,7 +248,8 @@ export const getComingSoonCars = async (): Promise<Car[]> => {
       buildOrderFilter(),
     ])
     if (apiCars && apiCars.length > 0) {
-      return apiCars.filter(car => !isOrdered(car))
+      // Only include cars that truly have is_coming_soon set — indicated by a valid arrivalDate
+      return apiCars.filter(car => !isOrdered(car) && !!car.arrivalDate)
     }
   } catch (error) {
     console.error('Error fetching coming soon cars from API, falling back to static data:', error)

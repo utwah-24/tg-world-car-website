@@ -644,15 +644,29 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
         )}
       </Button>
 
-      {/* Mobile / tablet: title first with page padding */}
+      {/* Mobile / tablet: hero banner card */}
       <div className="mb-6 mt-4 shrink-0 px-4 pr-[7.5rem] sm:px-6 lg:hidden">
-        <div className="animate-fade-in-up text-left">
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-foreground mb-2 tracking-tight">
-            Shop All Vehicles
-          </h1>
-          <p className="text-muted-foreground text-sm sm:text-base">
-            Browse our complete inventory of {cars.length} quality vehicles
-          </p>
+        <div className="animate-fade-in-up">
+          <div className="relative overflow-hidden rounded-2xl bg-black" style={{ height: "140px" }}>
+            {/* Right: car image */}
+            <img
+              src="/zenigame-photo-oaZ9WEVW7g8-unsplash.jpg"
+              alt="Premium vehicle"
+              className="absolute inset-0 h-full w-full object-cover object-center"
+            />
+            {/* Fade from black on the left over the image */}
+            <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent" style={{ width: "70%" }} />
+            <div className="absolute inset-0 bg-gradient-to-r from-black to-transparent" />
+            {/* Left: content */}
+            <div className="relative z-10 flex h-full flex-col justify-center px-5">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-tight mb-1">
+                Shop All Vehicles
+              </h1>
+              <p className="text-white/60 text-xs sm:text-sm">
+                Browse our complete inventory of {cars.length} quality vehicles
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -710,19 +724,38 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
         </div>
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-4 sm:px-6 lg:pl-8 lg:pr-6 xl:pr-8">
-          {/* Desktop title: top-left above the scrollable grid */}
-          <div className="hidden lg:block shrink-0 mb-4 pt-2 animate-fade-in-up text-left">
-            <h1 className="text-3xl xl:text-4xl font-extrabold text-foreground mb-1 tracking-tight">
-              Shop All Vehicles
-            </h1>
-            <p className="text-muted-foreground text-sm">
-              Browse our complete inventory of {cars.length} quality vehicles
-            </p>
+          {/* Scroll target: hero + results count + car grid all scroll together */}
+          <div
+            id="shop-car-list-scroll"
+            className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain pb-6"
+            style={{ WebkitOverflowScrolling: "touch" }}
+          >
+          {/* Desktop title: hero banner card */}
+          <div className="hidden lg:block mb-4 pt-2 animate-fade-in-up">
+            <div className="relative overflow-hidden rounded-2xl bg-black" style={{ height: "210px" }}>
+              {/* Right: car image */}
+              <img
+                src="/zenigame-photo-oaZ9WEVW7g8-unsplash.jpg"
+                alt="Premium vehicle"
+                className="absolute inset-0 h-full w-full object-cover object-center"
+              />
+              {/* Gradient fade from black (left) to transparent (right) */}
+              <div className="absolute inset-0 bg-gradient-to-r from-black via-black/75 to-transparent" />
+              {/* Left: content */}
+              <div className="relative z-10 flex h-full flex-col justify-center px-8">
+                <h1 className="text-3xl xl:text-4xl font-extrabold text-white tracking-tight leading-tight mb-1.5">
+                  Shop All Vehicles
+                </h1>
+                <p className="text-white/60 text-sm">
+                  Browse our complete inventory of {cars.length} quality vehicles
+                </p>
+              </div>
+            </div>
           </div>
 
           <div
             id="results"
-            className="shrink-0 mb-4 animate-fade-in"
+            className="mb-4 animate-fade-in"
             style={{ animationDelay: "0.1s", opacity: 0, animationFillMode: "forwards" }}
           >
             <p className="text-sm text-muted-foreground text-left">
@@ -737,13 +770,6 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
               {searchQuery && <span> matching &ldquo;{searchQuery}&rdquo;</span>}
             </p>
           </div>
-
-          {/* Only scroll target for the shop: cars list (all breakpoints) */}
-          <div
-            id="shop-car-list-scroll"
-            className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain pb-6"
-            style={{ WebkitOverflowScrolling: "touch" }}
-          >
             {filteredCars.length === 0 ? (
               <div className="text-center py-20">
                 <CarIcon className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />

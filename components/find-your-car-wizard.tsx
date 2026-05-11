@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { CarCard } from "@/components/car-card"
@@ -18,7 +18,7 @@ import {
   normalizeType,
   type FindCarCriteria,
 } from "@/lib/find-your-car-filter"
-import { labelForCanonicalCarType } from "@/lib/car-type"
+import { candidateCarTypeIconPaths, labelForCanonicalCarType, normalizeCarType as normalizeCanonicalType } from "@/lib/car-type"
 import { ArrowLeft, ArrowRight, Check, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -32,6 +32,37 @@ const CONDITIONS: { id: FindCarCriteria["condition"]; label: string; desc: strin
 
 function formatTypeLabel(canonical: string): string {
   return labelForCanonicalCarType(normalizeType(canonical))
+}
+
+function WizardTypeIcon({ rawType }: { rawType: string }) {
+  const canon = normalizeCanonicalType(rawType)
+  const label = formatTypeLabel(rawType)
+  const paths = useMemo(() => candidateCarTypeIconPaths(canon, label), [canon, label])
+  const [srcIndex, setSrcIndex] = useState(0)
+
+  useEffect(() => {
+    setSrcIndex(0)
+  }, [paths])
+
+  if (!canon || srcIndex >= paths.length) {
+    return (
+      <span className="text-[11px] font-bold text-muted-foreground uppercase">
+        {label.charAt(0)}
+      </span>
+    )
+  }
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={paths[srcIndex]}
+      alt={label}
+      width={26}
+      height={26}
+      className="object-contain h-full w-full"
+      onError={() => setSrcIndex((i) => i + 1)}
+    />
+  )
 }
 
 interface FindYourCarWizardProps {
@@ -60,6 +91,15 @@ export function FindYourCarWizard({ cars, companyLogos }: FindYourCarWizardProps
   }, [companyLogos])
 
   const types = useMemo(() => uniqueTypes(cars), [cars])
+  const typeCountMap = useMemo(() => {
+    const counts = new Map<string, number>()
+    cars.forEach((car) => {
+      const key = normalizeType(car.type || "")
+      if (!key) return
+      counts.set(key, (counts.get(key) ?? 0) + 1)
+    })
+    return counts
+  }, [cars])
   const companies = useMemo(
     () => uniqueCompanies(cars, selectedType || undefined),
     [cars, selectedType]
@@ -337,21 +377,31 @@ export function FindYourCarWizard({ cars, companyLogos }: FindYourCarWizardProps
             <h3 className="text-xl sm:text-2xl font-bold text-foreground mb-2">Vehicle type</h3>
             <p className="text-muted-foreground text-sm mb-8">Choose the body style you are looking for. Types come from our live inventory.</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {types.map((t) => (
+              {types.map((t) => {
+                const count = typeCountMap.get(normalizeType(t)) ?? 0
+                return (
                 <button
                   key={t}
                   type="button"
                   onClick={() => setSelectedType(t)}
                   className={cn(
-                    "rounded-xl border-2 px-4 py-3 text-sm font-medium transition-all duration-200 hover:border-primary/50",
+                    "flex items-center gap-3 rounded-xl border-2 px-4 py-3 text-left text-sm font-medium transition-all duration-200 hover:border-primary/50",
                     normalizeType(selectedType) === normalizeType(t)
                       ? "border-primary bg-primary/5 text-primary shadow-sm"
                       : "border-border bg-background"
                   )}
                 >
-                  {formatTypeLabel(t)}
+                  <span className="shrink-0 w-8 h-8 flex items-center justify-center overflow-hidden rounded-lg border border-border/60 bg-background">
+                    <WizardTypeIcon rawType={t} />
+                  </span>
+                  <span className="min-w-0 flex flex-col">
+                    <span className="truncate">{formatTypeLabel(t)}</span>
+                    <span className="text-xs text-muted-foreground leading-tight">
+                      {count} {count === 1 ? "car" : "cars"}
+                    </span>
+                  </span>
                 </button>
-              ))}
+                )})}
             </div>
             {types.length === 0 && (
               <p className="text-sm text-muted-foreground">No vehicle types available yet. Check back soon.</p>

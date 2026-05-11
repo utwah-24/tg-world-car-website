@@ -1,23 +1,37 @@
 "use client"
 
-interface HeroProps {
-  heroImage?: string
-}
+import { useEffect, useState } from "react"
 
-export function Hero({ heroImage = "/placeholder.svg" }: HeroProps) {
+const HERO_SLIDES = ["/images/img-1.jpg", "/images/img-2.jpg", "/images/img-3.jpg", "/images/img-4.jpg", "/images/img-5.jpg"] as const
+const SLIDE_MS = 4500
+
+export function Hero() {
+  const [activeSlide, setActiveSlide] = useState(0)
+
+  useEffect(() => {
+    const timerId = window.setInterval(() => {
+      setActiveSlide((idx) => (idx + 1) % HERO_SLIDES.length)
+    }, SLIDE_MS)
+    return () => window.clearInterval(timerId)
+  }, [])
+
   return (
     <section id="home" className="relative scroll-mt-20 lg:scroll-mt-24">
-      {/* Hero Image Background */}
-      <div className="relative h-screen">
-        <img
-          src={heroImage}
-          alt="Premium car showcase"
-          className="absolute inset-0 w-full h-full object-cover bg-muted scale-x-[-1]"
-          onError={(e) => {
-            // Fallback to placeholder if image fails to load
-            (e.target as HTMLImageElement).src = "/placeholder.svg"
-          }}
-        />
+      {/* Hero slideshow background */}
+      <div className="relative h-screen overflow-hidden">
+        {HERO_SLIDES.map((imageSrc, idx) => (
+          <img
+            key={imageSrc}
+            src={imageSrc}
+            alt="Premium car showcase"
+            className={`absolute inset-0 h-full w-full object-cover bg-muted scale-x-[-1] transition-opacity duration-1000 ${
+              idx === activeSlide ? "opacity-100" : "opacity-0"
+            }`}
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = "/placeholder.svg"
+            }}
+          />
+        ))}
         {/* Overlay - centered gradient for mobile, left-aligned for desktop */}
         <div className="absolute inset-0 bg-gradient-to-b sm:bg-gradient-to-r from-foreground/60 via-foreground/40 to-foreground/20 sm:to-transparent" />
         
