@@ -145,6 +145,7 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
   const [priceOpen, setPriceOpen] = useState(false)
   const [mileageOpen, setMileageOpen] = useState(false)
   const [typeOpen, setTypeOpen] = useState(false)
+  const [makeOpen, setMakeOpen] = useState(true)
   const [selectedCompany, setSelectedCompany] = useState("")
   const [selectedBrand, setSelectedBrand] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
@@ -323,42 +324,57 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
         )}
       </div>
 
-      <div className="flex flex-col gap-3">
-        <Select value={selectedCompany || "__all__"} onValueChange={handleCompanyChange}>
-          <SelectTrigger className="h-11 w-full rounded-xl border-border bg-card text-sm [&>span]:flex [&>span]:min-w-0 [&>span]:items-center [&>span]:gap-2.5 [&>span]:line-clamp-none">
-            <SelectValue placeholder="Company" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__all__">All Companies</SelectItem>
-            {companyOptions.map(company => (
-              <SelectItem key={company} value={company} className="py-2 pr-2 [&>span:last-child]:flex [&>span:last-child]:w-full [&>span:last-child]:min-w-0">
-                <CompanyOptionRow name={company} logoMap={companyLogoMap} />
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="space-y-2">
+        <button
+          type="button"
+          onClick={() => setMakeOpen((o) => !o)}
+          className="flex w-full items-center justify-between py-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <span>Shop by make</span>
+          <ChevronDown
+            className={`w-4 h-4 shrink-0 transition-transform duration-200 ${makeOpen ? "rotate-180" : ""}`}
+          />
+        </button>
 
-        <Select value={selectedBrand || "__all__"} onValueChange={handleBrandChange}>
-          <SelectTrigger className="h-11 w-full rounded-xl border-border bg-card text-sm [&>span]:flex [&>span]:min-w-0 [&>span]:items-center [&>span]:gap-2.5 [&>span]:line-clamp-none">
-            <SelectValue placeholder="Brand" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__all__">All Brands</SelectItem>
-            {brandOptions.map((brand) => (
-              <SelectItem
-                key={brand}
-                value={brand}
-                className="py-2 pr-2 [&>span:last-child]:flex [&>span:last-child]:w-full [&>span:last-child]:min-w-0"
-              >
-                <BrandOptionRow
-                  brand={brand}
-                  logoCompanyName={companyNameForBrand.get(brand) ?? ""}
-                  logoMap={companyLogoMap}
-                />
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {makeOpen && (
+          <div className="flex flex-col gap-3 pt-1">
+            <Select value={selectedCompany || "__all__"} onValueChange={handleCompanyChange}>
+              <SelectTrigger className="h-11 w-full rounded-xl border-border bg-card text-sm [&>span]:flex [&>span]:min-w-0 [&>span]:items-center [&>span]:gap-2.5 [&>span]:line-clamp-none">
+                <SelectValue placeholder="Company" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">All Companies</SelectItem>
+                {companyOptions.map(company => (
+                  <SelectItem key={company} value={company} className="py-2 pr-2 [&>span:last-child]:flex [&>span:last-child]:w-full [&>span:last-child]:min-w-0">
+                    <CompanyOptionRow name={company} logoMap={companyLogoMap} />
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={selectedBrand || "__all__"} onValueChange={handleBrandChange}>
+              <SelectTrigger className="h-11 w-full rounded-xl border-border bg-card text-sm [&>span]:flex [&>span]:min-w-0 [&>span]:items-center [&>span]:gap-2.5 [&>span]:line-clamp-none">
+                <SelectValue placeholder="Brand" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">All Brands</SelectItem>
+                {brandOptions.map((brand) => (
+                  <SelectItem
+                    key={brand}
+                    value={brand}
+                    className="py-2 pr-2 [&>span:last-child]:flex [&>span:last-child]:w-full [&>span:last-child]:min-w-0"
+                  >
+                    <BrandOptionRow
+                      brand={brand}
+                      logoCompanyName={companyNameForBrand.get(brand) ?? ""}
+                      logoMap={companyLogoMap}
+                    />
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
 
       <div className="space-y-2">
