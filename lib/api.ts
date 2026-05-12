@@ -72,6 +72,8 @@ export interface CarFromAPI {
   createdAt?: string
   /** From API `registration` when present (`registered` / `unregistered`) */
   registered?: boolean
+  /** Actual plate / registration number when API provides a value that isn't just "registered"/"unregistered" */
+  registrationNumber?: string
   /** ISO date string from `arrival_date` — present when `is_coming_soon === "set"` */
   arrivalDate?: string
 }
@@ -171,6 +173,13 @@ function transformCarData(rawCar: RawCarFromAPI): CarFromAPI {
   const chassis = chassisFromApi || chassisFromDesc || undefined
   
   const registered = registrationFromApi(rawCar.registration)
+  // If the registration value is neither "registered" nor "unregistered", treat it as an actual plate number
+  const registrationNumber = (() => {
+    if (!rawCar.registration) return undefined
+    const v = rawCar.registration.trim().toLowerCase()
+    if (v === "registered" || v === "unregistered" || v === "") return undefined
+    return rawCar.registration.trim()
+  })()
 
   // Clean up price - remove "With New Registration" and other common suffixes
   let cleanPrice = rawCar.car_price || 'Contact for price'
@@ -183,7 +192,9 @@ function transformCarData(rawCar: RawCarFromAPI): CarFromAPI {
     name,
     year,
     price: cleanPrice,
-    registered,
+    // A plate number implies the car is registered
+    registered: registrationNumber ? true : registered,
+    registrationNumber,
     image: mainImageUrl,
     images: allImageUrls,
     category,

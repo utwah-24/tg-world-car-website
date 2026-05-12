@@ -28,6 +28,8 @@ export interface Car {
   createdAt?: string
   /** From API `registration`; when set, car cards show Registered / Unregistered */
   registered?: boolean
+  /** Actual plate / registration number when the API provides one */
+  registrationNumber?: string
   /** ISO date string — only set when car has `is_coming_soon === "set"` and `arrival_date` from the API */
   arrivalDate?: string
 }

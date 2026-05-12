@@ -202,14 +202,28 @@ export function CarCard({ car, compact, showBadge, badgeText, badgeVariant = "de
           </div>
         )}
 
-        {/* Status Badges */}
-        {(isSoldOut || isComingSoon || isThirdParty || (showBadge && badgeText)) && (
+        {/* Status Badges + Registration Number */}
+        {(isSoldOut || isComingSoon || isThirdParty || (showBadge && badgeText) || car.registrationNumber) && (
           <div
             className={cn(
               "absolute flex flex-wrap max-w-[calc(100%-0.75rem)]",
               compact ? "bottom-1.5 left-1.5 gap-1" : "bottom-2 left-2 sm:bottom-3 sm:left-3 gap-2",
             )}
           >
+            {/* Registration plate number */}
+            {car.registrationNumber && (
+              <Badge
+                className={cn(
+                  "font-mono font-semibold bg-background/90 text-foreground border border-border/80 shadow-sm backdrop-blur-sm",
+                  compact
+                    ? "text-[9px] px-1.5 py-px leading-tight"
+                    : "text-[10px] sm:text-xs px-2 py-0.5 sm:px-2.5 sm:py-1",
+                )}
+              >
+                {car.registrationNumber}
+              </Badge>
+            )}
+
             {/* Third Party Badge - Always show if it's third party */}
             {isThirdParty && (
               <Badge
