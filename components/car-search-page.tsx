@@ -38,21 +38,24 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, all
 
   /** New listings: stay in this section for 30 days after upload (from API created_at) */
   const latestCars = useMemo(() => {
+    const now = Date.now()
     const today = new Date()
     today.setHours(0, 0, 0, 0)
+    const windowMs = 30 * 24 * 60 * 60 * 1000
 
-    // Coming-soon cars whose arrival_date has now passed — treat them as arrived
+    // Coming-soon cars whose arrival_date has passed but only within the last 30 days
     const arrived = allCars.filter((car) => {
       if (!car.arrivalDate) return false
       const d = new Date(car.arrivalDate)
       d.setHours(0, 0, 0, 0)
-      return d <= today
+      const ts = d.getTime()
+      return ts <= today.getTime() && now - ts <= windowMs
     })
 
     // Regular "uploaded within last 30 days" cars
     const recent = filterLatestCars(allCars)
 
-    // Merge: arrived cars first, then recent, deduplicated by id
+    // Merge, deduplicate, then sort newest-first using createdAt (or arrivalDate as fallback)
     const seen = new Set<string>()
     const merged: typeof allCars = []
     for (const car of [...arrived, ...recent]) {
@@ -61,6 +64,12 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, all
         merged.push(car)
       }
     }
+
+    merged.sort((a, b) => {
+      const ta = a.createdAt ? Date.parse(a.createdAt) : (a.arrivalDate ? Date.parse(a.arrivalDate) : 0)
+      const tb = b.createdAt ? Date.parse(b.createdAt) : (b.arrivalDate ? Date.parse(b.arrivalDate) : 0)
+      return tb - ta
+    })
 
     return merged.slice(0, 5) // one row at 5-column desktop grid
   }, [allCars])
@@ -131,6 +140,11 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, all
             title={`Results for ${activeLabel}`}
             subtitle={`Found ${filteredCars.length} ${filteredCars.length === 1 ? "car" : "cars"} matching your search`}
             cars={filteredCars}
+            seeMoreHref={`/shop?${new URLSearchParams([
+              ...(searchQuery.trim() ? [["q", searchQuery.trim()]] : []),
+              ...(selectedCompany ? [["company", selectedCompany]] : []),
+              ...(selectedBrand ? [["brand", selectedBrand]] : []),
+            ]).toString()}`}
           />
           {filteredCars.length === 0 && (
             <div className="text-center py-12">

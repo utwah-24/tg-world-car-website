@@ -210,7 +210,11 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const company = params.get("company")
+    const brand = params.get("brand")
+    const q = params.get("q")
     if (company) setSelectedCompany(decodeURIComponent(company))
+    if (brand) setSelectedBrand(decodeURIComponent(brand))
+    if (q) setSearchQuery(decodeURIComponent(q))
     if (params.get("latest") === "1") setActiveLatest(true)
   }, [])
 
