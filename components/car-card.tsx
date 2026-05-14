@@ -18,6 +18,8 @@ interface CarCardProps {
   badgeText?: string
   badgeVariant?: "default" | "secondary" | "destructive" | "outline"
   delay?: number
+  /** Image + name + price only; no specs row, summary, or Shop Now (e.g. Coming Soon home strip) */
+  minimalListing?: boolean
 }
 
 function mileageFromDescription(description: string): string | null {
@@ -51,7 +53,15 @@ function conditionLabel(car: CarType): string {
   return (car.condition || "").replace(/_/g, " ").replace(/\b\w/g, (x) => x.toUpperCase())
 }
 
-export function CarCard({ car, compact, showBadge, badgeText, badgeVariant = "default", delay = 0 }: CarCardProps) {
+export function CarCard({
+  car,
+  compact,
+  showBadge,
+  badgeText,
+  badgeVariant = "default",
+  delay = 0,
+  minimalListing = false,
+}: CarCardProps) {
   const isSoldOut = car.category === "sold-out"
   const isComingSoon = car.category === "coming-soon"
   const yearPrefix = car.year ? `${car.year} ` : ""
@@ -214,7 +224,7 @@ export function CarCard({ car, compact, showBadge, badgeText, badgeVariant = "de
             {car.registrationNumber && (
               <Badge
                 className={cn(
-                  "font-mono font-semibold bg-background/90 text-foreground border border-border/80 shadow-sm backdrop-blur-sm",
+                  "font-mono font-bold bg-yellow-400 text-black border-2 border-black shadow-sm",
                   compact
                     ? "text-[9px] px-1.5 py-px leading-tight"
                     : "text-[10px] sm:text-xs px-2 py-0.5 sm:px-2.5 sm:py-1",
@@ -282,9 +292,15 @@ export function CarCard({ car, compact, showBadge, badgeText, badgeVariant = "de
       </div>
 
       {/* Content */}
-      <CardContent className={cn("flex flex-col flex-1", compact ? "p-2 sm:p-2.5 lg:p-3" : "p-3 sm:p-4")}>
+      <CardContent
+        className={cn(
+          "flex flex-col flex-1",
+          compact ? "p-2 sm:p-2.5 lg:p-3" : "p-3 sm:p-4",
+          minimalListing && "pt-2",
+        )}
+      >
         {/* Car Name */}
-        <div className={cn(compact ? "mb-1.5 sm:mb-2" : "mb-2 sm:mb-3")}>
+        <div className={cn(compact ? "mb-1.5 sm:mb-2" : "mb-2 sm:mb-3", minimalListing && "mb-1 sm:mb-1.5")}>
           <h3
             className={cn(
               "font-semibold text-foreground line-clamp-2 sm:line-clamp-1",
@@ -296,7 +312,7 @@ export function CarCard({ car, compact, showBadge, badgeText, badgeVariant = "de
         </div>
 
         {/* Price */}
-        <div className={cn(compact ? "mb-1.5" : "mb-2")}>
+        <div className={cn(compact ? "mb-1.5" : "mb-2", minimalListing && "mb-0")}>
           <span
             className={cn(
               "font-bold text-foreground leading-tight block",
@@ -307,56 +323,60 @@ export function CarCard({ car, compact, showBadge, badgeText, badgeVariant = "de
           </span>
         </div>
 
-        {/* Mileage · fuel · condition — always shown; values parsed from description when API fields are empty */}
-        <div
-          className={cn(
-            "flex flex-wrap items-center text-muted-foreground",
-            compact
-              ? "gap-x-2 gap-y-1 mb-1.5 text-[9px] sm:text-[10px]"
-              : "gap-x-2 sm:gap-x-3 gap-y-1 mb-2 sm:mb-3 text-[10px] sm:text-xs",
-          )}
-        >
-          <div className="flex items-center gap-0.5 min-w-0 max-w-full">
-            <Gauge className={cn("shrink-0", compact ? "w-2.5 h-2.5" : "w-3 h-3 sm:w-3.5 sm:h-3.5")} />
-            <span className="truncate">{mileageDisplay}</span>
-          </div>
-          <div className="flex items-center gap-0.5 min-w-0 max-w-full">
-            <Fuel className={cn("shrink-0", compact ? "w-2.5 h-2.5" : "w-3 h-3 sm:w-3.5 sm:h-3.5")} />
-            <span className="truncate">{fuelDisplay}</span>
-          </div>
-          <div className="flex items-center gap-0.5 min-w-0 max-w-full">
-            <Tag className={cn("shrink-0", compact ? "w-2.5 h-2.5" : "w-3 h-3 sm:w-3.5 sm:h-3.5")} />
-            <span className="truncate">{conditionDisplay}</span>
-          </div>
-        </div>
+        {!minimalListing && (
+          <>
+            {/* Mileage · fuel · condition — always shown; values parsed from description when API fields are empty */}
+            <div
+              className={cn(
+                "flex flex-wrap items-center text-muted-foreground",
+                compact
+                  ? "gap-x-2 gap-y-1 mb-1.5 text-[9px] sm:text-[10px]"
+                  : "gap-x-2 sm:gap-x-3 gap-y-1 mb-2 sm:mb-3 text-[10px] sm:text-xs",
+              )}
+            >
+              <div className="flex items-center gap-0.5 min-w-0 max-w-full">
+                <Gauge className={cn("shrink-0", compact ? "w-2.5 h-2.5" : "w-3 h-3 sm:w-3.5 sm:h-3.5")} />
+                <span className="truncate">{mileageDisplay}</span>
+              </div>
+              <div className="flex items-center gap-0.5 min-w-0 max-w-full">
+                <Fuel className={cn("shrink-0", compact ? "w-2.5 h-2.5" : "w-3 h-3 sm:w-3.5 sm:h-3.5")} />
+                <span className="truncate">{fuelDisplay}</span>
+              </div>
+              <div className="flex items-center gap-0.5 min-w-0 max-w-full">
+                <Tag className={cn("shrink-0", compact ? "w-2.5 h-2.5" : "w-3 h-3 sm:w-3.5 sm:h-3.5")} />
+                <span className="truncate">{conditionDisplay}</span>
+              </div>
+            </div>
 
-        {/* Extra detail from description (transmission, engine, color, etc.) */}
-        {cleanSummary ? (
-          <p
-            className={cn(
-              "text-muted-foreground line-clamp-2 leading-snug",
-              compact ? "text-[9px] sm:text-[10px] mb-2" : "text-xs mb-4",
+            {/* Extra detail from description (transmission, engine, color, etc.) */}
+            {cleanSummary ? (
+              <p
+                className={cn(
+                  "text-muted-foreground line-clamp-2 leading-snug",
+                  compact ? "text-[9px] sm:text-[10px] mb-2" : "text-xs mb-4",
+                )}
+              >
+                {cleanSummary}
+              </p>
+            ) : (
+              <div className={cn(compact ? "mb-1" : "mb-2")} aria-hidden />
             )}
-          >
-            {cleanSummary}
-          </p>
-        ) : (
-          <div className={cn(compact ? "mb-1" : "mb-2")} aria-hidden />
+
+            {/* CTA Button */}
+            <div className={cn("mt-auto", compact ? "pt-2 sm:pt-2.5" : "pt-3 sm:pt-4")}>
+              <Button
+                onClick={() => window.location.href = `/car/${car.id}`}
+                className={cn(
+                  "w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-full font-medium",
+                  compact ? "h-7 sm:h-8 text-[10px] sm:text-xs px-2" : "h-9 text-xs sm:text-sm",
+                )}
+                disabled={isSoldOut}
+              >
+                {isSoldOut ? "Sold Out" : "Shop Now"}
+              </Button>
+            </div>
+          </>
         )}
-
-        {/* CTA Button */}
-        <div className={cn("mt-auto", compact ? "pt-2 sm:pt-2.5" : "pt-3 sm:pt-4")}>
-          <Button 
-            onClick={() => window.location.href = `/car/${car.id}`}
-            className={cn(
-              "w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-full font-medium",
-              compact ? "h-7 sm:h-8 text-[10px] sm:text-xs px-2" : "h-9 text-xs sm:text-sm",
-            )}
-            disabled={isSoldOut}
-          >
-            {isSoldOut ? "Sold Out" : "Shop Now"}
-          </Button>
-        </div>
       </CardContent>
     </Card>
     </div>

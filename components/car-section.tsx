@@ -4,6 +4,7 @@ import { CarCard } from "@/components/car-card"
 import { Button } from "@/components/ui/button"
 import type { Car } from "@/lib/cars-data"
 import { useScrollAnimation } from "@/hooks/use-scroll-animation"
+import { cn } from "@/lib/utils"
 
 interface CarSectionProps {
   id: string
@@ -16,6 +17,10 @@ interface CarSectionProps {
   badgeVariant?: "default" | "secondary" | "destructive" | "outline"
   hideSeeMore?: boolean
   seeMoreHref?: string
+  /** Orange accent band (#FF6A00) for sections e.g. Coming Soon preview */
+  variant?: "default" | "dark"
+  /** Name + price only on cards; no Shop Now or spec rows */
+  minimalCarCards?: boolean
 }
 
 export function CarSection({ 
@@ -29,12 +34,21 @@ export function CarSection({
   badgeVariant,
   hideSeeMore,
   seeMoreHref = "/shop",
+  variant = "default",
+  minimalCarCards = false,
 }: CarSectionProps) {
   const displayedCars = maxCars ? cars.slice(0, maxCars) : cars
   const { ref: headerRef, isVisible: headerVisible } = useScrollAnimation({ threshold: 0.2 })
+  const isDark = variant === "dark"
 
   return (
-    <section id={id} className="py-12 lg:py-20 scroll-mt-20 lg:scroll-mt-24">
+    <section
+      id={id}
+      className={cn(
+        "py-12 lg:py-20 scroll-mt-20 lg:scroll-mt-24",
+        isDark && "bg-[#FF6A00] border-t border-white/15",
+      )}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div
@@ -45,11 +59,21 @@ export function CarSection({
               : "opacity-0 translate-y-8"
           }`}
         >
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-foreground">
+          <h2
+            className={cn(
+              "text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight",
+              isDark ? "text-white" : "text-foreground",
+            )}
+          >
             {title}
           </h2>
           {subtitle && (
-            <p className="mt-2 text-base text-muted-foreground max-w-2xl">
+            <p
+              className={cn(
+                "mt-2 text-base max-w-2xl",
+                isDark ? "text-white/85" : "text-muted-foreground",
+              )}
+            >
               {subtitle}
             </p>
           )}
@@ -66,6 +90,7 @@ export function CarSection({
               badgeText={badgeText}
               badgeVariant={badgeVariant}
               delay={index * 100}
+              minimalListing={minimalCarCards}
             />
           ))}
         </div>
@@ -74,9 +99,14 @@ export function CarSection({
         {!hideSeeMore && (
           <div className="mt-10 text-center">
             <a href={seeMoreHref}>
-              <Button 
-                variant="outline" 
-                className="rounded-full px-8 h-11 border-primary text-primary hover:bg-primary hover:text-primary-foreground bg-transparent"
+              <Button
+                variant="outline"
+                className={cn(
+                  "rounded-full px-8 h-11 bg-transparent",
+                  isDark
+                    ? "border-white/50 text-white hover:bg-white hover:text-[#FF6A00] hover:border-white"
+                    : "border-primary text-primary hover:bg-primary hover:text-primary-foreground",
+                )}
               >
                 See More {title}
               </Button>

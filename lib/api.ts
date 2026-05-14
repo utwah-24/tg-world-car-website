@@ -29,11 +29,15 @@ interface RawCarFromAPI {
   car_mileage?: string | number
   /** `"registered"` | `"unregistered"` from Laravel API */
   registration?: string
+  /** Dedicated plate/registration number field from the API */
+  registration_number?: string | null
   category?: string
   /** Chassis / VIN — may come as `chassis`, `chasis`, or `chassis_no` from the API */
   chassis?: string
   chasis?: string
   chassis_no?: string
+  /** How many units are available; null means the field was not set (older records) */
+  total_available?: number | null
   created_at: string
   updated_at: string
 }
@@ -76,6 +80,8 @@ export interface CarFromAPI {
   registrationNumber?: string
   /** ISO date string from `arrival_date` — present when `is_coming_soon === "set"` */
   arrivalDate?: string
+  /** Effective stock count; null means pre-cutoff (treat as 1) */
+  totalAvailable?: number | null
 }
 
 /** Map Laravel `registration` string to boolean; unknown/missing → undefined (no UI badge). */
@@ -126,10 +132,20 @@ function transformCarData(rawCar: RawCarFromAPI): CarFromAPI {
   // Remove year prefix from name if present
   const name = carName.replace(/^\d{4}\s+/, '')
   
-  // Determine category — sold status comes ONLY from is_sold field
+  // ── total_available / sold-out logic ──────────────────────────────────────
+  // Cars uploaded on/after this date already have total_available set by the API.
+  // Cars uploaded before it did not have the field; treat their stock as 1 (available).
+  const TOTAL_AVAILABLE_CUTOFF = new Date("2026-05-13T14:32:40.000000Z")
+  const carCreatedAt = new Date(rawCar.created_at)
+  const rawTotal = rawCar.total_available ?? null
+  // Effective stock: for pre-cutoff cars with null total_available → 1; otherwise use the API value
+  const effectiveTotalAvailable: number | null =
+    rawTotal === null && carCreatedAt < TOTAL_AVAILABLE_CUTOFF ? 1 : rawTotal
+
+  // Determine category — sold status comes from is_sold field OR total_available reaching 0
   let category: "top-selling" | "coming-soon" | "sold-out" = "top-selling"
 
-  if (rawCar.is_sold === "sold") {
+  if (rawCar.is_sold === "sold" || effectiveTotalAvailable === 0) {
     category = "sold-out"
   } else if (rawCar.is_coming_soon === "set") {
     category = "coming-soon"
@@ -173,8 +189,10 @@ function transformCarData(rawCar: RawCarFromAPI): CarFromAPI {
   const chassis = chassisFromApi || chassisFromDesc || undefined
   
   const registered = registrationFromApi(rawCar.registration)
-  // If the registration value is neither "registered" nor "unregistered", treat it as an actual plate number
+  // Prefer the dedicated registration_number field; fall back to extracting a plate from registration
   const registrationNumber = (() => {
+    if (rawCar.registration_number && rawCar.registration_number.trim())
+      return rawCar.registration_number.trim()
     if (!rawCar.registration) return undefined
     const v = rawCar.registration.trim().toLowerCase()
     if (v === "registered" || v === "unregistered" || v === "") return undefined
@@ -210,6 +228,7 @@ function transformCarData(rawCar: RawCarFromAPI): CarFromAPI {
     chassis,
     description,
     createdAt: rawCar.created_at,
+    totalAvailable: effectiveTotalAvailable,
     arrivalDate: (() => {
       const d = rawCar.arrival_date
       if (!d || d.startsWith("0000")) return undefined
@@ -223,8 +242,10 @@ function transformCarData(rawCar: RawCarFromAPI): CarFromAPI {
  */
 export async function fetchCars(): Promise<CarFromAPI[]> {
   try {
+    // next: { revalidate: 0 } keeps data fresh while still allowing Next.js to
+    // deduplicate simultaneous calls within the same server render (unlike 'no-store').
     const response = await fetch(`${API_BASE_URL}/api/cars`, {
-      cache: 'no-store',
+      next: { revalidate: 0 },
       headers: {
         'Accept': 'application/json',
       }
@@ -293,7 +314,7 @@ export async function fetchCarsByCategory(category: "top-selling" | "coming-soon
 export async function fetchThirdPartyCars(): Promise<CarFromAPI[]> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/third-party`, {
-      cache: 'no-store',
+      next: { revalidate: 0 },
       headers: {
         'Accept': 'application/json',
       }
@@ -354,7 +375,7 @@ export interface ContentVideo {
 export async function fetchContent(): Promise<ContentVideo[]> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/content`, {
-      cache: 'no-store',
+      next: { revalidate: 0 },
       headers: {
         'Accept': 'application/json',
       }
@@ -456,7 +477,7 @@ export interface CompanyLogo {
 export async function fetchCompanyLogos(): Promise<CompanyLogo[]> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/companies`, {
-      cache: 'no-store',
+      next: { revalidate: 0 },
       headers: {
         Accept: 'application/json',
       },

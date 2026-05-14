@@ -32,6 +32,8 @@ export interface Car {
   registrationNumber?: string
   /** ISO date string — only set when car has `is_coming_soon === "set"` and `arrival_date` from the API */
   arrivalDate?: string
+  /** Effective stock count; null = pre-cutoff (treat as 1); 0 = sold out */
+  totalAvailable?: number | null
 }
 
 /** Third-party: `condition` from the main API and/or `[THIRD_PARTY]` from the partner feed */

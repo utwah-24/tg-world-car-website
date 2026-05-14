@@ -36,42 +36,15 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, all
     return Array.from(set)
   }, [allCars])
 
-  /** New listings: stay in this section for 30 days after upload (from API created_at) */
+  /** New listings: stay in this section for 30 days after upload (from API created_at).
+   *  Coming-soon cars (arrivalDate set) are excluded — they belong to the Coming Soon page. */
   const latestCars = useMemo(() => {
-    const now = Date.now()
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const windowMs = 30 * 24 * 60 * 60 * 1000
+    // Only cars that were recently uploaded, are not coming-soon, and are not sold
+    const recent = filterLatestCars(allCars).filter(
+      (car) => !car.arrivalDate && car.category !== "sold-out",
+    )
 
-    // Coming-soon cars whose arrival_date has passed but only within the last 30 days
-    const arrived = allCars.filter((car) => {
-      if (!car.arrivalDate) return false
-      const d = new Date(car.arrivalDate)
-      d.setHours(0, 0, 0, 0)
-      const ts = d.getTime()
-      return ts <= today.getTime() && now - ts <= windowMs
-    })
-
-    // Regular "uploaded within last 30 days" cars
-    const recent = filterLatestCars(allCars)
-
-    // Merge, deduplicate, then sort newest-first using createdAt (or arrivalDate as fallback)
-    const seen = new Set<string>()
-    const merged: typeof allCars = []
-    for (const car of [...arrived, ...recent]) {
-      if (!seen.has(car.id)) {
-        seen.add(car.id)
-        merged.push(car)
-      }
-    }
-
-    merged.sort((a, b) => {
-      const ta = a.createdAt ? Date.parse(a.createdAt) : (a.arrivalDate ? Date.parse(a.arrivalDate) : 0)
-      const tb = b.createdAt ? Date.parse(b.createdAt) : (b.arrivalDate ? Date.parse(b.arrivalDate) : 0)
-      return tb - ta
-    })
-
-    return merged.slice(0, 5) // one row at 5-column desktop grid
+    return recent.slice(0, 5) // one row at 5-column desktop grid
   }, [allCars])
 
   const hasFilters = !!searchQuery.trim() || !!selectedCompany || !!selectedBrand
@@ -157,6 +130,23 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, all
       ) : (
         // Show all category sections
         <>
+          {/* Coming Soon — first 5 cars teaser above Latest */}
+          {comingSoonCars.length > 0 && (
+            <CarSection
+              id="coming-soon-preview"
+              title="Coming Soon"
+              subtitle="Cars arriving soon — reserve yours before they land."
+              cars={comingSoonCars}
+              maxCars={5}
+              showBadge
+              badgeText="Coming Soon"
+              badgeVariant="default"
+              seeMoreHref="/coming-soon"
+              variant="dark"
+              minimalCarCards
+            />
+          )}
+
           {/* Latest cars — anchor #latest always exists for header nav */}
           {latestCars.length > 0 ? (
             <CarSection
