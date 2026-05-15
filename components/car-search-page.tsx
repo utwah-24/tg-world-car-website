@@ -29,12 +29,19 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, all
     return [...topSellingCars, ...comingSoonCars, ...soldOutCars]
   }, [topSellingCars, comingSoonCars, soldOutCars])
 
-  // Companies always derived from the FULL car list directly from the DB
+  // Only truly available cars: exclude sold-out and coming-soon for counts/company list
+  const availableForBrowse = useMemo(() => {
+    return allCars.filter(
+      (car) => car.category !== "sold-out" && car.category !== "coming-soon",
+    )
+  }, [allCars])
+
+  // Companies derived only from available cars so sold-out-only brands don't appear
   const companies = useMemo(() => {
     const set = new Set<string>()
-    allCars.forEach(car => { if (car.company) set.add(car.company) })
+    availableForBrowse.forEach(car => { if (car.company) set.add(car.company) })
     return Array.from(set)
-  }, [allCars])
+  }, [availableForBrowse])
 
   /** New listings: stay in this section for 30 days after upload (from API created_at).
    *  Coming-soon cars (arrivalDate set) are excluded — they belong to the Coming Soon page. */
@@ -100,7 +107,7 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, all
       <InfoCards
         companies={companies}
         companyLogos={companyLogos}
-        cars={allCars}
+        cars={availableForBrowse}
         collapseCompanyGrid
       />
       
@@ -144,6 +151,7 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, all
               seeMoreHref="/coming-soon"
               variant="dark"
               minimalCarCards
+              mobileMaxCars={4}
             />
           )}
 
@@ -158,6 +166,7 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, all
               badgeText="Just Added"
               badgeVariant="default"
               seeMoreHref="/shop?latest=1"
+              mobileMaxCars={4}
             />
           ) : (
             <section id="latest" className="scroll-mt-20 lg:scroll-mt-24 py-10 lg:py-12" aria-label="Latest cars">
@@ -177,6 +186,7 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, all
             showBadge
             badgeText="Best Seller"
             badgeVariant="default"
+            mobileMaxCars={4}
           />
 
           {/* Content — #content anchor always present for header nav */}

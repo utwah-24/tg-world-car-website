@@ -647,25 +647,27 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
         </SheetContent>
       </Sheet>
 
-      <Button
+      {/* Mobile filters icon — sits in the header bar just left of the hamburger */}
+      <button
         type="button"
-        variant="default"
-        size="lg"
         onClick={() => setMobileFiltersOpen(true)}
-        className="lg:hidden fixed right-4 z-40 h-12 rounded-full pl-4 pr-5 shadow-lg gap-2 pointer-events-auto top-[calc(4.5rem+env(safe-area-inset-top,0px))]"
+        className="lg:hidden fixed z-[60] pointer-events-auto right-14 top-[calc(env(safe-area-inset-top,0px)+0.5rem)] h-10 w-10 flex items-center justify-center rounded-full"
         aria-haspopup="dialog"
         aria-expanded={mobileFiltersOpen}
         aria-controls="shop-filters-sheet"
+        aria-label="Open filters"
       >
-        <SlidersHorizontal className="h-5 w-5 shrink-0" aria-hidden />
-        <span className="font-semibold">Filters</span>
+        <SlidersHorizontal className="h-5 w-5 shrink-0 text-black" aria-hidden />
         {hasActiveFilters && (
-          <span className="h-2 w-2 shrink-0 rounded-full bg-primary-foreground shadow-sm" aria-hidden />
+          <span
+            className="absolute top-1.5 right-1.5 h-2.5 w-2.5 rounded-full bg-primary border-2 border-white"
+            aria-hidden
+          />
         )}
-      </Button>
+      </button>
 
       {/* Mobile / tablet: hero banner card */}
-      <div className="mb-6 mt-4 shrink-0 px-4 pr-[7.5rem] sm:px-6 lg:hidden">
+      <div className="mb-6 mt-4 shrink-0 px-4 sm:px-6 lg:hidden">
         <div className="animate-fade-in-up">
           <div className="relative overflow-hidden rounded-2xl bg-black" style={{ height: "140px" }}>
             {/* Right: car image */}

@@ -18,6 +18,7 @@ interface CompanyLogo {
 interface CarItem {
   company?: string
   type?: string
+  category?: string
 }
 
 interface InfoCardsProps {
@@ -102,17 +103,20 @@ export function InfoCards({
     logoMap.set(company.trim().toLowerCase(), logoUrl)
   })
 
+  // Only count available cars — exclude sold-out and coming-soon
+  const availableCars = cars.filter((car) => car.category !== "sold-out" && car.category !== "coming-soon")
+
   const companyCountMap = new Map<string, number>()
-  cars.forEach((car) => {
+  availableCars.forEach((car) => {
     if (car.company) {
       const key = car.company.trim().toLowerCase()
       companyCountMap.set(key, (companyCountMap.get(key) ?? 0) + 1)
     }
   })
 
-  const canonicalTypes = orderedCanonicalTypesInInventory(cars)
+  const canonicalTypes = orderedCanonicalTypesInInventory(availableCars)
   const typeCountMap = new Map<string, number>()
-  cars.forEach((car) => {
+  availableCars.forEach((car) => {
     const key = normalizeCarType(car.type || "")
     if (key) typeCountMap.set(key, (typeCountMap.get(key) ?? 0) + 1)
   })

@@ -21,6 +21,8 @@ interface CarSectionProps {
   variant?: "default" | "dark"
   /** Name + price only on cards; no Shop Now or spec rows */
   minimalCarCards?: boolean
+  /** Hide cards beyond this index on mobile (< sm). Others still render on sm+. */
+  mobileMaxCars?: number
 }
 
 export function CarSection({ 
@@ -36,6 +38,7 @@ export function CarSection({
   seeMoreHref = "/shop",
   variant = "default",
   minimalCarCards = false,
+  mobileMaxCars,
 }: CarSectionProps) {
   const displayedCars = maxCars ? cars.slice(0, maxCars) : cars
   const { ref: headerRef, isVisible: headerVisible } = useScrollAnimation({ threshold: 0.2 })
@@ -82,16 +85,24 @@ export function CarSection({
         {/* Cars Grid — up to 5 columns on large screens with compact cards */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3 lg:gap-3">
           {displayedCars.map((car, index) => (
-            <CarCard 
-              key={car.id} 
-              car={car} 
-              compact
-              showBadge={showBadge}
-              badgeText={badgeText}
-              badgeVariant={badgeVariant}
-              delay={index * 100}
-              minimalListing={minimalCarCards}
-            />
+            <div
+              key={car.id}
+              className={cn(
+                mobileMaxCars !== undefined && index >= mobileMaxCars
+                  ? "hidden sm:block"
+                  : undefined,
+              )}
+            >
+              <CarCard
+                car={car}
+                compact
+                showBadge={showBadge}
+                badgeText={badgeText}
+                badgeVariant={badgeVariant}
+                delay={index * 100}
+                minimalListing={minimalCarCards}
+              />
+            </div>
           ))}
         </div>
 

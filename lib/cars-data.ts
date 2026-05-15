@@ -281,10 +281,13 @@ export const getSoldOutCars = async (): Promise<Car[]> => {
 // Function to get all cars from API or fallback to static data
 export const getAllCars = async (): Promise<Car[]> => {
   try {
-    const [apiCars, thirdPartyCars, orderedKeys] = await Promise.all([
-      fetchCars(),
-      fetchThirdPartyCars(),
-      fetchOrderedCarKeys(),
+    // Fetch ordered keys first so transformCarData can mark ordered single-unit
+    // cars as sold-out at the source, regardless of how the name is stored in orders.
+    const orderedKeys = await fetchOrderedCarKeys()
+
+    const [apiCars, thirdPartyCars] = await Promise.all([
+      fetchCars(orderedKeys),
+      fetchThirdPartyCars(orderedKeys),
     ])
 
     // Combine and deduplicate cars by ID
@@ -301,11 +304,7 @@ export const getAllCars = async (): Promise<Car[]> => {
       carMap.set(car.id, car)
     })
 
-    // Soft-delete: remove any car that has an active order
-    const isOrdered = (car: Car) =>
-      orderedKeys.has(normalizeOrderKey(car.name, car.year))
-
-    const allCars = Array.from(carMap.values()).filter(car => !isOrdered(car))
+    const allCars = Array.from(carMap.values())
 
     if (allCars.length > 0) {
       return allCars

@@ -100,9 +100,11 @@ function registrationFromApi(value: string | undefined | null): boolean | undefi
 }
 
 /**
- * Transform raw API data to our app format
+ * Transform raw API data to our app format.
+ * Pass `orderedKeys` (from fetchOrderedCarKeys) to mark ordered cars whose last
+ * unit has been reserved as sold-out at the data layer.
  */
-function transformCarData(rawCar: RawCarFromAPI): CarFromAPI {
+function transformCarData(rawCar: RawCarFromAPI, orderedKeys?: Set<string>): CarFromAPI {
   // Safety check: ensure car_pic is an array
   const carPics = Array.isArray(rawCar.car_pic) ? rawCar.car_pic : []
   
@@ -145,8 +147,21 @@ function transformCarData(rawCar: RawCarFromAPI): CarFromAPI {
   const carCreatedAt = new Date(rawCar.created_at)
   const rawTotal = rawCar.total_available ?? null
   // Effective stock: for pre-cutoff cars with null total_available → 1; otherwise use the API value
-  const effectiveTotalAvailable: number | null =
+  let effectiveTotalAvailable: number | null =
     rawTotal === null && carCreatedAt < TOTAL_AVAILABLE_CUTOFF ? 1 : rawTotal
+
+  // If this car has an active order AND only 1 unit was available, it is now effectively 0
+  if (orderedKeys && effectiveTotalAvailable === 1) {
+    // Primary: match by car_id (most reliable)
+    const isOrderedById = orderedKeys.has(`id:${rawCar.car_id}`)
+    // Fallback: name-based matching for older orders without car_id
+    const keyFullName = normalizeOrderKey(carName)
+    const keyStrippedName = normalizeOrderKey(name, year)
+    const isOrderedByName = orderedKeys.has(keyFullName) || orderedKeys.has(keyStrippedName)
+    if (isOrderedById || isOrderedByName) {
+      effectiveTotalAvailable = 0
+    }
+  }
 
   // Determine category — sold status comes from is_sold field OR total_available reaching 0
   let category: "top-selling" | "coming-soon" | "sold-out" = "top-selling"
@@ -249,7 +264,7 @@ function transformCarData(rawCar: RawCarFromAPI): CarFromAPI {
 /**
  * Fetch all cars from the API
  */
-export async function fetchCars(): Promise<CarFromAPI[]> {
+export async function fetchCars(orderedKeys?: Set<string>): Promise<CarFromAPI[]> {
   try {
     // next: { revalidate: 0 } keeps data fresh while still allowing Next.js to
     // deduplicate simultaneous calls within the same server render (unlike 'no-store').
@@ -267,7 +282,7 @@ export async function fetchCars(): Promise<CarFromAPI[]> {
     const apiResponse: APIResponse = await response.json()
     
     // Transform the raw API data to our app format
-    const transformedCars = apiResponse.data.map(transformCarData)
+    const transformedCars = apiResponse.data.map(rawCar => transformCarData(rawCar, orderedKeys))
     
     console.log(`✅ Successfully fetched ${transformedCars.length} cars from API`)
     return transformedCars
@@ -320,7 +335,7 @@ export async function fetchCarsByCategory(category: "top-selling" | "coming-soon
 /**
  * Fetch third-party cars from the API
  */
-export async function fetchThirdPartyCars(): Promise<CarFromAPI[]> {
+export async function fetchThirdPartyCars(orderedKeys?: Set<string>): Promise<CarFromAPI[]> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/third-party`, {
       next: { revalidate: 0 },
@@ -338,7 +353,7 @@ export async function fetchThirdPartyCars(): Promise<CarFromAPI[]> {
     
     // Transform the raw API data to our app format
     const transformedCars = apiResponse.data.map(rawCar => {
-      const transformed = transformCarData(rawCar)
+      const transformed = transformCarData(rawCar, orderedKeys)
       // Mark as third-party and add identifier to description
       return {
         ...transformed,
@@ -417,6 +432,7 @@ export async function fetchContent(): Promise<ContentVideo[]> {
 
 interface RawOrder {
   id: number
+  car_id?: number | null
   car_name: string
   year?: string | number | null
   status?: boolean | null
@@ -454,8 +470,14 @@ export async function fetchOrderedCarKeys(): Promise<Set<string>> {
       const json = await res.json()
       const orders: RawOrder[] = Array.isArray(json?.data) ? json.data : []
       for (const o of orders) {
+        // Primary: match by car_id when the order has it
+        if (o.car_id != null) {
+          _orderedKeysAccumulator.add(`id:${o.car_id}`)
+        }
+        // Fallback: name-based matching for orders without car_id
         if (o.car_name) {
           _orderedKeysAccumulator.add(normalizeOrderKey(o.car_name, o.year))
+          _orderedKeysAccumulator.add(normalizeOrderKey(o.car_name))
         }
       }
     }
