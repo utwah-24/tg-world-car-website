@@ -157,7 +157,7 @@ export function CheckoutContent({ car }: CheckoutContentProps) {
           {/* Left Column - Forms */}
           <div className="lg:col-span-2 space-y-6">
             {/* Bank Details */}
-            <div className="bg-primary/5 rounded-2xl p-6 border-2 border-primary/30 animate-fade-in-up" style={{ animationDelay: "0.15s", opacity: 0, animationFillMode: "forwards" }}>
+            <div className="bg-card rounded-none p-6 border-2 border-black animate-fade-in-up shadow-[6px_6px_0px_0px_#000]" style={{ animationDelay: "0.15s", opacity: 0, animationFillMode: "forwards" }}>
               <h2 className="text-xl font-bold mb-1 text-primary">Bank Details</h2>
               <p className="text-sm text-muted-foreground mb-5">Please use the details below to make your payment before submitting the order.</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">

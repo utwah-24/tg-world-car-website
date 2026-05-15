@@ -4,8 +4,9 @@ import { useState } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ChevronLeft, ChevronRight, MapPin, Star, Shield, Fuel, Gauge, Calendar, Car as CarIcon, DollarSign, Cog, Palette, Settings, Users, Check } from "lucide-react"
+import { ChevronLeft, ChevronRight, MapPin, Fuel, Gauge, Calendar, Car as CarIcon, DollarSign, Cog, Palette, Settings, Users, Check, Link, CheckCheck } from "lucide-react"
 import type { Car } from "@/lib/cars-data"
+import { isThirdPartyCar } from "@/lib/cars-data"
 
 interface CarDetailsContentProps {
   car: Car
@@ -13,8 +14,17 @@ interface CarDetailsContentProps {
 
 export function CarDetailsContent({ car }: CarDetailsContentProps) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
+  const [copied, setCopied] = useState(false)
   const images = car.images && car.images.length > 0 ? car.images : [car.image]
   const yearPrefix = car.year ? `${car.year} ` : ""
+  const isThirdParty = isThirdPartyCar(car)
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2500)
+    })
+  }
 
   const nextImage = () => {
     setSelectedImageIndex((prev) => (prev + 1) % images.length)
@@ -45,15 +55,57 @@ export function CarDetailsContent({ car }: CarDetailsContentProps) {
                   <h1 className="text-3xl font-bold text-foreground">
                     {yearPrefix}{car.name}
                   </h1>
-                  <div className="flex items-center gap-3 mt-2">
-                    <div className="flex items-center gap-1">
-                      <MapPin className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">Dar es Salaam</span>
-                    </div>
-                    <Badge className="bg-primary text-primary-foreground">
-                      <Shield className="w-3 h-3 mr-1" />
-                      Verified
-                    </Badge>
+                </div>
+                {/* Copy Link button */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCopyLink}
+                  className="shrink-0 ml-4 rounded-full gap-1.5 text-xs border-border"
+                >
+                  {copied
+                    ? <><CheckCheck className="w-3.5 h-3.5 text-emerald-500" /> Copied!</>
+                    : <><Link className="w-3.5 h-3.5" /> Copy Link</>
+                  }
+                </Button>
+              </div>
+              <div className="flex items-start mb-2">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                    {/* Location */}
+                    {car.location && (
+                      <div className="flex items-center gap-1">
+                        <MapPin className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">{car.location}</span>
+                      </div>
+                    )}
+
+                    {/* Third Party */}
+                    {isThirdParty && (
+                      <Badge className="bg-purple-600 text-white text-xs font-medium">
+                        Third Party
+                      </Badge>
+                    )}
+
+                    {/* Registered / Unregistered */}
+                    {car.registered !== undefined && (
+                      <Badge
+                        className={
+                          car.registered
+                            ? "bg-emerald-600 text-white text-xs font-medium"
+                            : "bg-background text-foreground border border-border text-xs font-medium"
+                        }
+                      >
+                        {car.registered ? "Registered" : "Unregistered"}
+                      </Badge>
+                    )}
+
+                    {/* Registration plate number */}
+                    {car.registrationNumber && (
+                      <Badge className="font-mono font-bold bg-yellow-400 text-black border-2 border-black text-xs">
+                        {car.registrationNumber}
+                      </Badge>
+                    )}
                   </div>
                 </div>
               </div>

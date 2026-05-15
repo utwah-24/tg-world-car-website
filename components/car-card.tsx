@@ -165,29 +165,28 @@ export function CarCard({
         />
         
         {/* Location (top-left) & registration tag (top-right) */}
-        <div
-          className={cn(
-            "absolute flex flex-wrap",
-            compact
-              ? "top-1.5 left-1.5 gap-1"
-              : "top-2 left-2 sm:top-3 sm:left-3 gap-1.5 sm:gap-2",
-          )}
-        >
+        {car.location && (
           <div
             className={cn(
-              "flex items-center bg-foreground/80 backdrop-blur-sm text-white rounded-full",
+              "absolute flex flex-wrap",
               compact
-                ? "gap-0.5 text-[9px] px-1 py-0.5"
-                : "gap-1 sm:gap-1.5 text-[10px] sm:text-xs px-1.5 py-1 sm:px-2.5 sm:py-1.5",
+                ? "top-1.5 left-1.5 gap-1"
+                : "top-2 left-2 sm:top-3 sm:left-3 gap-1.5 sm:gap-2",
             )}
           >
-            <MapPin className={cn(compact ? "w-2 h-2" : "w-2.5 h-2.5 sm:w-3 sm:h-3")} />
-            <span className={cn(compact ? "hidden min-[480px]:inline" : "hidden sm:inline")}>
-              Dar es Salaam
-            </span>
-            <span className={cn(compact ? "min-[480px]:hidden" : "sm:hidden")}>DSM</span>
+            <div
+              className={cn(
+                "flex items-center bg-foreground/80 backdrop-blur-sm text-white rounded-full",
+                compact
+                  ? "gap-0.5 text-[9px] px-1 py-0.5"
+                  : "gap-1 sm:gap-1.5 text-[10px] sm:text-xs px-1.5 py-1 sm:px-2.5 sm:py-1.5",
+              )}
+            >
+              <MapPin className={cn(compact ? "w-2 h-2" : "w-2.5 h-2.5 sm:w-3 sm:h-3")} />
+              <span>{car.location}</span>
+            </div>
           </div>
-        </div>
+        )}
         
         {registration !== undefined && (
           <div
@@ -278,7 +277,7 @@ export function CarCard({
             {isComingSoon && !isThirdParty && (
               <Badge
                 className={cn(
-                  "font-medium bg-primary text-primary-foreground",
+                  "font-medium bg-[#0A1628] text-white",
                   compact
                     ? "text-[9px] px-1.5 py-px leading-tight"
                     : "text-[10px] sm:text-xs px-2 py-0.5 sm:px-2.5 sm:py-1",

@@ -31,6 +31,10 @@ interface RawCarFromAPI {
   registration?: string
   /** Dedicated plate/registration number field from the API */
   registration_number?: string | null
+  /** true = car is in Dar es Salaam; false = use `location` field */
+  in_dar?: boolean | null
+  /** Free-text location when in_dar is false */
+  location?: string | null
   category?: string
   /** Chassis / VIN — may come as `chassis`, `chasis`, or `chassis_no` from the API */
   chassis?: string
@@ -78,6 +82,8 @@ export interface CarFromAPI {
   registered?: boolean
   /** Actual plate / registration number when API provides a value that isn't just "registered"/"unregistered" */
   registrationNumber?: string
+  /** Display location string — "Dar es Salaam" when in_dar===true, otherwise the location field value */
+  location?: string
   /** ISO date string from `arrival_date` — present when `is_coming_soon === "set"` */
   arrivalDate?: string
   /** Effective stock count; null means pre-cutoff (treat as 1) */
@@ -229,6 +235,9 @@ function transformCarData(rawCar: RawCarFromAPI): CarFromAPI {
     description,
     createdAt: rawCar.created_at,
     totalAvailable: effectiveTotalAvailable,
+    location: rawCar.in_dar === true
+      ? "Dar es Salaam"
+      : (rawCar.location?.trim() || undefined),
     arrivalDate: (() => {
       const d = rawCar.arrival_date
       if (!d || d.startsWith("0000")) return undefined

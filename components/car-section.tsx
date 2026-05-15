@@ -46,7 +46,7 @@ export function CarSection({
       id={id}
       className={cn(
         "py-12 lg:py-20 scroll-mt-20 lg:scroll-mt-24",
-        isDark && "bg-[#FF6A00] border-t border-white/15",
+        isDark && "bg-[#0A1628] border-t border-white/10",
       )}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -104,7 +104,7 @@ export function CarSection({
                 className={cn(
                   "rounded-full px-8 h-11 bg-transparent",
                   isDark
-                    ? "border-white/50 text-white hover:bg-white hover:text-[#FF6A00] hover:border-white"
+                    ? "border-white/50 text-white hover:bg-white hover:text-[#0A1628] hover:border-white"
                     : "border-primary text-primary hover:bg-primary hover:text-primary-foreground",
                 )}
               >
