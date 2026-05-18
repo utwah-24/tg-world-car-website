@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 const HOME_SLOTS: { src: string; href?: string; label?: string }[] = [
   { src: "/cards%20images/specail_offer_img.png" },
   { src: "/cards%20images/coming_soon_img.png", href: "/coming-soon", label: "View coming soon vehicles" },
-  { src: "/cards%20images/in_dar_img.jpeg" },
+  { src: "/cards%20images/in_dar_img.jpeg", href: "/shop?in_dar=1", label: "View vehicles in Dar es Salaam" },
   { src: "/cards%20images/top_selling_img.jpeg" },
 ]
 

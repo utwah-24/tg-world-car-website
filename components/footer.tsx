@@ -22,13 +22,14 @@ export function Footer({ logoDark = "/logos/Logo%20tg1.png" }: FooterProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
           {/* Brand */}
           <div className="lg:col-span-1">
-            <div className="relative h-10 w-32 mb-4">
+            <div className="mb-5 w-fit max-w-full">
               <Image
                 src={logoDark}
                 alt="TG World"
-                fill
-                className="object-contain object-left"
-                unoptimized={logoDark?.startsWith('http')}
+                width={320}
+                height={100}
+                className="h-16 w-auto sm:h-20 lg:h-24 object-contain object-left"
+                unoptimized={logoDark?.startsWith("http")}
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = "/placeholder-logo.svg"
                 }}

@@ -6,11 +6,32 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { Phone, Mail, MapPin, Send, ExternalLink } from "lucide-react"
+import { Phone, MapPin, ExternalLink, MessageCircle } from "lucide-react"
 import { useState } from "react"
 import { useScrollAnimation } from "@/hooks/use-scroll-animation"
 
 const GOOGLE_MAPS_LOCATION_URL = "https://maps.app.goo.gl/MJ1xDiQjc1XpLbR29"
+/** Tanzania WhatsApp — 0754 441 146 */
+const WHATSAPP_NUMBER = "255754441146"
+const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}`
+
+function buildWhatsAppMessage(data: {
+  name: string
+  email: string
+  phone: string
+  message: string
+}): string {
+  const lines = [
+    "Hello TG World International,",
+    "",
+    `Name: ${data.name}`,
+    `Email: ${data.email}`,
+    ...(data.phone.trim() ? [`Phone: ${data.phone.trim()}`] : []),
+    "",
+    data.message,
+  ]
+  return lines.join("\n")
+}
 
 export function ContactSection() {
   const [formData, setFormData] = useState({
@@ -19,22 +40,20 @@ export function ContactSection() {
     phone: "",
     message: "",
   })
-  
+
   const { ref: headerRef, isVisible: headerVisible } = useScrollAnimation({ threshold: 0.2 })
   const { ref: formRef, isVisible: formVisible } = useScrollAnimation({ threshold: 0.1 })
   const { ref: infoRef, isVisible: infoVisible } = useScrollAnimation({ threshold: 0.1 })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle form submission
-    alert("Thank you for your message! We will get back to you soon.")
-    setFormData({ name: "", email: "", phone: "", message: "" })
+    const text = encodeURIComponent(buildWhatsAppMessage(formData))
+    window.open(`${WHATSAPP_URL}?text=${text}`, "_blank", "noopener,noreferrer")
   }
 
   return (
     <section id="contact" className="py-12 lg:py-20 bg-muted scroll-mt-20 lg:scroll-mt-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
         <div
           ref={headerRef}
           className={`text-left mb-10 lg:mb-14 transition-all duration-700 ease-out ${
@@ -45,19 +64,21 @@ export function ContactSection() {
             Get in Touch
           </h2>
           <p className="mt-2 text-base text-muted-foreground max-w-2xl">
-            Ready to find your dream car? Contact us today and let our team help you get behind the wheel.
+            Ready to find your dream car? Message us on WhatsApp and our team will help you get behind the wheel.
           </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-          {/* Contact Form */}
           <div
             ref={formRef}
             className={`bg-card rounded-2xl p-6 sm:p-8 shadow-sm border border-border transition-all duration-700 ease-out ${
               formVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-8"
             }`}
           >
-            <h3 className="text-xl font-bold mb-6 text-foreground">Send us a message</h3>
+            <h3 className="text-xl font-bold mb-2 text-foreground">Send us a message</h3>
+            <p className="text-sm text-muted-foreground mb-6">
+              Fill in your details — we&apos;ll open WhatsApp with your message ready to send.
+            </p>
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div className="space-y-2">
@@ -103,14 +124,18 @@ export function ContactSection() {
                   required
                 />
               </div>
-              <Button type="submit" size="lg" className="w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
-                Send Message
-                <Send className="w-4 h-4 ml-2" />
+
+              <Button
+                type="submit"
+                size="lg"
+                className="w-full rounded-full bg-[#25D366] text-white hover:bg-[#20BD5A]"
+              >
+                Send via WhatsApp
+                <MessageCircle className="w-4 h-4 ml-2" aria-hidden />
               </Button>
             </form>
           </div>
 
-          {/* Contact Info */}
           <div
             ref={infoRef}
             className={`flex flex-col justify-center transition-all duration-700 ease-out ${
@@ -119,7 +144,24 @@ export function ContactSection() {
             style={{ transitionDelay: "200ms" }}
           >
             <div className="space-y-5">
-              {/* Contact Cards */}
+              <a
+                href={WHATSAPP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex items-start gap-4 p-5 bg-card rounded-2xl border border-border transition-all duration-200 hover:border-[#25D366]/50 hover:bg-[#25D366]/[0.04] hover:shadow-md"
+              >
+                <div className="w-12 h-12 rounded-xl bg-[#25D366]/15 flex items-center justify-center shrink-0">
+                  <MessageCircle className="w-5 h-5 text-[#25D366]" aria-hidden />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-foreground">WhatsApp Us</h4>
+                  <p className="text-muted-foreground text-sm mt-1 group-hover:text-foreground transition-colors">
+                    0754 441 146
+                  </p>
+                  <p className="text-xs text-[#25D366] font-medium mt-2">Chat on WhatsApp →</p>
+                </div>
+              </a>
+
               <div className="flex items-start gap-4 p-5 bg-card rounded-2xl border border-border">
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                   <Phone className="w-5 h-5 text-primary" />
@@ -134,20 +176,6 @@ export function ContactSection() {
                   <p className="text-muted-foreground text-sm">
                     <a href="tel:+255748364714" className="hover:text-foreground underline-offset-4 hover:underline">
                       0748364714
-                    </a>
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4 p-5 bg-card rounded-2xl border border-border">
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                  <Mail className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-foreground">Email Us</h4>
-                  <p className="text-muted-foreground text-sm mt-1">
-                    <a href="mailto:info@tgworldtz.com" className="hover:text-foreground underline-offset-4 hover:underline">
-                      info@tgworldtz.com
                     </a>
                   </p>
                 </div>

@@ -32,6 +32,8 @@ export interface Car {
   registrationNumber?: string
   /** Display location — "Dar es Salaam" when in_dar is true, otherwise the location field from API */
   location?: string
+  /** true when API `in_dar` is set */
+  inDar?: boolean
   /** ISO date string — only set when car has `is_coming_soon === "set"` and `arrival_date` from the API */
   arrivalDate?: string
   /** Effective stock count; null = pre-cutoff (treat as 1); 0 = sold out */

@@ -84,6 +84,8 @@ export interface CarFromAPI {
   registrationNumber?: string
   /** Display location string — "Dar es Salaam" when in_dar===true, otherwise the location field value */
   location?: string
+  /** true when API `in_dar` is set */
+  inDar?: boolean
   /** ISO date string from `arrival_date` — present when `is_coming_soon === "set"` */
   arrivalDate?: string
   /** Effective stock count; null means pre-cutoff (treat as 1) */
@@ -250,6 +252,7 @@ function transformCarData(rawCar: RawCarFromAPI, orderedKeys?: Set<string>): Car
     description,
     createdAt: rawCar.created_at,
     totalAvailable: effectiveTotalAvailable,
+    inDar: rawCar.in_dar === true,
     location: rawCar.in_dar === true
       ? "Dar es Salaam"
       : (rawCar.location?.trim() || undefined),

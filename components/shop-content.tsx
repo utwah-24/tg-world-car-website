@@ -93,6 +93,11 @@ function filterByRegistration(cars: Car[], registrationId: string | null): Car[]
   return cars
 }
 
+function filterByInDar(cars: Car[], inDarOnly: boolean): Car[] {
+  if (!inDarOnly) return cars
+  return cars.filter((car) => car.inDar === true)
+}
+
 /** Shop sidebar buckets: under 15M, then 25M-wide bands through 140M, then over 140M */
 const PRICE_BUCKETS: { id: string; label: string; match: (pm: number) => boolean }[] = [
   { id: "price-under-15", label: "Under 15 million Tshs", match: (pm) => pm < 15 },
@@ -148,6 +153,7 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
   const [makeOpen, setMakeOpen] = useState(true)
   const [selectedCompany, setSelectedCompany] = useState("")
   const [selectedBrand, setSelectedBrand] = useState("")
+  const [filterInDar, setFilterInDar] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
   const [desktopFiltersVisible, setDesktopFiltersVisible] = useState(true)
@@ -160,7 +166,8 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
     activeLatest ||
     activeRegistration !== null ||
     !!selectedCompany ||
-    !!selectedBrand
+    !!selectedBrand ||
+    filterInDar
 
   // Prevent document scroll; only the car list panel scrolls (see layout: h-[100dvh] overflow-hidden).
   useEffect(() => {
@@ -216,6 +223,7 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
     if (brand) setSelectedBrand(decodeURIComponent(brand))
     if (q) setSearchQuery(decodeURIComponent(q))
     if (params.get("latest") === "1") setActiveLatest(true)
+    if (params.get("in_dar") === "1") setFilterInDar(true)
   }, [])
 
   // Apply ?category= once inventory lists that type (new API types included automatically)
@@ -230,7 +238,8 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
   }, [cars])
 
   const carsMatchingFiltersExceptPriceAndRegistration = useMemo(() => {
-    let filtered = filterByType(cars, activeType)
+    let filtered = filterByInDar(cars, filterInDar)
+    filtered = filterByType(filtered, activeType)
     filtered = filterByCondition(filtered, activeCondition)
     filtered = filterByCompany(filtered, selectedCompany)
     filtered = filterByBrand(filtered, selectedBrand)
@@ -245,7 +254,7 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
     }
 
     return filtered
-  }, [cars, activeType, activeCondition, selectedCompany, selectedBrand, activeLatest, searchQuery])
+  }, [cars, filterInDar, activeType, activeCondition, selectedCompany, selectedBrand, activeLatest, searchQuery])
 
   const carsMatchingFiltersExceptPrice = useMemo(
     () => filterByRegistration(carsMatchingFiltersExceptPriceAndRegistration, activeRegistration),
@@ -266,6 +275,11 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
     })
   }, [carsMatchingPrice, activeMileageRange])
 
+  const shopTitle = filterInDar ? "Vehicles in Dar es Salaam" : "Shop All Vehicles"
+  const shopSubtitle = filterInDar
+    ? `Showing ${filteredCars.length} vehicle${filteredCars.length === 1 ? "" : "s"} available in Dar es Salaam`
+    : `Browse our complete inventory of ${cars.length} quality vehicles`
+
   const handleClearFilters = () => {
     setActiveType(null)
     setActiveCondition(null)
@@ -278,6 +292,7 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
     setTypeOpen(false)
     setSelectedCompany("")
     setSelectedBrand("")
+    setFilterInDar(false)
   }
 
   // When company changes, reset brand selection
@@ -682,10 +697,10 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
             {/* Left: content */}
             <div className="relative z-10 flex h-full flex-col justify-center px-5">
               <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-tight mb-1">
-                Shop All Vehicles
+                {shopTitle}
               </h1>
               <p className="text-white/60 text-xs sm:text-sm">
-                Browse our complete inventory of {cars.length} quality vehicles
+                {shopSubtitle}
               </p>
             </div>
           </div>
@@ -766,10 +781,10 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
               {/* Left: content */}
               <div className="relative z-10 flex h-full flex-col justify-center px-8">
                 <h1 className="text-3xl xl:text-4xl font-extrabold text-white tracking-tight leading-tight mb-1.5">
-                  Shop All Vehicles
+                  {shopTitle}
                 </h1>
                 <p className="text-white/60 text-sm">
-                  Browse our complete inventory of {cars.length} quality vehicles
+                  {shopSubtitle}
                 </p>
               </div>
             </div>
@@ -787,6 +802,7 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
               {activeRegistrationLabel && <span> · {activeRegistrationLabel}</span>}
               {activePriceLabel && <span> · {activePriceLabel}</span>}
               {activeMileageLabel && <span> · {activeMileageLabel}</span>}
+              {filterInDar && <span> · Dar es Salaam</span>}
               {selectedCompany && <span> · {selectedCompany}</span>}
               {selectedBrand && <span> · {selectedBrand}</span>}
               {searchQuery && <span> matching &ldquo;{searchQuery}&rdquo;</span>}
