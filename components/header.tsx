@@ -29,6 +29,7 @@ export function Header({ logoLight = "/logos/Logo%20tg1.png", logoDark: _logoDar
   const normalizedPath = pathname.replace(/\/$/, "") || "/"
   const isHome = normalizedPath === "/"
   const isContentPage = normalizedPath === "/content"
+  const isAboutPage = normalizedPath === "/about"
   const headerLogoSrc = isContentPage
     ? (scrolled ? HEADER_LOGO_MARKETING : logoLight)
     : isHome
@@ -37,12 +38,15 @@ export function Header({ logoLight = "/logos/Logo%20tg1.png", logoDark: _logoDar
   /** Home hero: transparent bar over imagery — light nav; scrolled bar uses dark text like other pages */
   const heroContrast = isHome && !scrolled
 
-  const navBtnClass = cn(
-    "text-sm rounded-md px-2 py-1.5 transition-colors outline-none",
-    heroContrast
-      ? "font-bold text-white hover:bg-white/10 hover:text-white"
-      : "font-medium text-black hover:bg-muted hover:text-neutral-900",
-  )
+  const navBtnClass = (active = false) =>
+    cn(
+      "text-sm rounded-md px-2 py-1.5 transition-colors outline-none",
+      heroContrast
+        ? "font-bold text-white hover:bg-white/10 hover:text-white"
+        : active
+          ? "font-semibold text-primary hover:bg-primary/10 hover:text-primary"
+          : "font-medium text-black hover:bg-muted hover:text-neutral-900",
+    )
 
   const dropdownTriggerClass = cn(
     "inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-sm transition-colors outline-none",
@@ -118,7 +122,7 @@ export function Header({ logoLight = "/logos/Logo%20tg1.png", logoDark: _logoDar
           {/* Nav + Sign In + menu — right (same cluster as Sign In) */}
           <div className="flex items-center gap-1 sm:gap-2 md:gap-3 ml-auto shrink-0">
             <nav className="hidden lg:flex items-center justify-end gap-1 xl:gap-2">
-              <button type="button" onClick={() => goToSection("home")} className={navBtnClass}>
+              <button type="button" onClick={() => goToSection("home")} className={navBtnClass()}>
                 Home
               </button>
 
@@ -134,11 +138,22 @@ export function Header({ logoLight = "/logos/Logo%20tg1.png", logoDark: _logoDar
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <button type="button" onClick={() => goToSection("content")} className={navBtnClass}>
+              <button type="button" onClick={() => goToSection("content")} className={navBtnClass()}>
                 Content
               </button>
 
-              <button type="button" onClick={() => goToSection("contact")} className={navBtnClass}>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMenuOpen(false)
+                  router.push("/about")
+                }}
+                className={navBtnClass(isAboutPage)}
+              >
+                About Us
+              </button>
+
+              <button type="button" onClick={() => goToSection("contact")} className={navBtnClass()}>
                 Get in touch
               </button>
             </nav>
@@ -240,6 +255,16 @@ export function Header({ logoLight = "/logos/Logo%20tg1.png", logoDark: _logoDar
               className="text-left py-3.5 text-lg font-medium text-white rounded-xl hover:bg-white/10 transition-colors px-1 mt-2"
             >
               Content
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                router.push("/about")
+                closeMenu()
+              }}
+              className="text-left py-3.5 text-lg font-medium text-white rounded-xl hover:bg-white/10 transition-colors px-1"
+            >
+              About Us
             </button>
             <button
               type="button"
