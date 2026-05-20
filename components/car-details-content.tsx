@@ -102,7 +102,7 @@ export function CarDetailsContent({ car }: CarDetailsContentProps) {
 
                     {/* Registration plate number */}
                     {car.registrationNumber && (
-                      <Badge className="font-mono font-bold bg-yellow-400 text-black border-2 border-black text-xs">
+                      <Badge className="rounded-none font-mono font-bold bg-yellow-400 text-black border-2 border-black text-xs">
                         {car.registrationNumber}
                       </Badge>
                     )}

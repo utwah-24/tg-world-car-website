@@ -223,7 +223,7 @@ export function CarCard({
             {car.registrationNumber && (
               <Badge
                 className={cn(
-                  "font-mono font-bold bg-yellow-400 text-black border-2 border-black shadow-sm",
+                  "rounded-none font-mono font-bold bg-yellow-400 text-black border-2 border-black shadow-sm",
                   compact
                     ? "text-[9px] px-1.5 py-px leading-tight"
                     : "text-[10px] sm:text-xs px-2 py-0.5 sm:px-2.5 sm:py-1",
