@@ -17,8 +17,8 @@ interface CarSectionProps {
   badgeVariant?: "default" | "secondary" | "destructive" | "outline"
   hideSeeMore?: boolean
   seeMoreHref?: string
-  /** Orange accent band (#FF6A00) for sections e.g. Coming Soon preview */
-  variant?: "default" | "dark"
+  /** Section background: default, dark navy, or gold band */
+  variant?: "default" | "dark" | "gold"
   /** Name + price only on cards; no Shop Now or spec rows */
   minimalCarCards?: boolean
   /** Hide cards beyond this index on mobile (< sm). Others still render on sm+. */
@@ -43,6 +43,7 @@ export function CarSection({
   const displayedCars = maxCars ? cars.slice(0, maxCars) : cars
   const { ref: headerRef, isVisible: headerVisible } = useScrollAnimation({ threshold: 0.2 })
   const isDark = variant === "dark"
+  const isGold = variant === "gold"
 
   return (
     <section
@@ -50,6 +51,7 @@ export function CarSection({
       className={cn(
         "py-12 lg:py-20 scroll-mt-20 lg:scroll-mt-24",
         isDark && "bg-[#0A1628] border-t border-white/10",
+        isGold && "bg-[#F5DFA0] border-y border-[#D4AF37]/30",
       )}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

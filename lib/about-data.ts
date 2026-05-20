@@ -34,7 +34,7 @@ export const aboutStats: AboutStat[] = [
   },
   {
     type: "count",
-    to: 22,
+    to: 15,
     suffix: "+",
     label: "Years Experience",
     illustration: "/illustrations/years_xp.svg",
@@ -83,7 +83,7 @@ export const teamMembers: TeamMember[] = [
   {
     id: "malaika",
     name: "Malaika / Angel",
-    role: "Receptionist",
+    role: "Receptionist & Sales Executive",
     bio: "The friendly face of Tg world. Handles client relations and supports the sales team to ensure a smooth experience.",
     imageSrc: "/Team%20/malaika/malaika.jpeg",
     placeholderClass: "bg-violet-100",
@@ -91,7 +91,7 @@ export const teamMembers: TeamMember[] = [
   {
     id: "calvin",
     name: "Calvin",
-    role: "Sales & Logistics",
+    role: "Sales & Logistics Executive",
     bio: "Handles sales support, test drives and vehicle deliveries. Ensures cars move safely to and from bond warehouse to a customers front doors.",
     imageSrc: "/Team%20/Calvin/Calvin.jpeg",
     placeholderClass: "bg-emerald-100",
@@ -99,7 +99,7 @@ export const teamMembers: TeamMember[] = [
   {
     id: "goodluck",
     name: "Goodluck",
-    role: "Operations",
+    role: "Operations & Maintanance Lead",
     bio: "Manages mechanics, Oversees cleaning neatness, office errands and other personnel to keep everything running smoothly.",
     imageSrc: "/Team%20/Goodluck/Goodluck.jpeg",
     placeholderClass: "bg-amber-100",
@@ -107,7 +107,7 @@ export const teamMembers: TeamMember[] = [
   {
     id: "gaudence",
     name: "Gaudence",
-    role: "Car Care",
+    role: "Car Care Specialist",
     bio: "Ensures every vehicle is prepared, detailed, and ready before it reaches you.",
     imageSrc: "/Team%20/Gaudence/Gaudence.jpeg",
     placeholderClass: "bg-lime-100",

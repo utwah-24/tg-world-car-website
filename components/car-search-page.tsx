@@ -176,17 +176,19 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, all
             </section>
           )}
 
-          {/* Popular Cars */}
+          {/* Top selling cars */}
           <CarSection
             id="popular"
-            title="Popular cars"
+            title="Top selling cars "
             subtitle="Browse cars by category to find what suits you best."
             cars={topSellingCars}
-            maxCars={6}
+            maxCars={5}
             showBadge
             badgeText="Best Seller"
             badgeVariant="default"
             mobileMaxCars={4}
+            seeMoreHref="/shop"
+            variant="gold"
           />
 
           {/* Content — #content anchor always present for header nav */}

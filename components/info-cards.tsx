@@ -79,7 +79,30 @@ export function InfoCards({
   const gridCols = useResponsiveCompanyGridColumns()
   const [companiesExpanded, setCompaniesExpanded] = useState(false)
 
-  const sorted = useMemo(() => [...companies].sort(), [companies])
+  const availableCars = useMemo(
+    () => cars.filter((car) => car.category !== "sold-out" && car.category !== "coming-soon"),
+    [cars],
+  )
+
+  const companyCountMap = useMemo(() => {
+    const map = new Map<string, number>()
+    availableCars.forEach((car) => {
+      if (car.company) {
+        const key = car.company.trim().toLowerCase()
+        map.set(key, (map.get(key) ?? 0) + 1)
+      }
+    })
+    return map
+  }, [availableCars])
+
+  const sorted = useMemo(() => {
+    return [...companies].sort((a, b) => {
+      const countA = companyCountMap.get(a.trim().toLowerCase()) ?? 0
+      const countB = companyCountMap.get(b.trim().toLowerCase()) ?? 0
+      if (countB !== countA) return countB - countA
+      return a.localeCompare(b, undefined, { sensitivity: "base" })
+    })
+  }, [companies, companyCountMap])
 
   const visibleCompanies = useMemo(() => {
     if (companies.length === 0) return []
@@ -101,17 +124,6 @@ export function InfoCards({
   const logoMap = new Map<string, string>()
   companyLogos.forEach(({ company, logoUrl }) => {
     logoMap.set(company.trim().toLowerCase(), logoUrl)
-  })
-
-  // Only count available cars — exclude sold-out and coming-soon
-  const availableCars = cars.filter((car) => car.category !== "sold-out" && car.category !== "coming-soon")
-
-  const companyCountMap = new Map<string, number>()
-  availableCars.forEach((car) => {
-    if (car.company) {
-      const key = car.company.trim().toLowerCase()
-      companyCountMap.set(key, (companyCountMap.get(key) ?? 0) + 1)
-    }
   })
 
   const canonicalTypes = orderedCanonicalTypesInInventory(availableCars)
