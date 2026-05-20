@@ -54,6 +54,9 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, all
     return recent.slice(0, 5) // one row at 5-column desktop grid
   }, [allCars])
 
+  /** Top Picks — available inventory only (no coming-soon or sold-out). */
+  const topPicksCars = useMemo(() => availableForBrowse, [availableForBrowse])
+
   const hasFilters = !!searchQuery.trim() || !!selectedCompany || !!selectedBrand
 
   // Filter cars based on search query + company + brand
@@ -207,12 +210,17 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, all
           )}
 
           {/* Top Picks for You */}
-          <CarSection
-            id="top-picks"
-            title="Top Picks for You"
-            subtitle="Explore the most popular listings handpicked from trusted sellers."
-            cars={comingSoonCars}
-          />
+          {topPicksCars.length > 0 && (
+            <CarSection
+              id="top-picks"
+              title="Top Picks for You"
+              subtitle="Explore handpicked listings available now from trusted sellers."
+              cars={topPicksCars}
+              maxCars={5}
+              mobileMaxCars={4}
+              seeMoreHref="/shop"
+            />
+          )}
         </>
       )}
     </>
