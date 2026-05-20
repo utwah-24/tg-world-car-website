@@ -34,7 +34,7 @@ export const aboutStats: AboutStat[] = [
   },
   {
     type: "count",
-    to: 7,
+    to: 22,
     suffix: "+",
     label: "Years Experience",
     illustration: "/illustrations/years_xp.svg",
