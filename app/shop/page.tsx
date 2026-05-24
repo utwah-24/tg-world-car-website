@@ -68,9 +68,9 @@ export async function generateMetadata({
       : `Browse ${displayName} vehicles at TG World International.`
   const pageUrl = `${SITE_URL}/shop?company=${encodeURIComponent(companyParam)}`
 
-  // Build a server-rendered PNG OG image via /api/og (1200×630, works on all platforms).
-  // The route fetches the SVG logo, embeds it in a branded card, and returns a proper PNG.
-  const ogImageParams = new URLSearchParams({ company: displayName, count: String(count) })
+  // Build a server-rendered PNG via /api/og — converts the SVG logo to PNG so all
+  // platforms (Telegram, WhatsApp, iMessage, etc.) can display it as the preview image.
+  const ogImageParams = new URLSearchParams({ company: displayName })
   if (logoEntry?.logoUrl) ogImageParams.set("logo", logoEntry.logoUrl)
   const ogImageUrl = `${SITE_URL}/api/og?${ogImageParams.toString()}`
 
@@ -82,12 +82,12 @@ export async function generateMetadata({
       description,
       url: pageUrl,
       siteName: "TG World International",
-      images: [{ url: ogImageUrl, width: 1200, height: 630, alt: `${displayName} – TG World` }],
+      images: [{ url: ogImageUrl, width: 630, height: 630, alt: `${displayName} logo` }],
       locale: "en_US",
       type: "website",
     },
     twitter: {
-      card: "summary_large_image",
+      card: "summary",
       title,
       description,
       images: [ogImageUrl],
