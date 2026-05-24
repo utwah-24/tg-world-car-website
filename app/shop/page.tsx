@@ -46,7 +46,12 @@ export async function generateMetadata({
 
   // Find the logo for this company
   const logoEntry = logos.find((l) => l.company.trim().toLowerCase() === normalised)
-  const logoUrl = logoEntry?.logoUrl ?? DEFAULT_OG_IMAGE
+  // Proxy the logo through our own domain so social-media crawlers (Telegram, WhatsApp, etc.)
+  // can always fetch it — the backend origin (tgworld.e-saloon.online) may be blocked for them.
+  const rawLogoUrl = logoEntry?.logoUrl
+  const logoUrl = rawLogoUrl
+    ? `${SITE_URL}/api/image-proxy?url=${encodeURIComponent(rawLogoUrl)}`
+    : DEFAULT_OG_IMAGE
 
   // Count available cars for this company (exclude sold-out / coming-soon)
   const today = new Date()
