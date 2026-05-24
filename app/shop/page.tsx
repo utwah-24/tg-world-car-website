@@ -46,12 +46,6 @@ export async function generateMetadata({
 
   // Find the logo for this company
   const logoEntry = logos.find((l) => l.company.trim().toLowerCase() === normalised)
-  // Proxy the logo through our own domain so social-media crawlers (Telegram, WhatsApp, etc.)
-  // can always fetch it — the backend origin (tgworld.e-saloon.online) may be blocked for them.
-  const rawLogoUrl = logoEntry?.logoUrl
-  const logoUrl = rawLogoUrl
-    ? `${SITE_URL}/api/image-proxy?url=${encodeURIComponent(rawLogoUrl)}`
-    : DEFAULT_OG_IMAGE
 
   // Count available cars for this company (exclude sold-out / coming-soon)
   const today = new Date()
@@ -74,6 +68,12 @@ export async function generateMetadata({
       : `Browse ${displayName} vehicles at TG World International.`
   const pageUrl = `${SITE_URL}/shop?company=${encodeURIComponent(companyParam)}`
 
+  // Build a server-rendered PNG OG image via /api/og (1200×630, works on all platforms).
+  // The route fetches the SVG logo, embeds it in a branded card, and returns a proper PNG.
+  const ogImageParams = new URLSearchParams({ company: displayName, count: String(count) })
+  if (logoEntry?.logoUrl) ogImageParams.set("logo", logoEntry.logoUrl)
+  const ogImageUrl = `${SITE_URL}/api/og?${ogImageParams.toString()}`
+
   return {
     title,
     description,
@@ -82,12 +82,7 @@ export async function generateMetadata({
       description,
       url: pageUrl,
       siteName: "TG World International",
-      images: [
-        {
-          url: logoUrl,
-          alt: `${displayName} – TG World`,
-        },
-      ],
+      images: [{ url: ogImageUrl, width: 1200, height: 630, alt: `${displayName} – TG World` }],
       locale: "en_US",
       type: "website",
     },
@@ -95,7 +90,7 @@ export async function generateMetadata({
       card: "summary_large_image",
       title,
       description,
-      images: [logoUrl],
+      images: [ogImageUrl],
     },
   }
 }
