@@ -158,6 +158,7 @@ export function Header({ logoLight = "/logos/Logo%20tg1.png", logoDark: _logoDar
               </button>
             </nav>
 
+            {/* Sign In button — temporarily hidden
             <Button
               variant="outline"
               onClick={() => router.push("/signin")}
@@ -170,6 +171,7 @@ export function Header({ logoLight = "/logos/Logo%20tg1.png", logoDark: _logoDar
             >
               Sign In
             </Button>
+            */}
 
             <button
               type="button"
@@ -274,6 +276,7 @@ export function Header({ logoLight = "/logos/Logo%20tg1.png", logoDark: _logoDar
               Get in touch
             </button>
 
+            {/* Sign In button (mobile) — temporarily hidden
             <div className="mt-auto pt-8 border-t border-white/10">
               <Button
                 variant="outline"
@@ -286,6 +289,7 @@ export function Header({ logoLight = "/logos/Logo%20tg1.png", logoDark: _logoDar
                 Sign In
               </Button>
             </div>
+            */}
           </nav>
         </div>
       </div>

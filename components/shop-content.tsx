@@ -86,6 +86,11 @@ function filterByBrand(cars: Car[], brand: string): Car[] {
   return cars.filter(car => (car.brand || "").toLowerCase() === brand.toLowerCase())
 }
 
+function filterByModel(cars: Car[], model: string): Car[] {
+  if (!model) return cars
+  return cars.filter(car => (car.model || "").toLowerCase() === model.toLowerCase())
+}
+
 function filterByRegistration(cars: Car[], registrationId: string | null): Car[] {
   if (!registrationId) return cars
   if (registrationId === "registered") return cars.filter((car) => car.registered === true)
@@ -151,8 +156,11 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
   const [mileageOpen, setMileageOpen] = useState(false)
   const [typeOpen, setTypeOpen] = useState(false)
   const [makeOpen, setMakeOpen] = useState(true)
+  const [listingOpen, setListingOpen] = useState(true)
+  const [conditionOpen, setConditionOpen] = useState(true)
   const [selectedCompany, setSelectedCompany] = useState("")
   const [selectedBrand, setSelectedBrand] = useState("")
+  const [selectedModel, setSelectedModel] = useState("")
   const [filterInDar, setFilterInDar] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
@@ -167,6 +175,7 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
     activeRegistration !== null ||
     !!selectedCompany ||
     !!selectedBrand ||
+    !!selectedModel ||
     filterInDar
 
   // Prevent document scroll; only the car list panel scrolls (see layout: h-[100dvh] overflow-hidden).
@@ -211,6 +220,15 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
     return m
   }, [cars, selectedCompany])
 
+  // Model list filtered to only models that belong to the selected company/brand
+  const modelOptions = useMemo(() => {
+    let source = selectedCompany ? filterByCompany(cars, selectedCompany) : cars
+    if (selectedBrand) source = filterByBrand(source, selectedBrand)
+    const set = new Set<string>()
+    source.forEach(car => { if (car.model) set.add(car.model) })
+    return Array.from(set).sort()
+  }, [cars, selectedCompany, selectedBrand])
+
   /** Type filters: built from live inventory so any new API `type` appears after normalizeCarType(). */
   const typeFilters = useMemo(() => buildShopTypeFilterRows(cars), [cars])
 
@@ -218,9 +236,11 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
     const params = new URLSearchParams(window.location.search)
     const company = params.get("company")
     const brand = params.get("brand")
+    const model = params.get("model")
     const q = params.get("q")
     if (company) setSelectedCompany(decodeURIComponent(company))
     if (brand) setSelectedBrand(decodeURIComponent(brand))
+    if (model) setSelectedModel(decodeURIComponent(model))
     if (q) setSearchQuery(decodeURIComponent(q))
     if (params.get("latest") === "1") setActiveLatest(true)
     if (params.get("in_dar") === "1") setFilterInDar(true)
@@ -243,6 +263,7 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
     filtered = filterByCondition(filtered, activeCondition)
     filtered = filterByCompany(filtered, selectedCompany)
     filtered = filterByBrand(filtered, selectedBrand)
+    filtered = filterByModel(filtered, selectedModel)
     if (activeLatest) filtered = filtered.filter((car) => isCarInLatestWindow(car.createdAt))
 
     if (searchQuery.trim()) {
@@ -254,7 +275,7 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
     }
 
     return filtered
-  }, [cars, filterInDar, activeType, activeCondition, selectedCompany, selectedBrand, activeLatest, searchQuery])
+  }, [cars, filterInDar, activeType, activeCondition, selectedCompany, selectedBrand, selectedModel, activeLatest, searchQuery])
 
   const carsMatchingFiltersExceptPrice = useMemo(
     () => filterByRegistration(carsMatchingFiltersExceptPriceAndRegistration, activeRegistration),
@@ -292,17 +313,24 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
     setTypeOpen(false)
     setSelectedCompany("")
     setSelectedBrand("")
+    setSelectedModel("")
     setFilterInDar(false)
   }
 
-  // When company changes, reset brand selection
+  // When company changes, reset brand and model selection
   const handleCompanyChange = (value: string) => {
     setSelectedCompany(value === "__all__" ? "" : value)
     setSelectedBrand("")
+    setSelectedModel("")
   }
 
   const handleBrandChange = (value: string) => {
     setSelectedBrand(value === "__all__" ? "" : value)
+    setSelectedModel("")
+  }
+
+  const handleModelChange = (value: string) => {
+    setSelectedModel(value === "__all__" ? "" : value)
   }
 
   const handleClearSearch = () => setSearchQuery("")
@@ -388,6 +416,20 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
                       logoCompanyName={companyNameForBrand.get(brand) ?? ""}
                       logoMap={companyLogoMap}
                     />
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={selectedModel || "__all__"} onValueChange={handleModelChange}>
+              <SelectTrigger className="h-11 w-full rounded-xl border-border bg-card text-sm">
+                <SelectValue placeholder="Model" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">All Models</SelectItem>
+                {modelOptions.map((model) => (
+                  <SelectItem key={model} value={model}>
+                    {model}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -485,53 +527,63 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
         )}
       </div>
 
-      <div className="space-y-3">
-        <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground block">
-          Listing
-        </span>
-        <div className="flex flex-col gap-2">
-          {(() => {
-            const latestCount = cars.filter((car) => isCarInLatestWindow(car.createdAt)).length
-            return (
-              <Button
-                variant={activeLatest ? "default" : "outline"}
-                size="sm"
-                onClick={() => setActiveLatest(!activeLatest)}
-                className={`group w-full justify-between rounded-xl h-10 px-3 text-sm font-medium transition-all duration-200 ${
-                  activeLatest
-                    ? "bg-primary text-primary-foreground shadow-md"
-                    : "border-border bg-transparent text-foreground hover:!bg-white hover:!text-black"
-                }`}
-              >
-                <span>Latest cars</span>
-                <span className="text-xs opacity-70 tabular-nums group-hover:opacity-100">({latestCount})</span>
-              </Button>
-            )
-          })()}
-          {registrationFilters.map((filter) => {
-            const count =
-              filter.id === "registered"
-                ? carsMatchingFiltersExceptPriceAndRegistration.filter((c) => c.registered === true).length
-                : carsMatchingFiltersExceptPriceAndRegistration.filter((c) => c.registered === false).length
-            const isActive = activeRegistration === filter.id
-            return (
-              <Button
-                key={filter.id}
-                variant={isActive ? "default" : "outline"}
-                size="sm"
-                onClick={() => setActiveRegistration(isActive ? null : filter.id)}
-                className={`group w-full justify-between rounded-xl h-10 px-3 text-sm font-medium transition-all duration-200 ${
-                  isActive
-                    ? "bg-primary text-primary-foreground shadow-md"
-                    : "border-border bg-transparent text-foreground hover:!bg-white hover:!text-black"
-                }`}
-              >
-                <span>{filter.label}</span>
-                <span className="text-xs opacity-70 tabular-nums group-hover:opacity-100">({count})</span>
-              </Button>
-            )
-          })}
-        </div>
+      <div className="space-y-2">
+        <button
+          type="button"
+          onClick={() => setListingOpen((o) => !o)}
+          className="flex w-full items-center justify-between py-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <span>Listing</span>
+          <ChevronDown
+            className={`w-4 h-4 shrink-0 transition-transform duration-200 ${listingOpen ? "rotate-180" : ""}`}
+          />
+        </button>
+
+        {listingOpen && (
+          <div className="flex flex-col gap-2 pt-1">
+            {(() => {
+              const latestCount = cars.filter((car) => isCarInLatestWindow(car.createdAt)).length
+              return (
+                <Button
+                  variant={activeLatest ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setActiveLatest(!activeLatest)}
+                  className={`group w-full justify-between rounded-xl h-10 px-3 text-sm font-medium transition-all duration-200 ${
+                    activeLatest
+                      ? "bg-primary text-primary-foreground shadow-md"
+                      : "border-border bg-transparent text-foreground hover:!bg-white hover:!text-black"
+                  }`}
+                >
+                  <span>Latest cars</span>
+                  <span className="text-xs opacity-70 tabular-nums group-hover:opacity-100">({latestCount})</span>
+                </Button>
+              )
+            })()}
+            {registrationFilters.map((filter) => {
+              const count =
+                filter.id === "registered"
+                  ? carsMatchingFiltersExceptPriceAndRegistration.filter((c) => c.registered === true).length
+                  : carsMatchingFiltersExceptPriceAndRegistration.filter((c) => c.registered === false).length
+              const isActive = activeRegistration === filter.id
+              return (
+                <Button
+                  key={filter.id}
+                  variant={isActive ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setActiveRegistration(isActive ? null : filter.id)}
+                  className={`group w-full justify-between rounded-xl h-10 px-3 text-sm font-medium transition-all duration-200 ${
+                    isActive
+                      ? "bg-primary text-primary-foreground shadow-md"
+                      : "border-border bg-transparent text-foreground hover:!bg-white hover:!text-black"
+                  }`}
+                >
+                  <span>{filter.label}</span>
+                  <span className="text-xs opacity-70 tabular-nums group-hover:opacity-100">({count})</span>
+                </Button>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       <div className="space-y-2">
@@ -578,37 +630,47 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
         )}
       </div>
 
-      <div className="space-y-3">
-        <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground block">
-          Condition
-        </span>
-        <div className="flex flex-col gap-2">
-          {conditionFilters.map((filter) => {
-            const count = filterByType(cars, activeType).filter(car => {
-              if (filter.apiCondition === "third_party") {
-                return isThirdPartyCar(car)
-              }
-              return (car.condition || "").toLowerCase() === filter.apiCondition
-            }).length
-            const isActive = activeCondition === filter.id
-            return (
-              <Button
-                key={filter.id}
-                variant={isActive ? "default" : "outline"}
-                size="sm"
-                onClick={() => setActiveCondition(isActive ? null : filter.id)}
-                className={`group w-full justify-start rounded-xl h-10 px-3 text-sm font-medium transition-all duration-200 ${
-                  isActive
-                    ? "bg-primary text-primary-foreground shadow-md"
-                    : "border-border bg-transparent text-foreground hover:!bg-white hover:!text-black"
-                }`}
-              >
-                <span className="flex-1 text-left">{filter.label}</span>
-                <span className="text-xs opacity-70 tabular-nums group-hover:opacity-100">({count})</span>
-              </Button>
-            )
-          })}
-        </div>
+      <div className="space-y-2">
+        <button
+          type="button"
+          onClick={() => setConditionOpen((o) => !o)}
+          className="flex w-full items-center justify-between py-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <span>Condition</span>
+          <ChevronDown
+            className={`w-4 h-4 shrink-0 transition-transform duration-200 ${conditionOpen ? "rotate-180" : ""}`}
+          />
+        </button>
+
+        {conditionOpen && (
+          <div className="flex flex-col gap-2 pt-1">
+            {conditionFilters.map((filter) => {
+              const count = filterByType(cars, activeType).filter(car => {
+                if (filter.apiCondition === "third_party") {
+                  return isThirdPartyCar(car)
+                }
+                return (car.condition || "").toLowerCase() === filter.apiCondition
+              }).length
+              const isActive = activeCondition === filter.id
+              return (
+                <Button
+                  key={filter.id}
+                  variant={isActive ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setActiveCondition(isActive ? null : filter.id)}
+                  className={`group w-full justify-start rounded-xl h-10 px-3 text-sm font-medium transition-all duration-200 ${
+                    isActive
+                      ? "bg-primary text-primary-foreground shadow-md"
+                      : "border-border bg-transparent text-foreground hover:!bg-white hover:!text-black"
+                  }`}
+                >
+                  <span className="flex-1 text-left">{filter.label}</span>
+                  <span className="text-xs opacity-70 tabular-nums group-hover:opacity-100">({count})</span>
+                </Button>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {hasActiveFilters && (
@@ -805,6 +867,7 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
               {filterInDar && <span> · Dar es Salaam</span>}
               {selectedCompany && <span> · {selectedCompany}</span>}
               {selectedBrand && <span> · {selectedBrand}</span>}
+              {selectedModel && <span> · {selectedModel}</span>}
               {searchQuery && <span> matching &ldquo;{searchQuery}&rdquo;</span>}
             </p>
           </div>
