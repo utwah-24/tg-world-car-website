@@ -136,12 +136,12 @@ export function InfoCards({
   if (companies.length === 0) return null
 
   return (
-    <section className="py-10 px-4 sm:px-6 lg:px-8 border-b border-border">
-      <div className="max-w-7xl mx-auto space-y-10">
+    <section className="py-6 px-4 sm:px-6 lg:px-8 border-b border-border">
+      <div className="max-w-7xl mx-auto space-y-6">
 
         {/* Browse by Company */}
         <div>
-          <h2 className="text-lg font-semibold text-foreground mb-6">
+          <h2 className="text-lg font-semibold text-foreground mb-3">
             Browse by Company
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
@@ -153,26 +153,28 @@ export function InfoCards({
                 <a
                   key={company}
                   href={`/shop?company=${encodeURIComponent(company)}`}
-                  className="flex items-center gap-3 py-3 px-4 rounded-xl border border-border hover:border-primary hover:bg-muted transition-all duration-150 group min-h-[52px]"
+                  className="flex flex-col items-center justify-center gap-3 py-5 px-4 rounded-xl border border-border hover:border-primary hover:bg-muted transition-all duration-150 group"
                 >
-                  <div className="shrink-0 w-10 h-10 flex items-center justify-center rounded-lg bg-background border border-border/60 overflow-hidden">
+                  {/* Logo */}
+                  <div className="w-20 h-20 flex items-center justify-center overflow-hidden">
                     {logoUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={logoUrl}
                         alt={company}
-                        width={40}
-                        height={40}
-                        className="object-contain w-full h-full p-1"
+                        width={80}
+                        height={80}
+                        className="object-contain w-full h-full"
                       />
                     ) : (
-                      <span className="text-xs font-bold text-muted-foreground uppercase">
+                      <span className="text-3xl font-bold text-muted-foreground uppercase">
                         {company.charAt(0)}
                       </span>
                     )}
                   </div>
-                  <div className="min-w-0 flex flex-col">
-                    <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors truncate leading-tight">
+                  {/* Label */}
+                  <div className="flex flex-col items-center gap-0.5 text-center">
+                    <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors leading-tight">
                       {company}
                     </span>
                     {count > 0 && (
@@ -210,7 +212,7 @@ export function InfoCards({
         {/* Browse by Car Type */}
         {canonicalTypes.length > 0 && (
           <div>
-            <h2 className="text-lg font-semibold text-foreground mb-6">
+            <h2 className="text-lg font-semibold text-foreground mb-3">
               Browse by Car Type
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">

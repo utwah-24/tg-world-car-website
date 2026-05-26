@@ -74,7 +74,7 @@ export function SearchBox({
   const hasAnyFilter = !!searchQuery || !!selectedCompany || !!selectedBrand
 
   return (
-    <section className="py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
+    <section className="relative z-10 -mt-[99px] px-4 sm:px-6 lg:px-8 pb-8">
       <div className="max-w-4xl mx-auto">
         <div className="bg-card rounded-2xl sm:rounded-3xl shadow-xl p-5 sm:p-6 border border-border">
 

@@ -108,7 +108,7 @@ export function Header({ logoLight = "/logos/Logo%20tg1.png", logoDark: _logoDar
                 src={headerLogoSrc}
                 alt="TG World"
                 fill
-                className="object-contain"
+                className="object-contain object-left"
                 priority
                 unoptimized={headerLogoSrc?.startsWith("http")}
                 onError={(e) => {

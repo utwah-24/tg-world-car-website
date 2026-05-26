@@ -18,15 +18,15 @@ export function Hero() {
   return (
     <section id="home" className="relative scroll-mt-20 lg:scroll-mt-24">
       {/* Hero slideshow background */}
-      <div className="relative h-screen overflow-hidden">
+      <div className="relative h-[50vh] min-h-[360px] overflow-hidden">
         {HERO_SLIDES.map((imageSrc, idx) => (
           <img
             key={imageSrc}
             src={imageSrc}
             alt="Premium car showcase"
-            className={`absolute inset-0 h-full w-full object-cover bg-muted scale-x-[-1] transition-opacity duration-1000 ${
+            className={`absolute inset-0 h-full w-full object-cover bg-muted transition-opacity duration-1000 ${
               idx === activeSlide ? "opacity-100" : "opacity-0"
-            }`}
+            } ${imageSrc !== "/images/img-5.jpg" ? "scale-x-[-1]" : ""}`}
             onError={(e) => {
               (e.target as HTMLImageElement).src = "/placeholder.svg"
             }}
@@ -48,17 +48,17 @@ export function Hero() {
               
               {/* CTAs */}
               <div
-                className="mt-8 flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 animate-fade-in-up"
+                className="mt-8 flex flex-row flex-wrap gap-3 sm:gap-4 animate-fade-in-up"
                 style={{ animationDelay: "0.4s", opacity: 0, animationFillMode: "forwards" }}
               >
                 <a href="/shop">
-                  <button className="group relative px-8 py-4 bg-primary text-primary-foreground rounded-full font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 hover:bg-primary/90 overflow-hidden w-full sm:w-auto">
+                  <button className="group relative px-5 py-3 sm:px-8 sm:py-4 bg-primary text-primary-foreground rounded-full font-semibold text-sm sm:text-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 hover:bg-primary/90 overflow-hidden">
                     <span className="relative z-10">Shop Now</span>
                     <div className="absolute inset-0 bg-white/20 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
                   </button>
                 </a>
                 <a href="/find-your-car">
-                  <button className="group relative px-8 py-4 bg-white/15 backdrop-blur-sm text-white border-2 border-white/40 rounded-full font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 hover:bg-white/25 overflow-hidden w-full sm:w-auto">
+                  <button className="group relative px-5 py-3 sm:px-8 sm:py-4 bg-white/15 backdrop-blur-sm text-white border-2 border-white/40 rounded-full font-semibold text-sm sm:text-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 hover:bg-white/25 overflow-hidden">
                     <span className="relative z-10">Find your car</span>
                     <div className="absolute inset-0 bg-white/10 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
                   </button>

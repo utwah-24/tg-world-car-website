@@ -4,7 +4,7 @@ import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Fuel, Gauge, MapPin, Tag } from "lucide-react"
+import { Calendar, Fuel, Gauge, MapPin, Tag } from "lucide-react"
 import type { Car as CarType } from "@/lib/cars-data"
 import { isThirdPartyCar } from "@/lib/cars-data"
 import { useScrollAnimation } from "@/hooks/use-scroll-animation"
@@ -321,6 +321,28 @@ export function CarCard({
             {car.price}
           </span>
         </div>
+
+        {/* Arrival date — coming-soon cards only */}
+        {isComingSoon && car.arrivalDate && (
+          <div
+            className={cn(
+              "flex items-center gap-1 font-medium text-[#0A1628] bg-blue-50 border border-blue-200 rounded-full w-fit",
+              compact
+                ? "text-[9px] sm:text-[10px] px-1.5 py-0.5 mb-1.5"
+                : "text-[10px] sm:text-xs px-2 py-1 mb-2",
+            )}
+          >
+            <Calendar className={cn("shrink-0", compact ? "w-2.5 h-2.5" : "w-3 h-3")} />
+            <span>
+              Arrives{" "}
+              {new Date(car.arrivalDate).toLocaleDateString("en-GB", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })}
+            </span>
+          </div>
+        )}
 
         {!minimalListing && (
           <>

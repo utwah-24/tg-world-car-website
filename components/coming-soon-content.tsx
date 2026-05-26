@@ -4,7 +4,7 @@ import { useMemo } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import type { Car } from "@/lib/cars-data"
-import { Car as CarIcon, Clock, ArrowLeft } from "lucide-react"
+import { Car as CarIcon, Calendar, Clock, ArrowLeft } from "lucide-react"
 
 interface ComingSoonContentProps {
   cars: Car[]
@@ -35,7 +35,7 @@ function ComingSoonCard({ car }: { car: Car }) {
         />
         {/* Coming Soon overlay badge */}
         <div className="absolute bottom-1.5 left-1.5">
-          <span className="rounded-full bg-primary px-2 py-0.5 text-[9px] font-medium text-primary-foreground">
+          <span className="rounded-full bg-[#0A1628] px-2 py-0.5 text-[9px] font-medium text-white">
             Coming Soon
           </span>
         </div>
@@ -50,18 +50,21 @@ function ComingSoonCard({ car }: { car: Car }) {
           {car.price}
         </span>
         {car.arrivalDate ? (
-          <div className="flex items-center gap-1 mt-2">
-            <Clock className="w-3 h-3 text-primary shrink-0" />
-            <span className="text-[10px] sm:text-xs font-medium text-primary">
-              {formatArrivalDate(car.arrivalDate)}
+          <div className="flex items-center gap-1 font-medium text-[#0A1628] bg-blue-50 border border-blue-200 rounded-full w-fit text-[9px] sm:text-[10px] px-1.5 py-0.5 mt-2">
+            <Calendar className="w-2.5 h-2.5 shrink-0" />
+            <span>
+              Arrives{" "}
+              {new Date(car.arrivalDate).toLocaleDateString("en-GB", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })}
             </span>
           </div>
         ) : (
-          <div className="flex items-center gap-1 mt-2">
-            <Clock className="w-3 h-3 text-muted-foreground shrink-0" />
-            <span className="text-[10px] sm:text-xs text-muted-foreground">
-              Arriving soon
-            </span>
+          <div className="flex items-center gap-1 font-medium text-muted-foreground bg-muted border border-border rounded-full w-fit text-[9px] sm:text-[10px] px-1.5 py-0.5 mt-2">
+            <Clock className="w-2.5 h-2.5 shrink-0" />
+            <span>Arriving soon</span>
           </div>
         )}
       </div>

@@ -44,7 +44,7 @@ export function ContentVideoCard({ video, layout = "carousel" }: ContentVideoCar
       <div
         className={cn(
           "relative rounded-2xl overflow-hidden bg-white/10 group",
-          layout === "carousel" && "shrink-0 w-[280px] sm:w-[320px]",
+          layout === "carousel" && "shrink-0 w-[200px] sm:w-[230px]",
           layout === "grid" && "w-full"
         )}
         onMouseEnter={() => setShowControls(true)}

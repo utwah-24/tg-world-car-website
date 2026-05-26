@@ -92,10 +92,7 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, all
 
   return (
     <>
-      {/* Coming Soon */}
-      {!hasFilters && <HomeSlotsSection />}
-
-      {/* Search Box */}
+      {/* Search Box — overlaps the bottom of the hero */}
       <SearchBox
         cars={searchableCars}
         companyLogos={companyLogos}
@@ -106,14 +103,19 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, all
         onBrandChange={setSelectedBrand}
       />
 
-      {/* Brand grid */}
-      <InfoCards
-        companies={companies}
-        companyLogos={companyLogos}
-        cars={availableForBrowse}
-        collapseCompanyGrid
-      />
-      
+      {/* Brand / company grid */}
+      {!hasFilters && (
+        <InfoCards
+          companies={companies}
+          companyLogos={companyLogos}
+          cars={availableForBrowse}
+          collapseCompanyGrid
+        />
+      )}
+
+      {/* Coming Soon / Home Slots */}
+      {!hasFilters && <HomeSlotsSection />}
+
       {/* Search Results or Category Sections */}
       {filteredCars !== null ? (
         // Show search results

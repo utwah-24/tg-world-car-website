@@ -15,7 +15,7 @@ export function HomeSlotsSection() {
   return (
     <section
       id="home-slots"
-      className="py-10 sm:py-12 scroll-mt-20 lg:scroll-mt-24 border-b border-border bg-background"
+      className="py-5 sm:py-6 scroll-mt-20 lg:scroll-mt-24 border-b border-border bg-background"
       aria-label="Featured content"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

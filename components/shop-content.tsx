@@ -301,6 +301,11 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
     ? `Showing ${filteredCars.length} vehicle${filteredCars.length === 1 ? "" : "s"} available in Dar es Salaam`
     : `Browse our complete inventory of ${cars.length} quality vehicles`
 
+  // Banner: use the selected company logo as the bg image (cross-fades to/from the default photo)
+  const bannerLogoUrl = selectedCompany
+    ? companyLogoMap.get(selectedCompany.trim().toLowerCase()) ?? null
+    : null
+
   const handleClearFilters = () => {
     setActiveType(null)
     setActiveCondition(null)
@@ -747,13 +752,24 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
       <div className="mb-6 mt-4 shrink-0 px-4 sm:px-6 lg:hidden">
         <div className="animate-fade-in-up">
           <div className="relative overflow-hidden rounded-2xl bg-black" style={{ height: "140px" }}>
-            {/* Right: car image */}
+            {/* Default car photo — fades out when a company logo is active */}
             <img
               src="/zenigame-photo-oaZ9WEVW7g8-unsplash.jpg"
               alt="Premium vehicle"
-              className="absolute inset-0 h-full w-full object-cover object-center"
+              className="absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-700"
+              style={{ opacity: bannerLogoUrl ? 0 : 1 }}
             />
-            {/* Fade from black on the left over the image */}
+            {/* Company logo layer — fades in when a company is selected */}
+            {bannerLogoUrl && (
+              <img
+                key={bannerLogoUrl}
+                src={bannerLogoUrl}
+                alt={selectedCompany}
+                className="absolute inset-0 h-full w-full object-contain object-center p-6 transition-opacity duration-700"
+                style={{ opacity: bannerLogoUrl ? 1 : 0, background: "white" }}
+              />
+            )}
+            {/* Gradient overlay */}
             <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent" style={{ width: "70%" }} />
             <div className="absolute inset-0 bg-gradient-to-r from-black to-transparent" />
             {/* Left: content */}
@@ -832,12 +848,23 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
           {/* Desktop title: hero banner card */}
           <div className="hidden lg:block mb-4 pt-2 animate-fade-in-up">
             <div className="relative overflow-hidden rounded-2xl bg-black" style={{ height: "210px" }}>
-              {/* Right: car image */}
+              {/* Default car photo — fades out when a company logo is active */}
               <img
                 src="/zenigame-photo-oaZ9WEVW7g8-unsplash.jpg"
                 alt="Premium vehicle"
-                className="absolute inset-0 h-full w-full object-cover object-center"
+                className="absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-700"
+                style={{ opacity: bannerLogoUrl ? 0 : 1 }}
               />
+              {/* Company logo layer — cross-fades in when a company is selected */}
+              {bannerLogoUrl && (
+                <img
+                  key={bannerLogoUrl}
+                  src={bannerLogoUrl}
+                  alt={selectedCompany}
+                  className="absolute inset-0 h-full w-full object-contain object-center p-10 transition-opacity duration-700"
+                  style={{ opacity: bannerLogoUrl ? 1 : 0, background: "white" }}
+                />
+              )}
               {/* Gradient fade from black (left) to transparent (right) */}
               <div className="absolute inset-0 bg-gradient-to-r from-black via-black/75 to-transparent" />
               {/* Left: content */}

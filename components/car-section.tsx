@@ -49,7 +49,7 @@ export function CarSection({
     <section
       id={id}
       className={cn(
-        "py-12 lg:py-20 scroll-mt-20 lg:scroll-mt-24",
+        "py-8 lg:py-12 scroll-mt-20 lg:scroll-mt-24",
         isDark && "bg-[#0A1628] border-t border-white/10",
         isGold && "bg-[#F5DFA0] border-y border-[#D4AF37]/30",
       )}
@@ -58,7 +58,7 @@ export function CarSection({
         {/* Section Header */}
         <div
           ref={headerRef}
-          className={`mb-8 lg:mb-12 transition-all duration-700 ease-out ${
+          className={`mb-5 lg:mb-8 transition-all duration-700 ease-out ${
             headerVisible
               ? "opacity-100 translate-y-0"
               : "opacity-0 translate-y-8"
