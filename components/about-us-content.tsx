@@ -74,8 +74,8 @@ function HeroSection() {
             style={{ transitionDelay: "100ms" }}
           >
             <Image
-              src="/images/img-1.jpg"
-              alt="Premium vehicles at TG World"
+              src="/images/about_us.jpg"
+              alt="TG World International showroom"
               fill
               className="object-cover"
               sizes="(max-width: 1024px) 100vw, 50vw"
