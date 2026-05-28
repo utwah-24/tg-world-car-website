@@ -173,11 +173,6 @@ export function ContactSection() {
                       0754 441 146
                     </a>
                   </p>
-                  <p className="text-muted-foreground text-sm">
-                    <a href="tel:+255748364714" className="hover:text-foreground underline-offset-4 hover:underline">
-                      0748364714
-                    </a>
-                  </p>
                 </div>
               </div>
 

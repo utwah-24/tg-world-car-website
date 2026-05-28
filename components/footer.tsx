@@ -86,7 +86,7 @@ export function Footer({ logoDark = "/logos/Logo%20tg1.png" }: FooterProps) {
             <ul className="space-y-3">
               <li className="flex items-center gap-3 text-sm text-background/70">
                 <Phone className="w-4 h-4 shrink-0" />
-                <span>+255 123 456 789</span>
+                <span>0754 441 146</span>
               </li>
               <li className="flex items-center gap-3 text-sm text-background/70">
                 <Mail className="w-4 h-4 shrink-0" />
