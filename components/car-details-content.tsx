@@ -243,100 +243,129 @@ export function CarDetailsContent({ car }: CarDetailsContentProps) {
               </div>
             )}
 
-            {/* Description - Redesigned */}
+            {/* Description — Specifications + Features */}
             {car.description && (
-              <div className="mt-6 bg-card rounded-2xl p-6 border border-border animate-fade-in-up" style={{ animationDelay: "0.6s", opacity: 0, animationFillMode: "forwards" }}>
-                <h2 className="text-xl font-bold mb-6 text-foreground flex items-center gap-2">
-                  <span className="text-2xl">📋</span>
-                  Vehicle Details
-                </h2>
-                
+              <div className="mt-6 bg-white rounded-2xl border border-border p-6 space-y-8 animate-fade-in-up" style={{ animationDelay: "0.6s", opacity: 0, animationFillMode: "forwards" }}>
                 {(() => {
                   const desc = car.description.replace('[THIRD_PARTY] ', '')
-                  const lines = desc.split('\n').filter(line => line.trim())
-                  
-                  // Extract different sections
-                  const specs: { label: string, value: string, IconComponent: any }[] = []
-                  const highlights: string[] = []
-                  
+                  const lines = desc.split('\n').filter(l => l.trim())
+
+                  // Ordered spec rows to parse
+                  const specDefs: { label: string; pattern: RegExp }[] = [
+                    { label: 'Engine Size',   pattern: /Engine Size\s*:\s*(.+)/i },
+                    { label: 'Fuel',          pattern: /Fuel\s*:\s*(.+)/i },
+                    { label: 'Transmission',  pattern: /Transmission\s*:\s*(.+)/i },
+                    { label: 'Mileage',       pattern: /Mileage\s*:\s*(.+)/i },
+                    { label: 'Colour',        pattern: /Colou?r\s*:\s*(.+)/i },
+                    { label: 'Seat Capacity', pattern: /Seat Capacity\s*:\s*(.+)/i },
+                    { label: 'Doors',         pattern: /Doors\s*:\s*(.+)/i },
+                    { label: 'Drive',         pattern: /Drive\s*:\s*(.+)/i },
+                    { label: 'Body Type',     pattern: /Body Type\s*:\s*(.+)/i },
+                  ]
+
+                  const specs: { label: string; value: string }[] = []
+                  const featureLines: string[] = []
+                  let inFeatures = false
+
                   lines.forEach(line => {
-                    const priceMatch = line.match(/Price\s*:\s*(.+)/i)
-                    const engineMatch = line.match(/Engine Size\s*:\s*(.+)/i)
-                    const fuelMatch = line.match(/Fuel\s*:\s*(.+)/i)
-                    const transMatch = line.match(/Transmission\s*:\s*(.+)/i)
-                    const mileageMatch = line.match(/Mileage\s*:\s*(.+)/i)
-                    const driveMatch = line.match(/Drive\s*:\s*(.+)/i)
-                    const seatsMatch = line.match(/Seat Capacity\s*:\s*(.+)/i)
-                    const colorMatch = line.match(/Colou?r\s*:\s*(.+)/i)
-                    const featuresMatch = line.match(/Features\s*:\s*(.+)/i)
-                    
-                    if (priceMatch) specs.push({ label: 'Price', value: priceMatch[1].trim(), IconComponent: DollarSign })
-                    else if (engineMatch) specs.push({ label: 'Engine', value: engineMatch[1].trim(), IconComponent: Cog })
-                    else if (fuelMatch) specs.push({ label: 'Fuel Type', value: fuelMatch[1].trim(), IconComponent: Fuel })
-                    else if (transMatch) specs.push({ label: 'Transmission', value: transMatch[1].trim(), IconComponent: Settings })
-                    else if (mileageMatch) specs.push({ label: 'Mileage', value: mileageMatch[1].trim(), IconComponent: Gauge })
-                    else if (driveMatch) specs.push({ label: 'Drive Type', value: driveMatch[1].trim(), IconComponent: CarIcon })
-                    else if (seatsMatch) specs.push({ label: 'Seats', value: seatsMatch[1].trim(), IconComponent: Users })
-                    else if (colorMatch) specs.push({ label: 'Color', value: colorMatch[1].trim(), IconComponent: Palette })
-                    else if (featuresMatch) highlights.push(featuresMatch[1].trim())
-                    else if (line.trim() && !line.includes(':') && line.length > 10) {
-                      highlights.push(line.trim())
+                    const trimmed = line.trim()
+
+                    // Features block — inline "Features : A | B" or "Features:" on its own line
+                    if (/^Features\s*:/i.test(trimmed)) {
+                      inFeatures = true
+                      const afterLabel = trimmed.replace(/^Features\s*:\s*/i, '').trim()
+                      if (afterLabel) featureLines.push(afterLabel)
+                      return
+                    }
+
+                    if (inFeatures) {
+                      // Stop when a new labelled field starts (e.g. "Location : ...")
+                      if (/^[A-Za-z][\w\s]*\s*:\s*.+/i.test(trimmed) && !trimmed.includes('|')) {
+                        inFeatures = false
+                      } else {
+                        featureLines.push(trimmed)
+                        return
+                      }
+                    }
+
+                    for (const def of specDefs) {
+                      const m = trimmed.match(def.pattern)
+                      if (m) {
+                        specs.push({ label: def.label, value: m[1].trim() })
+                        return
+                      }
                     }
                   })
-                  
+
+                  const features = featureLines
+                    .join(' ')
+                    .split('|')
+                    .map(f => f.trim())
+                    .filter(Boolean)
+
+                  // Split specs into two columns
+                  const half = Math.ceil(specs.length / 2)
+                  const leftSpecs = specs.slice(0, half)
+                  const rightSpecs = specs.slice(half)
+
                   return (
-                    <div className="space-y-6">
-                      {/* Specifications Grid */}
+                    <>
+                      {/* Specifications */}
                       {specs.length > 0 && (
                         <div>
-                          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4">Specifications</h3>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {specs.map((spec, index) => {
-                              const Icon = spec.IconComponent
-                              return (
-                                <div 
-                                  key={index} 
-                                  className="flex items-start gap-3 p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
-                                >
-                                  <div className="shrink-0 w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                                    <Icon className="w-5 h-5 text-primary" />
+                          <h2 className="text-lg font-bold text-foreground mb-3">Specifications</h2>
+                          <div className="rounded-xl border border-border overflow-hidden">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-border bg-white">
+                              {/* Left column */}
+                              <div className="divide-y divide-border">
+                                {leftSpecs.map((spec, i) => (
+                                  <div key={i} className="flex items-center justify-between px-6 py-3.5">
+                                    <span className="text-sm text-muted-foreground">{spec.label}</span>
+                                    <span className="text-sm font-semibold text-foreground text-right ml-4">{spec.value}</span>
                                   </div>
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-xs text-muted-foreground font-medium">{spec.label}</p>
-                                    <p className="text-sm font-semibold text-foreground mt-0.5 truncate">{spec.value}</p>
-                                  </div>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        </div>
-                      )}
-                      
-                      {/* Highlights */}
-                      {highlights.length > 0 && (
-                        <div>
-                          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4">Highlights</h3>
-                          <div className="space-y-2">
-                            {highlights.map((highlight, index) => (
-                              <div 
-                                key={index}
-                                className="flex items-start gap-3 p-3 rounded-lg bg-primary/5 border-l-4 border-primary"
-                              >
-                                <Check className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                                <p className="text-sm text-foreground leading-relaxed">{highlight}</p>
+                                ))}
                               </div>
-                            ))}
+                              {/* Right column */}
+                              <div className="divide-y divide-border">
+                                {rightSpecs.map((spec, i) => (
+                                  <div key={i} className="flex items-center justify-between px-6 py-3.5">
+                                    <span className="text-sm text-muted-foreground">{spec.label}</span>
+                                    <span className="text-sm font-semibold text-foreground text-right ml-4">{spec.value}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       )}
-                      
-                      {/* Full Description Fallback */}
-                      {specs.length === 0 && highlights.length === 0 && (
-                        <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
-                          {desc}
-                        </p>
+
+                      {/* Features */}
+                      {features.length > 0 && (
+                        <div>
+                          <h2 className="text-lg font-bold text-foreground mb-3">Features</h2>
+                          <div className="rounded-xl border border-border bg-white px-6 py-5">
+                            <div className="flex flex-wrap gap-2">
+                              {features.map((feat, i) => (
+                                <span
+                                  key={i}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-gray-50 text-sm text-foreground"
+                                >
+                                  <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                                  {feat}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
                       )}
-                    </div>
+
+                      {/* Fallback: raw text if nothing parsed */}
+                      {specs.length === 0 && features.length === 0 && (
+                        <div>
+                          <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">{desc}</p>
+                        </div>
+                      )}
+                    </>
                   )
                 })()}
               </div>
