@@ -144,7 +144,7 @@ export function InfoCards({
           <h2 className="text-lg font-semibold text-foreground mb-3">
             Browse by Company
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
             {visibleCompanies.map((company) => {
               const key = company.trim().toLowerCase()
               const logoUrl = logoMap.get(key)
@@ -153,32 +153,32 @@ export function InfoCards({
                 <a
                   key={company}
                   href={`/shop?company=${encodeURIComponent(company)}`}
-                  className="flex flex-col items-center justify-center gap-3 py-5 px-4 rounded-xl border border-border hover:border-primary hover:bg-muted transition-all duration-150 group"
+                  className="flex flex-col items-center justify-center gap-1.5 py-3 px-2.5 rounded-lg border border-border hover:border-primary hover:bg-muted transition-all duration-150 group"
                 >
                   {/* Logo */}
-                  <div className="w-20 h-20 flex items-center justify-center overflow-hidden">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center overflow-hidden">
                     {logoUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={logoUrl}
                         alt={company}
-                        width={80}
-                        height={80}
+                        width={56}
+                        height={56}
                         className="object-contain w-full h-full"
                       />
                     ) : (
-                      <span className="text-3xl font-bold text-muted-foreground uppercase">
+                      <span className="text-xl font-bold text-muted-foreground uppercase">
                         {company.charAt(0)}
                       </span>
                     )}
                   </div>
                   {/* Label */}
-                  <div className="flex flex-col items-center gap-0.5 text-center">
-                    <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors leading-tight">
+                  <div className="flex flex-col items-center gap-0 text-center">
+                    <span className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors leading-tight">
                       {company}
                     </span>
                     {count > 0 && (
-                      <span className="text-xs text-muted-foreground leading-tight">
+                      <span className="text-[10px] text-muted-foreground leading-tight">
                         {count} {count === 1 ? "car" : "cars"}
                       </span>
                     )}
