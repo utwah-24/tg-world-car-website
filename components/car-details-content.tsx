@@ -4,12 +4,24 @@ import { useState } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ChevronLeft, ChevronRight, MapPin, Fuel, Gauge, Calendar, Car as CarIcon, DollarSign, Cog, Palette, Settings, Users, Check, Link, CheckCheck } from "lucide-react"
+import { ChevronLeft, ChevronRight, MapPin, Fuel, Gauge, Calendar, Car as CarIcon, DollarSign, Cog, Palette, Settings, Users, Check, Link, CheckCheck, Download } from "lucide-react"
 import type { Car } from "@/lib/cars-data"
 import { isThirdPartyCar } from "@/lib/cars-data"
 
 interface CarDetailsContentProps {
   car: Car
+}
+
+/** CRC-32 for ZIP local file headers — standard table-based implementation */
+function crc32(data: Uint8Array): number {
+  let crc = 0xffffffff
+  for (let i = 0; i < data.length; i++) {
+    crc ^= data[i]
+    for (let j = 0; j < 8; j++) {
+      crc = crc & 1 ? (crc >>> 1) ^ 0xedb88320 : crc >>> 1
+    }
+  }
+  return (crc ^ 0xffffffff) >>> 0
 }
 
 export function CarDetailsContent({ car }: CarDetailsContentProps) {
@@ -19,11 +31,119 @@ export function CarDetailsContent({ car }: CarDetailsContentProps) {
   const yearPrefix = car.year ? `${car.year} ` : ""
   const isThirdParty = isThirdPartyCar(car)
 
+  const [downloading, setDownloading] = useState(false)
+
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href).then(() => {
       setCopied(true)
       setTimeout(() => setCopied(false), 2500)
     })
+  }
+
+  const handleDownloadPhotos = async () => {
+    if (downloading) return
+    setDownloading(true)
+    const allImages = (car.images && car.images.length > 0 ? car.images : [car.image]).filter(Boolean) as string[]
+    const carSlug = (car.name || "car").replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_-]/g, "")
+
+    try {
+      // Fetch all images via proxy (avoids CORS)
+      const files: { name: string; data: Uint8Array }[] = []
+      for (let i = 0; i < allImages.length; i++) {
+        const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(allImages[i])}`
+        const res = await fetch(proxyUrl)
+        if (!res.ok) continue
+        const blob = await res.blob()
+        const ext = blob.type.includes("png") ? "png" : blob.type.includes("webp") ? "webp" : "jpg"
+        const buf = await blob.arrayBuffer()
+        files.push({ name: `${carSlug}_photo_${i + 1}.${ext}`, data: new Uint8Array(buf) })
+      }
+
+      if (files.length === 0) return
+
+      // Build a ZIP file manually (PKZIP STORED — no compression, no dependencies)
+      const zipParts: Uint8Array[] = []
+      const centralDir: Uint8Array[] = []
+      const encoder = new TextEncoder()
+      let offset = 0
+
+      for (const file of files) {
+        const nameBytes = encoder.encode(file.name)
+        const crc = crc32(file.data)
+        const size = file.data.length
+
+        // Local file header
+        const local = new DataView(new ArrayBuffer(30 + nameBytes.length))
+        local.setUint32(0, 0x04034b50, true)  // signature
+        local.setUint16(4, 20, true)           // version needed
+        local.setUint16(6, 0, true)            // flags
+        local.setUint16(8, 0, true)            // STORED (no compression)
+        local.setUint16(10, 0, true)           // mod time
+        local.setUint16(12, 0, true)           // mod date
+        local.setUint32(14, crc, true)
+        local.setUint32(18, size, true)
+        local.setUint32(22, size, true)
+        local.setUint16(26, nameBytes.length, true)
+        local.setUint16(28, 0, true)
+        nameBytes.forEach((b, j) => local.setUint8(30 + j, b))
+        const localArr = new Uint8Array(local.buffer)
+        zipParts.push(localArr)
+        zipParts.push(file.data)
+
+        // Central directory entry
+        const cd = new DataView(new ArrayBuffer(46 + nameBytes.length))
+        cd.setUint32(0, 0x02014b50, true)
+        cd.setUint16(4, 20, true)
+        cd.setUint16(6, 20, true)
+        cd.setUint16(8, 0, true)
+        cd.setUint16(10, 0, true)
+        cd.setUint16(12, 0, true)
+        cd.setUint16(14, 0, true)
+        cd.setUint32(16, crc, true)
+        cd.setUint32(20, size, true)
+        cd.setUint32(24, size, true)
+        cd.setUint16(28, nameBytes.length, true)
+        cd.setUint16(30, 0, true)
+        cd.setUint16(32, 0, true)
+        cd.setUint16(34, 0, true)
+        cd.setUint16(36, 0, true)
+        cd.setUint32(38, 0, true)
+        cd.setUint32(42, offset, true)
+        nameBytes.forEach((b, j) => cd.setUint8(46 + j, b))
+        centralDir.push(new Uint8Array(cd.buffer))
+
+        offset += localArr.length + file.data.length
+      }
+
+      const cdSize = centralDir.reduce((s, a) => s + a.length, 0)
+      const eocd = new DataView(new ArrayBuffer(22))
+      eocd.setUint32(0, 0x06054b50, true)
+      eocd.setUint16(4, 0, true)
+      eocd.setUint16(6, 0, true)
+      eocd.setUint16(8, files.length, true)
+      eocd.setUint16(10, files.length, true)
+      eocd.setUint32(12, cdSize, true)
+      eocd.setUint32(16, offset, true)
+      eocd.setUint16(20, 0, true)
+
+      const all = [...zipParts, ...centralDir, new Uint8Array(eocd.buffer)]
+      const total = all.reduce((s, a) => s + a.length, 0)
+      const zip = new Uint8Array(total)
+      let pos = 0
+      for (const chunk of all) { zip.set(chunk, pos); pos += chunk.length }
+
+      const blob = new Blob([zip], { type: "application/zip" })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `${carSlug}_photos.zip`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } finally {
+      setDownloading(false)
+    }
   }
 
   const nextImage = () => {
@@ -40,6 +160,8 @@ export function CarDetailsContent({ car }: CarDetailsContentProps) {
         {/* Breadcrumb */}
         <div className="mb-6 text-sm text-muted-foreground animate-fade-in-up">
           <a href="/" className="hover:text-primary">Home</a>
+          <span className="mx-2">/</span>
+          <a href="/shop" className="hover:text-primary">Shop</a>
           <span className="mx-2">/</span>
           <span className="text-foreground">{yearPrefix}{car.name}</span>
         </div>
@@ -69,7 +191,7 @@ export function CarDetailsContent({ car }: CarDetailsContentProps) {
                   }
                 </Button>
               </div>
-              <div className="flex items-start mb-2">
+              <div className="flex items-start justify-between mb-2 gap-4">
                 <div>
                   <div className="flex flex-wrap items-center gap-2 mt-2">
                     {/* Location */}
@@ -108,6 +230,18 @@ export function CarDetailsContent({ car }: CarDetailsContentProps) {
                     )}
                   </div>
                 </div>
+
+                {/* Download photos button */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDownloadPhotos}
+                  disabled={downloading}
+                  className="shrink-0 rounded-full gap-1.5 text-xs border-border mt-2"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  {downloading ? "Downloading…" : `Download photos${images.length > 1 ? ` (${images.length})` : ""}`}
+                </Button>
               </div>
             </div>
 

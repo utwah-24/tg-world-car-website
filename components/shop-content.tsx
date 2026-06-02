@@ -103,15 +103,16 @@ function filterByInDar(cars: Car[], inDarOnly: boolean): Car[] {
   return cars.filter((car) => car.inDar === true)
 }
 
-/** Shop sidebar buckets: under 15M, then 25M-wide bands through 140M, then over 140M */
+/** Shop sidebar price buckets (millions TZS) */
 const PRICE_BUCKETS: { id: string; label: string; match: (pm: number) => boolean }[] = [
-  { id: "price-under-15", label: "Under 15 million Tshs", match: (pm) => pm < 15 },
-  { id: "price-15-40", label: "15 million - 40 million Tshs", match: (pm) => pm >= 15 && pm < 40 },
-  { id: "price-40-65", label: "40 million - 65 million Tshs", match: (pm) => pm >= 40 && pm < 65 },
-  { id: "price-65-90", label: "65 million - 90 million Tshs", match: (pm) => pm >= 65 && pm < 90 },
-  { id: "price-90-115", label: "90 million - 115 million Tshs", match: (pm) => pm >= 90 && pm < 115 },
-  { id: "price-115-140", label: "115 million - 140 million Tshs", match: (pm) => pm >= 115 && pm < 140 },
-  { id: "price-over-140", label: "Over 140 million Tshs", match: (pm) => pm >= 140 },
+  { id: "price-under-20", label: "Under 20M Tshs", match: (pm) => pm < 20 },
+  { id: "price-20-40", label: "20M – 40M Tshs", match: (pm) => pm >= 20 && pm < 40 },
+  { id: "price-40-60", label: "40M – 60M Tshs", match: (pm) => pm >= 40 && pm < 60 },
+  { id: "price-60-80", label: "60M – 80M Tshs", match: (pm) => pm >= 60 && pm < 80 },
+  { id: "price-80-100", label: "80M – 100M Tshs", match: (pm) => pm >= 80 && pm < 100 },
+  { id: "price-100-150", label: "100M – 150M Tshs", match: (pm) => pm >= 100 && pm < 150 },
+  { id: "price-150-180", label: "150M – 180M Tshs", match: (pm) => pm >= 150 && pm < 180 },
+  { id: "price-180-plus", label: "180M+", match: (pm) => pm >= 180 },
 ]
 
 function filterByPriceBucket(cars: Car[], bucketId: string | null): Car[] {
@@ -244,6 +245,8 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
     if (q) setSearchQuery(decodeURIComponent(q))
     if (params.get("latest") === "1") setActiveLatest(true)
     if (params.get("in_dar") === "1") setFilterInDar(true)
+    const price = params.get("price")
+    if (price && PRICE_BUCKETS.some((b) => b.id === price)) setActivePriceRange(price)
   }, [])
 
   // Apply ?category= once inventory lists that type (new API types included automatically)

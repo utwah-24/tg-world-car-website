@@ -139,6 +139,44 @@ export function InfoCards({
     <section className="py-6 px-4 sm:px-6 lg:px-8 border-b border-border">
       <div className="max-w-7xl mx-auto space-y-6">
 
+        {/* Browse by Budget */}
+        <div>
+          <h2 className="text-lg font-semibold text-foreground mb-3">
+            Browse by Budget
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
+            {([
+              { label: "Under 20M Tshs", image: "/browse by budget/under_20M.jpg",  price: "price-under-20" },
+              { label: "20M – 40M Tshs",  image: "/browse by budget/20M-40M.png",   price: "price-20-40" },
+              { label: "40M – 60M Tshs",  image: "/browse by budget/40M-60M.PNG",   price: "price-40-60" },
+              { label: "60M – 80M Tshs",  image: "/browse by budget/60M-80M.jpg",   price: "price-60-80" },
+              { label: "80M – 100M Tshs", image: "/browse by budget/80M-100M.jpg",  price: "price-80-100" },
+              { label: "100M – 150M Tshs",image: "/browse by budget/100M+.jpeg",    price: "price-100-150" },
+              { label: "180M+",           image: "/browse by budget/180 M+.png",    price: "price-180-plus" },
+            ] as const).map(({ label, image, price }) => (
+              <a
+                key={price}
+                href={`/shop?price=${price}`}
+                  className="group relative rounded-xl overflow-hidden bg-muted border border-border/40 hover:border-primary/60 hover:shadow-md transition-all duration-200"
+              >
+                {/* Car image fills card */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={image}
+                  alt={label}
+                  className="w-full h-40 sm:h-48 object-cover object-center transition-transform duration-300 group-hover:scale-105"
+                />
+                {/* Label below image */}
+                <div className="px-3 py-2.5 bg-primary">
+                  <span className="text-xs sm:text-sm font-semibold text-white">
+                    {label}
+                  </span>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+
         {/* Browse by Company */}
         <div>
           <h2 className="text-lg font-semibold text-foreground mb-3">

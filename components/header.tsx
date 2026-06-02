@@ -134,7 +134,7 @@ export function Header({ logoLight = "/logos/Logo%20tg1.png", logoDark: _logoDar
                 <DropdownMenuContent align="end" className="z-[60] min-w-[12rem]">
                   <DropdownMenuItem onClick={() => goToSection("latest")}>Latest</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => goToSection("popular")}>Popular</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => goToSection("top-picks")}>Top Picks for you</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => goToSection("coming-soon-preview")}>Coming soon</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
@@ -246,10 +246,10 @@ export function Header({ logoLight = "/logos/Logo%20tg1.png", logoDark: _logoDar
             </button>
             <button
               type="button"
-              onClick={() => goToSection("top-picks")}
+              onClick={() => goToSection("coming-soon-preview")}
               className="text-left pl-4 py-3 text-base text-white/95 rounded-xl hover:bg-white/10 transition-colors"
             >
-              Top Picks for you
+              Coming soon
             </button>
             <button
               type="button"
