@@ -38,6 +38,10 @@ export interface Car {
   arrivalDate?: string
   /** Effective stock count; null = pre-cutoff (treat as 1); 0 = sold out */
   totalAvailable?: number | null
+  /** When true, show the "Book a test drive" banner on the car details page */
+  testDriveAvailable?: boolean
+  /** Dealer notes from API; null when empty */
+  notes?: string | null
 }
 
 /** Third-party: `condition` from the main API and/or `[THIRD_PARTY]` from the partner feed */

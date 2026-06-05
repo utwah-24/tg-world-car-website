@@ -2,9 +2,10 @@
 
 import { useState } from "react"
 import Image from "next/image"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ChevronLeft, ChevronRight, MapPin, Fuel, Gauge, Calendar, Car as CarIcon, DollarSign, Cog, Palette, Settings, Users, Check, Link, CheckCheck, Download } from "lucide-react"
+import { ChevronLeft, ChevronRight, MapPin, Fuel, Gauge, Calendar, Car as CarIcon, DollarSign, Cog, Palette, Settings, Users, Check, Link as LinkIcon, CheckCheck, Download } from "lucide-react"
 import type { Car } from "@/lib/cars-data"
 import { isThirdPartyCar } from "@/lib/cars-data"
 
@@ -187,7 +188,7 @@ export function CarDetailsContent({ car }: CarDetailsContentProps) {
                 >
                   {copied
                     ? <><CheckCheck className="w-3.5 h-3.5 text-emerald-500" /> Copied!</>
-                    : <><Link className="w-3.5 h-3.5" /> Copy Link</>
+                    : <><LinkIcon className="w-3.5 h-3.5" /> Copy Link</>
                   }
                 </Button>
               </div>
@@ -307,6 +308,37 @@ export function CarDetailsContent({ car }: CarDetailsContentProps) {
             )}
 
             {/* Overview Section */}
+            {/* Book a Test Drive banner — only when API sets test_drive_available to true */}
+            {car.testDriveAvailable && (
+              <div className="mt-8 rounded-2xl overflow-hidden border border-border animate-fade-in-up flex flex-col sm:flex-row" style={{ animationDelay: "0.35s", opacity: 0, animationFillMode: "forwards", minHeight: "160px" }}>
+                {/* Left: dark text panel */}
+                <div className="flex-1 bg-black flex flex-col justify-center px-7 py-8 sm:py-6">
+                  <h1 className="font-[family-name:var(--font-outfit),sans-serif] text-2xl sm:text-3xl font-extrabold leading-tight mb-2" style={{ color: "#FF6600" }}>
+                    Book a test drive
+                  </h1>
+                  <p className="text-white/85 text-sm sm:text-base mb-5 max-w-xs">
+                    Experience this vehicle firsthand. Schedule a test drive at your convenience
+                  </p>
+                  <Link
+                    href={`/test-drive/${car.id}`}
+                    className="inline-flex items-center justify-center w-fit px-6 py-2.5 rounded-full font-semibold text-sm text-white transition-all duration-200 hover:opacity-90"
+                    style={{ backgroundColor: "#FF6600" }}
+                  >
+                    Book now
+                  </Link>
+                </div>
+                {/* Right: photo */}
+                <div className="relative w-full sm:w-64 md:w-80 shrink-0" style={{ minHeight: "180px" }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/test_drive.jpg"
+                    alt="Test drive"
+                    className="absolute inset-0 w-full h-full object-cover object-center"
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="mt-8 bg-card rounded-2xl p-6 border border-border animate-fade-in-up" style={{ animationDelay: "0.4s", opacity: 0, animationFillMode: "forwards" }}>
               <h2 className="text-xl font-bold mb-4 text-foreground">Overview</h2>
               
@@ -551,6 +583,14 @@ export function CarDetailsContent({ car }: CarDetailsContentProps) {
                     <span className="font-medium text-foreground">{car.fuel}</span>
                   </div>
                 )}
+              </div>
+
+              {/* Notes */}
+              <div className="mt-6 pt-6 border-t border-border">
+                <h3 className="font-semibold text-foreground mb-2">Notes</h3>
+                <p className="font-[family-name:var(--font-carter-one),system-ui] font-light text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+                  {car.notes?.trim() ? car.notes.trim() : "null"}
+                </p>
               </div>
 
               {/* Contact Dealer */}

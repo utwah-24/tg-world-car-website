@@ -42,6 +42,10 @@ interface RawCarFromAPI {
   chassis_no?: string
   /** How many units are available; null means the field was not set (older records) */
   total_available?: number | null
+  /** When true, the car details page shows the "Book a test drive" banner */
+  test_drive_available?: boolean
+  /** Optional dealer notes shown on the car details page */
+  notes?: string | null
   created_at: string
   updated_at: string
 }
@@ -90,6 +94,10 @@ export interface CarFromAPI {
   arrivalDate?: string
   /** Effective stock count; null means pre-cutoff (treat as 1) */
   totalAvailable?: number | null
+  /** When true, show the "Book a test drive" banner on the car details page */
+  testDriveAvailable?: boolean
+  /** Dealer notes from API; null when empty */
+  notes?: string | null
 }
 
 /** Map Laravel `registration` string to boolean; unknown/missing → undefined (no UI badge). */
@@ -261,6 +269,8 @@ function transformCarData(rawCar: RawCarFromAPI, orderedKeys?: Set<string>): Car
       if (!d || d.startsWith("0000")) return undefined
       return d
     })(),
+    testDriveAvailable: rawCar.test_drive_available === true,
+    notes: rawCar.notes?.trim() ? rawCar.notes.trim() : null,
   }
 }
 

@@ -1,6 +1,6 @@
 import React from "react"
 import type { Metadata } from 'next'
-import { Playfair_Display, Inter, Lato, Outfit } from 'next/font/google'
+import { Playfair_Display, Inter, Lato, Outfit, Carter_One } from 'next/font/google'
 import './globals.css'
 
 const playfair = Playfair_Display({ 
@@ -22,6 +22,12 @@ const lato = Lato({
 const outfit = Outfit({
   subsets: ['latin'],
   variable: '--font-outfit',
+})
+
+const carterOne = Carter_One({
+  subsets: ['latin'],
+  weight: '400',
+  variable: '--font-carter-one',
 })
 
 export const metadata: Metadata = {
@@ -63,7 +69,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${playfair.variable} ${inter.variable} ${lato.variable} ${outfit.variable} font-sans antialiased`}>{children}</body>
+      <body className={`${playfair.variable} ${inter.variable} ${lato.variable} ${outfit.variable} ${carterOne.variable} font-sans antialiased`}>{children}</body>
     </html>
   )
 }
