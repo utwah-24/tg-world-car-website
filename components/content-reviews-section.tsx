@@ -52,12 +52,16 @@ export function ContentReviewsSection({ videos }: ContentReviewsSectionProps) {
             </h2>
             <div className="mb-4 animate-fade-in-up">
               <span className="inline-block text-2xl sm:text-3xl font-bold text-primary bg-primary/10 px-4 py-2 rounded-lg border-l-4 border-primary">
-                Hi, I am Sharif 👋
+                Salaam, I&apos;m Sharif 👋
               </span>
             </div>
-            <p className="text-background/80 text-sm sm:text-base max-w-3xl leading-relaxed">
-              Welcome to TG World&apos;s exclusive car review collection! Watch authentic, detailed reviews of every vehicle in our inventory. From powerful engines to luxurious interiors, I personally showcase each car&apos;s features, performance, and unique qualities to help you make the best decision. Real cars, real reviews, real value.
-            </p>
+            <div className="text-background/80 text-sm sm:text-base max-w-3xl leading-relaxed space-y-4">
+              <p>Karibu TG World, the best home of 4x4s in Tanzania. 🚘🔥</p>
+              <p>
+                Here, you&apos;ll find authentic car reviews, honest insights, and up-close looks at some of the finest vehicles in our collection. Whether you&apos;re searching for your next ride or simply love cars, you&apos;re in the right place.
+              </p>
+              <p>Explore. Learn. Drive with confidence. Welcome to TG World.</p>
+            </div>
           </div>
         </div>
 

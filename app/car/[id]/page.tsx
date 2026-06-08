@@ -61,6 +61,7 @@ export default async function CarDetailsPage({
     .filter(c =>
       c.id !== car.id &&
       c.category !== "sold-out" &&
+      c.category !== "coming-soon" &&
       !!(car.company && c.company?.toLowerCase() === car.company.toLowerCase()) &&
       !!(car.type && c.type?.toLowerCase() === car.type.toLowerCase()) &&
       c.model !== car.model

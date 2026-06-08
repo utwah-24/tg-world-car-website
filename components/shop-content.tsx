@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react"
 import { CarCard } from "./car-card"
-import { buildCompanyLogoMap, BrandOptionRow, CompanyOptionRow } from "@/components/company-select-option"
+import { buildCompanyLogoMap, CompanyOptionRow } from "@/components/company-select-option"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
@@ -81,16 +81,6 @@ function filterByCompany(cars: Car[], company: string): Car[] {
   return cars.filter(car => (car.company || "").toLowerCase() === company.toLowerCase())
 }
 
-function filterByBrand(cars: Car[], brand: string): Car[] {
-  if (!brand) return cars
-  return cars.filter(car => (car.brand || "").toLowerCase() === brand.toLowerCase())
-}
-
-function filterByModel(cars: Car[], model: string): Car[] {
-  if (!model) return cars
-  return cars.filter(car => (car.model || "").toLowerCase() === model.toLowerCase())
-}
-
 function filterByRegistration(cars: Car[], registrationId: string | null): Car[] {
   if (!registrationId) return cars
   if (registrationId === "registered") return cars.filter((car) => car.registered === true)
@@ -160,8 +150,6 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
   const [listingOpen, setListingOpen] = useState(true)
   const [conditionOpen, setConditionOpen] = useState(true)
   const [selectedCompany, setSelectedCompany] = useState("")
-  const [selectedBrand, setSelectedBrand] = useState("")
-  const [selectedModel, setSelectedModel] = useState("")
   const [filterInDar, setFilterInDar] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
@@ -175,8 +163,6 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
     activeLatest ||
     activeRegistration !== null ||
     !!selectedCompany ||
-    !!selectedBrand ||
-    !!selectedModel ||
     filterInDar
 
   // Prevent document scroll; only the car list panel scrolls (see layout: h-[100dvh] overflow-hidden).
@@ -202,46 +188,14 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
 
   const companyLogoMap = useMemo(() => buildCompanyLogoMap(companyLogos), [companyLogos])
 
-  // Brand list filtered to only brands that belong to the selected company (or all brands)
-  const brandOptions = useMemo(() => {
-    const source = selectedCompany ? filterByCompany(cars, selectedCompany) : cars
-    const set = new Set<string>()
-    source.forEach(car => { if (car.brand) set.add(car.brand) })
-    return Array.from(set).sort()
-  }, [cars, selectedCompany])
-
-  /** First inventory company per brand (for logo); when a company filter is set, logos match that dealer. */
-  const companyNameForBrand = useMemo(() => {
-    const source = selectedCompany ? filterByCompany(cars, selectedCompany) : cars
-    const m = new Map<string, string>()
-    for (const car of source) {
-      if (!car.brand || !car.company) continue
-      if (!m.has(car.brand)) m.set(car.brand, car.company)
-    }
-    return m
-  }, [cars, selectedCompany])
-
-  // Model list filtered to only models that belong to the selected company/brand
-  const modelOptions = useMemo(() => {
-    let source = selectedCompany ? filterByCompany(cars, selectedCompany) : cars
-    if (selectedBrand) source = filterByBrand(source, selectedBrand)
-    const set = new Set<string>()
-    source.forEach(car => { if (car.model) set.add(car.model) })
-    return Array.from(set).sort()
-  }, [cars, selectedCompany, selectedBrand])
-
   /** Type filters: built from live inventory so any new API `type` appears after normalizeCarType(). */
   const typeFilters = useMemo(() => buildShopTypeFilterRows(cars), [cars])
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const company = params.get("company")
-    const brand = params.get("brand")
-    const model = params.get("model")
     const q = params.get("q")
     if (company) setSelectedCompany(decodeURIComponent(company))
-    if (brand) setSelectedBrand(decodeURIComponent(brand))
-    if (model) setSelectedModel(decodeURIComponent(model))
     if (q) setSearchQuery(decodeURIComponent(q))
     if (params.get("latest") === "1") setActiveLatest(true)
     if (params.get("in_dar") === "1") setFilterInDar(true)
@@ -265,8 +219,6 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
     filtered = filterByType(filtered, activeType)
     filtered = filterByCondition(filtered, activeCondition)
     filtered = filterByCompany(filtered, selectedCompany)
-    filtered = filterByBrand(filtered, selectedBrand)
-    filtered = filterByModel(filtered, selectedModel)
     if (activeLatest) filtered = filtered.filter((car) => isCarInLatestWindow(car.createdAt))
 
     if (searchQuery.trim()) {
@@ -278,7 +230,7 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
     }
 
     return filtered
-  }, [cars, filterInDar, activeType, activeCondition, selectedCompany, selectedBrand, selectedModel, activeLatest, searchQuery])
+  }, [cars, filterInDar, activeType, activeCondition, selectedCompany, activeLatest, searchQuery])
 
   const carsMatchingFiltersExceptPrice = useMemo(
     () => filterByRegistration(carsMatchingFiltersExceptPriceAndRegistration, activeRegistration),
@@ -320,25 +272,11 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
     setMileageOpen(false)
     setTypeOpen(false)
     setSelectedCompany("")
-    setSelectedBrand("")
-    setSelectedModel("")
     setFilterInDar(false)
   }
 
-  // When company changes, reset brand and model selection
   const handleCompanyChange = (value: string) => {
     setSelectedCompany(value === "__all__" ? "" : value)
-    setSelectedBrand("")
-    setSelectedModel("")
-  }
-
-  const handleBrandChange = (value: string) => {
-    setSelectedBrand(value === "__all__" ? "" : value)
-    setSelectedModel("")
-  }
-
-  const handleModelChange = (value: string) => {
-    setSelectedModel(value === "__all__" ? "" : value)
   }
 
   const handleClearSearch = () => setSearchQuery("")
@@ -397,47 +335,11 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
               <SelectTrigger className="h-11 w-full rounded-xl border-border bg-card text-sm [&>span]:flex [&>span]:min-w-0 [&>span]:items-center [&>span]:gap-2.5 [&>span]:line-clamp-none">
                 <SelectValue placeholder="Company" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent fourRowList>
                 <SelectItem value="__all__">All Companies</SelectItem>
                 {companyOptions.map(company => (
                   <SelectItem key={company} value={company} className="py-2 pr-2 [&>span:last-child]:flex [&>span:last-child]:w-full [&>span:last-child]:min-w-0">
                     <CompanyOptionRow name={company} logoMap={companyLogoMap} />
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={selectedBrand || "__all__"} onValueChange={handleBrandChange}>
-              <SelectTrigger className="h-11 w-full rounded-xl border-border bg-card text-sm [&>span]:flex [&>span]:min-w-0 [&>span]:items-center [&>span]:gap-2.5 [&>span]:line-clamp-none">
-                <SelectValue placeholder="Brand" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__all__">All Brands</SelectItem>
-                {brandOptions.map((brand) => (
-                  <SelectItem
-                    key={brand}
-                    value={brand}
-                    className="py-2 pr-2 [&>span:last-child]:flex [&>span:last-child]:w-full [&>span:last-child]:min-w-0"
-                  >
-                    <BrandOptionRow
-                      brand={brand}
-                      logoCompanyName={companyNameForBrand.get(brand) ?? ""}
-                      logoMap={companyLogoMap}
-                    />
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={selectedModel || "__all__"} onValueChange={handleModelChange}>
-              <SelectTrigger className="h-11 w-full rounded-xl border-border bg-card text-sm">
-                <SelectValue placeholder="Model" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__all__">All Models</SelectItem>
-                {modelOptions.map((model) => (
-                  <SelectItem key={model} value={model}>
-                    {model}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -708,7 +610,7 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
             <SheetHeader className="space-y-1 text-left">
               <SheetTitle>Filters</SheetTitle>
               <SheetDescription className="sr-only">
-                Narrow the vehicle list by search, company, brand, price, mileage, listing, registration, type, and condition.
+                Narrow the vehicle list by search, company, price, mileage, listing, registration, type, and condition.
               </SheetDescription>
             </SheetHeader>
           </div>
@@ -896,8 +798,6 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
               {activeMileageLabel && <span> · {activeMileageLabel}</span>}
               {filterInDar && <span> · Dar es Salaam</span>}
               {selectedCompany && <span> · {selectedCompany}</span>}
-              {selectedBrand && <span> · {selectedBrand}</span>}
-              {selectedModel && <span> · {selectedModel}</span>}
               {searchQuery && <span> matching &ldquo;{searchQuery}&rdquo;</span>}
             </p>
           </div>
