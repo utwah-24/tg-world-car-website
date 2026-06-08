@@ -57,10 +57,20 @@ export default async function CarDetailsPage({
     notFound()
   }
 
+  const relatedCars = allCars
+    .filter(c =>
+      c.id !== car.id &&
+      c.category !== "sold-out" &&
+      !!(car.company && c.company?.toLowerCase() === car.company.toLowerCase()) &&
+      !!(car.type && c.type?.toLowerCase() === car.type.toLowerCase()) &&
+      c.model !== car.model
+    )
+    .slice(0, 4)
+
   return (
     <main className="min-h-screen bg-background">
       <HeaderWrapper />
-      <CarDetailsContent car={car} />
+      <CarDetailsContent car={car} relatedCars={relatedCars} />
       <FooterWrapper />
     </main>
   )

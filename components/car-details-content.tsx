@@ -8,9 +8,11 @@ import { Badge } from "@/components/ui/badge"
 import { ChevronLeft, ChevronRight, MapPin, Fuel, Gauge, Calendar, Car as CarIcon, DollarSign, Cog, Palette, Settings, Users, Check, Link as LinkIcon, CheckCheck, Download } from "lucide-react"
 import type { Car } from "@/lib/cars-data"
 import { isThirdPartyCar } from "@/lib/cars-data"
+import { CarCard } from "@/components/car-card"
 
 interface CarDetailsContentProps {
   car: Car
+  relatedCars?: Car[]
 }
 
 /** CRC-32 for ZIP local file headers — standard table-based implementation */
@@ -25,7 +27,7 @@ function crc32(data: Uint8Array): number {
   return (crc ^ 0xffffffff) >>> 0
 }
 
-export function CarDetailsContent({ car }: CarDetailsContentProps) {
+export function CarDetailsContent({ car, relatedCars = [] }: CarDetailsContentProps) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [copied, setCopied] = useState(false)
   const images = car.images && car.images.length > 0 ? car.images : [car.image]
@@ -539,7 +541,15 @@ export function CarDetailsContent({ car }: CarDetailsContentProps) {
           </div>
 
           {/* Right Column - Pricing & Contact */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 flex flex-col gap-4">
+            {/* Notes Card — separate, above the pricing sticky */}
+            <div className="bg-card rounded-2xl p-6 border border-border animate-slide-in-right" style={{ animationDelay: "0.25s", opacity: 0, animationFillMode: "forwards" }}>
+              <h3 className="font-semibold text-foreground mb-2">Notes</h3>
+              <p className="font-[family-name:var(--font-carter-one),system-ui] font-light text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+                {car.notes?.trim() ? car.notes.trim() : "null"}
+              </p>
+            </div>
+
             {/* Pricing Card */}
             <div className="bg-card rounded-2xl p-6 border border-border sticky top-24 animate-slide-in-right" style={{ animationDelay: "0.3s", opacity: 0, animationFillMode: "forwards" }}>
               <div className="mb-6">
@@ -585,14 +595,6 @@ export function CarDetailsContent({ car }: CarDetailsContentProps) {
                 )}
               </div>
 
-              {/* Notes */}
-              <div className="mt-6 pt-6 border-t border-border">
-                <h3 className="font-semibold text-foreground mb-2">Notes</h3>
-                <p className="font-[family-name:var(--font-carter-one),system-ui] font-light text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
-                  {car.notes?.trim() ? car.notes.trim() : "null"}
-                </p>
-              </div>
-
               {/* Contact Dealer */}
               <div className="mt-6 pt-6 border-t border-border">
                 <h3 className="font-semibold text-foreground mb-2">TG World</h3>
@@ -608,6 +610,22 @@ export function CarDetailsContent({ car }: CarDetailsContentProps) {
             </div>
           </div>
         </div>
+
+        {/* You may also like */}
+        {relatedCars.length > 0 && (
+          <div className="mt-14">
+            <h2 className="font-[family-name:var(--font-outfit),sans-serif] text-2xl font-bold text-foreground mb-6">
+              You may also like
+            </h2>
+            <div className="flex gap-4 overflow-x-auto pb-3 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 scrollbar-hide">
+              {relatedCars.map((related, i) => (
+                <div key={related.id} className="flex-none w-56 sm:w-64">
+                  <CarCard car={related} compact delay={i * 80} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

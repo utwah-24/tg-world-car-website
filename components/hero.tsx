@@ -18,7 +18,7 @@ export function Hero() {
   return (
     <section id="home" className="relative scroll-mt-20 lg:scroll-mt-24">
       {/* Hero slideshow background */}
-      <div className="relative h-[50vh] min-h-[360px] overflow-hidden">
+      <div className="relative h-[60vh] min-h-[480px] overflow-hidden">
         {HERO_SLIDES.map((imageSrc, idx) => (
           <img
             key={imageSrc}
