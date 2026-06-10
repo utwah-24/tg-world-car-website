@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -11,6 +11,7 @@ import {
 import { Menu, X, ChevronDown } from "lucide-react"
 import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
+import { candidateCarTypeIconPaths } from "@/lib/car-type"
 import { cn } from "@/lib/utils"
 
 /** Header logo once the nav turns white on scroll (`Logo tg2.png`). */
@@ -19,10 +20,89 @@ const HEADER_LOGO_MARKETING = "/logos/Logo%20tg2.png"
 interface HeaderProps {
   logoLight?: string
   logoDark?: string
+  stockCompanies?: StockCompany[]
+  stockCounts?: Record<string, number>
+  totalStockCount?: number
 }
 
-export function Header({ logoLight = "/logos/Logo%20tg1.png", logoDark: _logoDark = "/logos/Logo%20tg1.png" }: HeaderProps) {
+interface StockCompany {
+  label: string
+  logoUrl: string
+  href: string
+  count: number
+}
+
+const stockFilterColumns = [
+  {
+    title: "Search by type",
+    items: [
+      { label: "SUV", href: "/shop?stock=list&category=suv", icon: "suv" },
+      { label: "Crossover SUV", href: "/shop?stock=list&category=crossover_suv", icon: "crossover_suv" },
+      { label: "Pickup", href: "/shop?stock=list&category=pickup", icon: "pickup" },
+      { label: "Sedan", href: "/shop?stock=list&category=sedan", icon: "sedan" },
+      { label: "Van", href: "/shop?stock=list&category=van", icon: "van" },
+      { label: "Truck", href: "/shop?stock=list&category=truck", icon: "truck" },
+    ],
+  },
+  {
+    title: "Car price",
+    items: [
+      { label: "Under 20M Tshs", href: "/shop?stock=list&price=price-under-20" },
+      { label: "20M - 40M Tshs", href: "/shop?stock=list&price=price-20-40" },
+      { label: "40M - 60M Tshs", href: "/shop?stock=list&price=price-40-60" },
+      { label: "60M - 80M Tshs", href: "/shop?stock=list&price=price-60-80" },
+      { label: "80M - 100M Tshs", href: "/shop?stock=list&price=price-80-100" },
+      { label: "100M - 150M Tshs", href: "/shop?stock=list&price=price-100-150" },
+      { label: "180M+", href: "/shop?stock=list&price=price-180-plus" },
+    ],
+  },
+  {
+    title: "More filters",
+    items: [
+      { label: "Latest cars", href: "/shop?stock=list&latest=1" },
+      { label: "In Dar es Salaam", href: "/shop?stock=list&in_dar=1" },
+      { label: "New", href: "/shop?stock=list&condition=new" },
+      { label: "Second Hand", href: "/shop?stock=list&condition=second_hand" },
+      { label: "Third Party", href: "/shop?stock=list&condition=third_party" },
+      { label: "Registered", href: "/shop?stock=list&registration=registered" },
+      { label: "Unregistered", href: "/shop?stock=list&registration=unregistered" },
+      { label: "Over 50,000 km", href: "/shop?stock=list&mileage=mileage-over-50k" },
+    ],
+  },
+]
+
+function StockTypeIcon({ canon, label }: { canon: string; label: string }) {
+  const paths = useMemo(() => candidateCarTypeIconPaths(canon, label), [canon, label])
+  const [srcIndex, setSrcIndex] = useState(0)
+
+  useEffect(() => {
+    setSrcIndex(0)
+  }, [paths])
+
+  if (srcIndex >= paths.length) return null
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={paths[srcIndex]}
+      alt=""
+      width={24}
+      height={24}
+      className="h-full w-full object-contain p-0.5"
+      onError={() => setSrcIndex((i) => i + 1)}
+    />
+  )
+}
+
+export function Header({
+  logoLight = "/logos/Logo%20tg1.png",
+  logoDark: _logoDark = "/logos/Logo%20tg1.png",
+  stockCompanies = [],
+  stockCounts = {},
+  totalStockCount,
+}: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [stockMenuOpen, setStockMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
@@ -30,6 +110,7 @@ export function Header({ logoLight = "/logos/Logo%20tg1.png", logoDark: _logoDar
   const isHome = normalizedPath === "/"
   const isContentPage = normalizedPath === "/content"
   const isAboutPage = normalizedPath === "/about"
+  const isShopPage = normalizedPath === "/shop"
   const headerLogoSrc = isContentPage
     ? (scrolled ? HEADER_LOGO_MARKETING : logoLight)
     : isHome
@@ -142,6 +223,93 @@ export function Header({ logoLight = "/logos/Logo%20tg1.png", logoDark: _logoDar
                 Content
               </button>
 
+              <DropdownMenu open={stockMenuOpen} onOpenChange={setStockMenuOpen}>
+                <DropdownMenuTrigger className={cn(dropdownTriggerClass, isShopPage && !heroContrast && "font-semibold text-primary hover:bg-primary/10 hover:text-primary")}>
+                  Stock list
+                  <ChevronDown className="h-4 w-4 opacity-70" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="z-[80] w-[min(860px,calc(100vw-2rem))] rounded-xl p-0 shadow-xl">
+                  <div className="grid grid-cols-4 gap-8 p-7">
+                    <div className="min-w-0">
+                      <p className="mb-3 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                        Search by make
+                      </p>
+                      <div className="max-h-64 space-y-1 overflow-y-auto pr-1">
+                        {stockCompanies.map((company) => (
+                          <a
+                            key={company.href}
+                            href={company.href}
+                            className="flex w-full items-center justify-between gap-3 rounded-md px-2 py-1.5 text-left text-sm font-medium text-foreground transition-colors hover:bg-muted hover:text-primary"
+                          >
+                            <span className="flex min-w-0 items-center gap-2">
+                              <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border/60 bg-background">
+                                {company.logoUrl ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img
+                                    src={company.logoUrl}
+                                    alt=""
+                                    width={24}
+                                    height={24}
+                                    className="h-full w-full object-contain p-0.5"
+                                  />
+                                ) : (
+                                  <span className="text-[10px] font-bold text-muted-foreground leading-none">
+                                    {company.label.charAt(0).toUpperCase()}
+                                  </span>
+                                )}
+                              </span>
+                              <span className="min-w-0 truncate">{company.label}</span>
+                            </span>
+                            <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                              ({company.count})
+                            </span>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                    {stockFilterColumns.map((column) => (
+                      <div key={column.title} className="min-w-0">
+                        <p className="mb-3 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                          {column.title}
+                        </p>
+                        <div className="space-y-1">
+                          {column.items.map((item) => (
+                            <a
+                              key={item.href}
+                              href={item.href}
+                              className="flex w-full items-center justify-between gap-3 rounded-md px-2 py-1.5 text-left text-sm font-medium text-foreground transition-colors hover:bg-muted hover:text-primary"
+                            >
+                              <span className="flex min-w-0 items-center gap-2">
+                                {"icon" in item && item.icon && (
+                                  <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border/60 bg-background">
+                                    <StockTypeIcon canon={item.icon} label={item.label} />
+                                  </span>
+                                )}
+                                <span className="min-w-0 truncate">{item.label}</span>
+                              </span>
+                              <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                                ({stockCounts[item.href] ?? 0})
+                              </span>
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="border-t border-border bg-muted/40 px-7 py-4">
+                    <a
+                      href="/shop?stock=list"
+                      className="inline-flex items-center gap-2 rounded-md bg-neutral-900 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-neutral-700"
+                    >
+                      <span>View all stock</span>
+                      {typeof totalStockCount === "number" && (
+                        <span className="text-white/70 tabular-nums">({totalStockCount})</span>
+                      )}
+                    </a>
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
               <button
                 type="button"
                 onClick={() => {
@@ -186,6 +354,15 @@ export function Header({ logoLight = "/logos/Logo%20tg1.png", logoDark: _logoDar
         </div>
       </div>
     </header>
+
+    {stockMenuOpen && (
+      <button
+        type="button"
+        aria-label="Close stock list"
+        className="fixed inset-0 z-40 hidden cursor-default bg-black/15 backdrop-blur-md lg:block"
+        onClick={() => setStockMenuOpen(false)}
+      />
+    )}
 
     {/* Fullscreen mobile / tablet menu — blur + subtle motion */}
     {isMenuOpen && (
@@ -257,6 +434,16 @@ export function Header({ logoLight = "/logos/Logo%20tg1.png", logoDark: _logoDar
               className="text-left py-3.5 text-lg font-medium text-white rounded-xl hover:bg-white/10 transition-colors px-1 mt-2"
             >
               Content
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                router.push("/shop?stock=list")
+                closeMenu()
+              }}
+              className="text-left py-3.5 text-lg font-medium text-white rounded-xl hover:bg-white/10 transition-colors px-1"
+            >
+              Stock list
             </button>
             <button
               type="button"

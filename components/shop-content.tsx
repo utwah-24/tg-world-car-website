@@ -116,6 +116,20 @@ function filterByPriceBucket(cars: Car[], bucketId: string | null): Car[] {
   })
 }
 
+function sortByPriceLowToHigh(cars: Car[]): Car[] {
+  return [...cars].sort((a, b) => {
+    const pa = parsePriceMillions(a.price || "")
+    const pb = parsePriceMillions(b.price || "")
+    const priceA = pa ?? Number.POSITIVE_INFINITY
+    const priceB = pb ?? Number.POSITIVE_INFINITY
+    if (priceA !== priceB) return priceA - priceB
+
+    const ta = a.createdAt ? Date.parse(a.createdAt) : 0
+    const tb = b.createdAt ? Date.parse(b.createdAt) : 0
+    return tb - ta
+  })
+}
+
 /** Shop mileage buckets (km); overlaps avoided at boundaries. */
 const MILEAGE_BUCKETS: { id: string; label: string; match: (km: number) => boolean }[] = [
   { id: "mileage-0-20k", label: "0 km – 20,000 km", match: (km) => km >= 0 && km <= 20_000 },
@@ -193,6 +207,16 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
+    const showStockList = params.get("stock") === "list"
+    if (showStockList) {
+      setPriceOpen(true)
+      setMileageOpen(true)
+      setTypeOpen(true)
+      setMakeOpen(true)
+      setListingOpen(true)
+      setConditionOpen(true)
+    }
+
     const company = params.get("company")
     const q = params.get("q")
     if (company) setSelectedCompany(decodeURIComponent(company))
@@ -200,14 +224,34 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
     if (params.get("latest") === "1") setActiveLatest(true)
     if (params.get("in_dar") === "1") setFilterInDar(true)
     const price = params.get("price")
-    if (price && PRICE_BUCKETS.some((b) => b.id === price)) setActivePriceRange(price)
+    if (price && PRICE_BUCKETS.some((b) => b.id === price)) {
+      setActivePriceRange(price)
+      setPriceOpen(true)
+    }
+    const mileage = params.get("mileage")
+    if (mileage && MILEAGE_BUCKETS.some((b) => b.id === mileage)) {
+      setActiveMileageRange(mileage)
+      setMileageOpen(true)
+    }
+    const condition = params.get("condition")
+    if (condition && conditionFilters.some((f) => f.id === condition)) {
+      setActiveCondition(condition)
+      setConditionOpen(true)
+    }
+    const registration = params.get("registration")
+    if (registration && registrationFilters.some((f) => f.id === registration)) {
+      setActiveRegistration(registration)
+      setListingOpen(true)
+    }
   }, [])
 
   // Apply ?category= once inventory lists that type (new API types included automatically)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const category = params.get("category")
+    const showStockList = params.get("stock") === "list"
     const rows = buildShopTypeFilterRows(cars)
+    if (showStockList) setTypeOpen(true)
     if (category && rows.some((f) => f.id === category)) {
       setActiveType(category)
       setTypeOpen(true)
@@ -244,12 +288,14 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
 
   const filteredCars = useMemo(() => {
     const results = filterByMileageBucket(carsMatchingPrice, activeMileageRange)
+    if (activePriceRange) return sortByPriceLowToHigh(results)
+
     return [...results].sort((a, b) => {
       const ta = a.createdAt ? Date.parse(a.createdAt) : 0
       const tb = b.createdAt ? Date.parse(b.createdAt) : 0
       return tb - ta
     })
-  }, [carsMatchingPrice, activeMileageRange])
+  }, [carsMatchingPrice, activeMileageRange, activePriceRange])
 
   const shopTitle = filterInDar ? "Vehicles in Dar es Salaam" : "Shop All Vehicles"
   const shopSubtitle = filterInDar
