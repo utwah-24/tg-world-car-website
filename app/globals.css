@@ -206,3 +206,27 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  @keyframes shop-card-highlight {
+    0% {
+      box-shadow: 0 0 0 0 hsl(var(--primary) / 0.55);
+      transform: scale(1);
+    }
+    12%,
+    78% {
+      box-shadow: 0 0 0 6px hsl(var(--primary) / 0.28), 0 18px 38px hsl(var(--primary) / 0.18);
+      transform: scale(1.015);
+    }
+    100% {
+      box-shadow: 0 0 0 0 hsl(var(--primary) / 0);
+      transform: scale(1);
+    }
+  }
+
+  .shop-card-highlight {
+    animation: shop-card-highlight 5s ease-in-out;
+    position: relative;
+    z-index: 1;
+  }
+}

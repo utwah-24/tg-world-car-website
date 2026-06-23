@@ -8,46 +8,12 @@ import { Badge } from "@/components/ui/badge"
 import { ChevronLeft, ChevronRight, MapPin, Fuel, Gauge, Calendar, Car as CarIcon, DollarSign, Cog, Palette, Settings, Users, Check, Link as LinkIcon, CheckCheck, Download, Phone } from "lucide-react"
 import type { Car } from "@/lib/cars-data"
 import { isThirdPartyCar } from "@/lib/cars-data"
+import { DEALER_CONTACTS, tzPhoneHref, tzWhatsAppHref } from "@/lib/dealer-contacts"
 import { CarCard } from "@/components/car-card"
 
 interface CarDetailsContentProps {
   car: Car
   relatedCars?: Car[]
-}
-
-const DEALER_CONTACTS = [
-  {
-    name: "Sharif Issa",
-    image: "/Team /Sharif/sharif.jpeg",
-    phone: "0748364714",
-    whatsapp: "0748364714",
-  },
-  {
-    name: "Deogratious Temba",
-    image: "/Team /Deo/deo.jpeg",
-    phone: "0754444146",
-    whatsapp: "0754441146",
-  },
-  {
-    name: "Calvin Temba",
-    image: "/Team /Calvin/Calvin.jpeg",
-    phone: "0768425380",
-    whatsapp: "0768425380",
-  },
-] as const
-
-function tzPhoneHref(local: string) {
-  const digits = local.replace(/\D/g, "")
-  const intl = digits.startsWith("255") ? digits : `255${digits.replace(/^0/, "")}`
-  return `tel:+${intl}`
-}
-
-function tzWhatsAppHref(local: string, message?: string) {
-  const digits = local.replace(/\D/g, "")
-  const intl = digits.startsWith("255") ? digits : `255${digits.replace(/^0/, "")}`
-  const base = `https://wa.me/${intl}`
-  if (!message) return base
-  return `${base}?text=${encodeURIComponent(message)}`
 }
 
 function WhatsAppIcon({ className }: { className?: string }) {
@@ -79,15 +45,22 @@ export function CarDetailsContent({ car, relatedCars = [] }: CarDetailsContentPr
 
   const [downloading, setDownloading] = useState(false)
   const [carPageUrl, setCarPageUrl] = useState("")
+  const fallbackReturnToShopHref = `/shop?highlight=${encodeURIComponent(car.id)}`
+  const [returnToShopHref, setReturnToShopHref] = useState(fallbackReturnToShopHref)
 
   useEffect(() => {
     setCarPageUrl(window.location.href)
-  }, [])
+    try {
+      setReturnToShopHref(sessionStorage.getItem(`tg-world-return-to-shop:${car.id}`) || fallbackReturnToShopHref)
+    } catch {
+      setReturnToShopHref(fallbackReturnToShopHref)
+    }
+  }, [car.id, fallbackReturnToShopHref])
 
   const carLabel = `${yearPrefix}${car.name}`.trim()
 
   const buildCarInquiryWhatsAppHref = (whatsapp: string) => {
-    const pageUrl = carPageUrl || window.location.href
+    const pageUrl = carPageUrl
     const text = `I would like more info on ${carLabel}\n\n${pageUrl}`
     return tzWhatsAppHref(whatsapp, text)
   }
@@ -217,12 +190,15 @@ export function CarDetailsContent({ car, relatedCars = [] }: CarDetailsContentPr
     <div className="pt-20 pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Breadcrumb */}
-        <div className="mb-6 text-sm text-muted-foreground animate-fade-in-up">
-          <a href="/" className="hover:text-primary">Home</a>
-          <span className="mx-2">/</span>
-          <a href="/shop" className="hover:text-primary">Shop</a>
-          <span className="mx-2">/</span>
-          <span className="text-foreground">{yearPrefix}{car.name}</span>
+        <div className="mb-6 animate-fade-in-up">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+            <Button asChild variant="ghost" size="sm" className="h-auto rounded-full border-0 bg-transparent px-2 py-1 text-sm font-medium text-foreground shadow-none hover:bg-transparent hover:text-primary">
+              <Link href={returnToShopHref}>
+                <ChevronLeft className="mr-1 h-3.5 w-3.5" />
+                Back to Shop
+              </Link>
+            </Button>
+          </div>
         </div>
 
         {/* Main Content Grid */}

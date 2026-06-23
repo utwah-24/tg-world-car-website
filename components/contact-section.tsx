@@ -1,6 +1,7 @@
 "use client"
 
 import React from "react"
+import Image from "next/image"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Phone, MapPin, ExternalLink, MessageCircle } from "lucide-react"
 import { useState } from "react"
 import { useScrollAnimation } from "@/hooks/use-scroll-animation"
+import { DEALER_CONTACTS, tzPhoneHref, tzWhatsAppHref } from "@/lib/dealer-contacts"
 
 const GOOGLE_MAPS_LOCATION_URL = "https://maps.app.goo.gl/MJ1xDiQjc1XpLbR29"
 /** Tanzania WhatsApp — 0754 441 146 */
@@ -144,23 +146,46 @@ export function ContactSection() {
             style={{ transitionDelay: "200ms" }}
           >
             <div className="space-y-5">
-              <a
-                href={WHATSAPP_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group flex items-start gap-4 p-5 bg-card rounded-2xl border border-border transition-all duration-200 hover:border-[#25D366]/50 hover:bg-[#25D366]/[0.04] hover:shadow-md"
-              >
-                <div className="w-12 h-12 rounded-xl bg-[#25D366]/15 flex items-center justify-center shrink-0">
-                  <MessageCircle className="w-5 h-5 text-[#25D366]" aria-hidden />
+              <div className="p-5 bg-card rounded-2xl border border-border">
+                <h4 className="font-semibold text-foreground mb-4">Contact Dealer</h4>
+                <div className="divide-y divide-border">
+                  {DEALER_CONTACTS.map((contact) => (
+                    <div key={contact.name} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-muted">
+                        <Image
+                          src={contact.image}
+                          alt={contact.name}
+                          fill
+                          className="object-cover"
+                          sizes="48px"
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-bold text-foreground leading-tight">{contact.name}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{contact.phone}</p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <a
+                          href={tzPhoneHref(contact.phone)}
+                          className="flex h-10 w-10 items-center justify-center rounded-full bg-[#2D9CDB] text-white shadow-md transition-opacity hover:opacity-90"
+                          aria-label={`Call ${contact.name}`}
+                        >
+                          <Phone className="h-5 w-5" />
+                        </a>
+                        <a
+                          href={tzWhatsAppHref(contact.whatsapp)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex h-10 w-10 items-center justify-center rounded-full bg-[#25D366] text-white shadow-md transition-opacity hover:opacity-90"
+                          aria-label={`WhatsApp ${contact.name}`}
+                        >
+                          <MessageCircle className="h-5 w-5" />
+                        </a>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div>
-                  <h4 className="font-semibold text-foreground">WhatsApp Us</h4>
-                  <p className="text-muted-foreground text-sm mt-1 group-hover:text-foreground transition-colors">
-                    0754 441 146
-                  </p>
-                  <p className="text-xs text-[#25D366] font-medium mt-2">Chat on WhatsApp →</p>
-                </div>
-              </a>
+              </div>
 
               <div className="flex items-start gap-4 p-5 bg-card rounded-2xl border border-border">
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">

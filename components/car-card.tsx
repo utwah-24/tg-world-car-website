@@ -20,6 +20,8 @@ interface CarCardProps {
   delay?: number
   /** Image + name + price only; no specs row, summary, or Shop Now (e.g. Coming Soon home strip) */
   minimalListing?: boolean
+  /** Shop URL used by the detail page's Back to Shop button. */
+  returnToShopHref?: string
 }
 
 function mileageFromDescription(description: string): string | null {
@@ -61,6 +63,7 @@ export function CarCard({
   badgeVariant = "default",
   delay = 0,
   minimalListing = false,
+  returnToShopHref,
 }: CarCardProps) {
   const isSoldOut = car.category === "sold-out"
   const isComingSoon = car.category === "coming-soon"
@@ -125,6 +128,17 @@ export function CarCard({
   const cleanSummary = desc ? getCleanSummary(desc) : ""
 
   const registration = car.registered
+  const goToDetails = () => {
+    if (isSoldOut) return
+    if (returnToShopHref) {
+      try {
+        sessionStorage.setItem(`tg-world-return-to-shop:${car.id}`, returnToShopHref)
+      } catch {
+        // Ignore storage failures; navigation still works.
+      }
+    }
+    window.location.href = `/car/${car.id}`
+  }
 
   return (
     <div
@@ -137,9 +151,19 @@ export function CarCard({
       style={{ transitionDelay: `${delay}ms` }}
     >
       <Card
+        role={isSoldOut ? undefined : "link"}
+        tabIndex={isSoldOut ? undefined : 0}
+        onClick={goToDetails}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault()
+            goToDetails()
+          }
+        }}
         className={cn(
           "group h-full flex flex-col overflow-hidden border-border bg-card hover:shadow-xl transition-all duration-300",
           compact ? "rounded-xl" : "rounded-2xl",
+          !isSoldOut && "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
           isSoldOut && "opacity-80",
         )}
       >
@@ -386,7 +410,10 @@ export function CarCard({
             {/* CTA Button */}
             <div className={cn("mt-auto", compact ? "pt-2 sm:pt-2.5" : "pt-3 sm:pt-4")}>
               <Button
-                onClick={() => window.location.href = `/car/${car.id}`}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  goToDetails()
+                }}
                 className={cn(
                   "w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-full font-medium",
                   compact ? "h-7 sm:h-8 text-[10px] sm:text-xs px-2" : "h-9 text-xs sm:text-sm",

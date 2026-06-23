@@ -1,11 +1,18 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useRef } from "react"
 import { CarCard } from "./car-card"
 import { buildCompanyLogoMap, CompanyOptionRow } from "@/components/company-select-option"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
 import { isThirdPartyCar, type Car } from "@/lib/cars-data"
 import { Car as CarIcon, Search, X, RotateCcw, SlidersHorizontal, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react"
 import {
@@ -61,6 +68,8 @@ const registrationFilters = [
   { id: "registered", label: "Registered" },
   { id: "unregistered", label: "Unregistered" },
 ]
+
+const CARS_PER_PAGE = 25
 
 function filterByType(cars: Car[], typeId: string | null): Car[] {
   if (!typeId) return cars
@@ -151,6 +160,8 @@ function filterByMileageBucket(cars: Car[], bucketId: string | null): Car[] {
 }
 
 export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
+  const didMountPageResetRef = useRef(false)
+  const skipNextPageResetRef = useRef(false)
   const [activeType, setActiveType] = useState<string | null>(null)
   const [activeCondition, setActiveCondition] = useState<string | null>(null)
   const [activePriceRange, setActivePriceRange] = useState<string | null>(null)
@@ -168,6 +179,10 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
   const [desktopFiltersVisible, setDesktopFiltersVisible] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [stockListMode, setStockListMode] = useState(false)
+  const [highlightedCarId, setHighlightedCarId] = useState<string | null>(null)
+  const [highlightActive, setHighlightActive] = useState(false)
 
   const hasActiveFilters =
     activeType !== null ||
@@ -208,6 +223,9 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const showStockList = params.get("stock") === "list"
+    const highlight = params.get("highlight")
+    const page = Number(params.get("page"))
+    setStockListMode(showStockList)
     if (showStockList) {
       setPriceOpen(true)
       setMileageOpen(true)
@@ -215,6 +233,14 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
       setMakeOpen(true)
       setListingOpen(true)
       setConditionOpen(true)
+    }
+    if (Number.isFinite(page) && page > 0) {
+      skipNextPageResetRef.current = true
+      setCurrentPage(Math.floor(page))
+    }
+    if (highlight) {
+      setHighlightedCarId(highlight)
+      setHighlightActive(true)
     }
 
     const company = params.get("company")
@@ -253,6 +279,7 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
     const rows = buildShopTypeFilterRows(cars)
     if (showStockList) setTypeOpen(true)
     if (category && rows.some((f) => f.id === category)) {
+      skipNextPageResetRef.current = true
       setActiveType(category)
       setTypeOpen(true)
     }
@@ -297,6 +324,87 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
     })
   }, [carsMatchingPrice, activeMileageRange, activePriceRange])
 
+  const totalPages = Math.max(1, Math.ceil(filteredCars.length / CARS_PER_PAGE))
+  const pageStartIndex = (currentPage - 1) * CARS_PER_PAGE
+  const paginatedCars = filteredCars.slice(pageStartIndex, pageStartIndex + CARS_PER_PAGE)
+  const visibleStart = filteredCars.length === 0 ? 0 : pageStartIndex + 1
+  const visibleEnd = Math.min(pageStartIndex + paginatedCars.length, filteredCars.length)
+
+  useEffect(() => {
+    if (!didMountPageResetRef.current) {
+      didMountPageResetRef.current = true
+      return
+    }
+    if (skipNextPageResetRef.current) {
+      skipNextPageResetRef.current = false
+      return
+    }
+    setCurrentPage(1)
+  }, [
+    activeType,
+    activeCondition,
+    activePriceRange,
+    activeMileageRange,
+    activeLatest,
+    activeRegistration,
+    selectedCompany,
+    filterInDar,
+    searchQuery,
+  ])
+
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(page, totalPages))
+  }, [totalPages])
+
+  useEffect(() => {
+    if (!highlightedCarId) return
+    const highlightedIndex = filteredCars.findIndex((car) => car.id === highlightedCarId)
+    if (highlightedIndex < 0) return
+    const highlightedPage = Math.floor(highlightedIndex / CARS_PER_PAGE) + 1
+    setCurrentPage(highlightedPage)
+  }, [filteredCars, highlightedCarId])
+
+  useEffect(() => {
+    if (!highlightedCarId || !paginatedCars.some((car) => car.id === highlightedCarId)) return
+
+    const scrollFrame = requestAnimationFrame(() => {
+      document
+        .getElementById(`shop-car-${highlightedCarId}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" })
+    })
+    const timeout = window.setTimeout(() => setHighlightActive(false), 5000)
+
+    return () => {
+      cancelAnimationFrame(scrollFrame)
+      window.clearTimeout(timeout)
+    }
+  }, [highlightedCarId, paginatedCars])
+
+  const goToResultsPage = (page: number) => {
+    const nextPage = Math.min(Math.max(page, 1), totalPages)
+    setCurrentPage(nextPage)
+    requestAnimationFrame(() => {
+      document.getElementById("results")?.scrollIntoView({ behavior: "smooth", block: "start" })
+    })
+  }
+
+  const buildReturnToShopHref = (carId: string) => {
+    const params = new URLSearchParams()
+    if (stockListMode) params.set("stock", "list")
+    if (selectedCompany) params.set("company", selectedCompany)
+    if (searchQuery.trim()) params.set("q", searchQuery.trim())
+    if (activeLatest) params.set("latest", "1")
+    if (filterInDar) params.set("in_dar", "1")
+    if (activePriceRange) params.set("price", activePriceRange)
+    if (activeMileageRange) params.set("mileage", activeMileageRange)
+    if (activeCondition) params.set("condition", activeCondition)
+    if (activeRegistration) params.set("registration", activeRegistration)
+    if (activeType) params.set("category", activeType)
+    params.set("page", String(currentPage))
+    params.set("highlight", carId)
+    return `/shop?${params.toString()}`
+  }
+
   const shopTitle = filterInDar ? "Vehicles in Dar es Salaam" : "Shop All Vehicles"
   const shopSubtitle = filterInDar
     ? `Showing ${filteredCars.length} vehicle${filteredCars.length === 1 ? "" : "s"} available in Dar es Salaam`
@@ -319,6 +427,7 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
     setTypeOpen(false)
     setSelectedCompany("")
     setFilterInDar(false)
+    setCurrentPage(1)
   }
 
   const handleCompanyChange = (value: string) => {
@@ -836,7 +945,8 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
             style={{ animationDelay: "0.1s", opacity: 0, animationFillMode: "forwards" }}
           >
             <p className="text-sm text-muted-foreground text-left">
-              Showing {filteredCars.length} {filteredCars.length === 1 ? "vehicle" : "vehicles"}
+              Showing {visibleStart}
+              {filteredCars.length > 0 && <span>–{visibleEnd}</span>} of {filteredCars.length} {filteredCars.length === 1 ? "vehicle" : "vehicles"}
               {activeTypeLabel && <span> · {activeTypeLabel}</span>}
               {activeConditionLabel && <span> · {activeConditionLabel}</span>}
               {activeRegistrationLabel && <span> · {activeRegistrationLabel}</span>}
@@ -858,21 +968,79 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2.5 sm:gap-3 lg:gap-3">
-                {filteredCars.map((car, index) => (
-                  <div
-                    key={car.id}
-                    className="animate-fade-in-up"
-                    style={{
-                      animationDelay: `${0.15 + (index * 0.05)}s`,
-                      opacity: 0,
-                      animationFillMode: "forwards",
-                    }}
-                  >
-                    <CarCard car={car} compact />
-                  </div>
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2.5 sm:gap-3 lg:gap-3">
+                  {paginatedCars.map((car, index) => (
+                    <div
+                      key={car.id}
+                      id={`shop-car-${car.id}`}
+                      className="animate-fade-in-up"
+                      style={{
+                        animationDelay: `${0.15 + (index * 0.03)}s`,
+                        opacity: 0,
+                        animationFillMode: "forwards",
+                      }}
+                    >
+                      <div
+                        className={cn(
+                          "rounded-xl",
+                          highlightActive && highlightedCarId === car.id && "shop-card-highlight",
+                        )}
+                      >
+                        <CarCard car={car} compact returnToShopHref={buildReturnToShopHref(car.id)} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {totalPages > 1 && (
+                  <Pagination className="mt-8 pb-2">
+                    <PaginationContent className="flex-wrap justify-center gap-2">
+                      <PaginationItem>
+                        <PaginationPrevious
+                          href="#results"
+                          aria-disabled={currentPage === 1}
+                          onClick={(event) => {
+                            event.preventDefault()
+                            if (currentPage > 1) goToResultsPage(currentPage - 1)
+                          }}
+                          className={cn(currentPage === 1 && "pointer-events-none opacity-50")}
+                        />
+                      </PaginationItem>
+
+                      {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+                        <PaginationItem key={page}>
+                          <button
+                            type="button"
+                            aria-current={page === currentPage ? "page" : undefined}
+                            onClick={() => goToResultsPage(page)}
+                            className={cn(
+                              "h-9 min-w-9 rounded-md px-3 text-sm font-medium transition-colors",
+                              page === currentPage
+                                ? "border border-input bg-background shadow-sm"
+                                : "hover:bg-accent hover:text-accent-foreground",
+                            )}
+                          >
+                            {page}
+                          </button>
+                        </PaginationItem>
+                      ))}
+
+                      <PaginationItem>
+                        <PaginationNext
+                          href="#results"
+                          aria-disabled={currentPage === totalPages}
+                          onClick={(event) => {
+                            event.preventDefault()
+                            if (currentPage < totalPages) goToResultsPage(currentPage + 1)
+                          }}
+                          className={cn(currentPage === totalPages && "pointer-events-none opacity-50")}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                )}
+              </>
             )}
           </div>
         </div>
