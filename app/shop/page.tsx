@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { HeaderWrapper } from "@/components/header-wrapper"
 import { ShopContent } from "@/components/shop-content"
-import { getAllCars } from "@/lib/cars-data"
+import { getAllCars, getSoldCarsForShop } from "@/lib/cars-data"
 import { fetchCompanyLogos } from "@/lib/api"
 
 export const revalidate = 0
@@ -96,13 +96,19 @@ export async function generateMetadata({
 }
 
 export default async function ShopPage() {
-  const [allCars, companyLogos] = await Promise.all([getAllCars(), fetchCompanyLogos()])
+  const allCars = await getAllCars()
+  const [companyLogos, soldCars] = await Promise.all([
+    fetchCompanyLogos(),
+    getSoldCarsForShop(allCars),
+  ])
 
-  // Exclude cars that are still waiting to arrive (arrivalDate in the future) or are sold out
+  const soldCarIds = new Set(soldCars.map((car) => car.id))
+
+  // Exclude sold-out inventory, future arrivals, and cars listed in /api/sold-cars
   const today = new Date()
   today.setHours(0, 0, 0, 0)
-  const shopCars = allCars.filter((car) => {
-    if (car.category === "sold-out") return false
+  const availableCars = allCars.filter((car) => {
+    if (car.category === "sold-out" || soldCarIds.has(car.id)) return false
     if (car.arrivalDate) {
       const arrival = new Date(car.arrivalDate)
       arrival.setHours(0, 0, 0, 0)
@@ -110,6 +116,8 @@ export default async function ShopPage() {
     }
     return true
   })
+
+  const shopCars = [...availableCars, ...soldCars]
 
   return (
     <main className="flex h-[100dvh] min-h-0 flex-col overflow-hidden bg-background">

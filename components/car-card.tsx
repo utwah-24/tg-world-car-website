@@ -161,10 +161,12 @@ export function CarCard({
           }
         }}
         className={cn(
-          "group h-full flex flex-col overflow-hidden border-border bg-card hover:shadow-xl transition-all duration-300",
+          "group h-full flex flex-col overflow-hidden border-border transition-all duration-300",
           compact ? "rounded-xl" : "rounded-2xl",
+          isSoldOut
+            ? "bg-muted/60 border-muted-foreground/20 opacity-90"
+            : "bg-card hover:shadow-xl",
           !isSoldOut && "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-          isSoldOut && "opacity-80",
         )}
       >
       {/* Image Container */}
@@ -178,7 +180,7 @@ export function CarCard({
           src={car.image || "/placeholder.svg"}
           alt={`${yearPrefix}${car.name}`}
           fill
-          className={`object-cover transition-transform duration-500 group-hover:scale-105 ${isSoldOut ? "grayscale" : ""}`}
+          className={`object-cover transition-transform duration-500 ${isSoldOut ? "grayscale opacity-75" : "group-hover:scale-105"}`}
           style={shouldFlipImage ? { transform: 'scaleX(-1)' } : undefined}
           sizes={
             compact

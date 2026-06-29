@@ -1,4 +1,4 @@
-import { fetchCars, fetchCarsByCategory, fetchThirdPartyCars, fetchOrderedCarKeys, normalizeOrderKey, type CarFromAPI } from './api'
+import { fetchCars, fetchCarsByCategory, fetchThirdPartyCars, fetchOrderedCarKeys, fetchSoldCars, normalizeOrderKey, type CarFromAPI } from './api'
 
 export interface Car {
   id: string
@@ -282,6 +282,17 @@ export const getSoldOutCars = async (): Promise<Car[]> => {
     console.error('Error fetching sold out cars from API, falling back to static data:', error)
   }
   return cars.filter(car => car.category === "sold-out")
+}
+
+/** Sold vehicles from /api/sold-cars for shop display. */
+export const getSoldCarsForShop = async (inventory?: Car[]): Promise<Car[]> => {
+  try {
+    const soldCars = await fetchSoldCars(inventory)
+    if (soldCars.length > 0) return soldCars
+  } catch (error) {
+    console.error('Error fetching sold cars for shop:', error)
+  }
+  return []
 }
 
 // Function to get all cars from API or fallback to static data

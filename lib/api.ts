@@ -54,6 +54,24 @@ interface APIResponse {
   data: RawCarFromAPI[]
 }
 
+interface RawSoldCarFromAPI {
+  id: number
+  order_id?: number | null
+  car_id: string | number
+  car_name: string
+  car_pics?: string[]
+  sold_at?: string
+  price_sold?: string
+  total_available?: number | null
+  qty?: string
+  created_at: string
+  updated_at: string
+}
+
+interface SoldCarsAPIResponse {
+  data: RawSoldCarFromAPI[]
+}
+
 // Our App Interface (what we use in the app)
 export interface CarFromAPI {
   id: string
@@ -271,6 +289,98 @@ function transformCarData(rawCar: RawCarFromAPI, orderedKeys?: Set<string>): Car
     })(),
     testDriveAvailable: rawCar.test_drive_available === true,
     notes: rawCar.notes?.trim() ? rawCar.notes.trim() : null,
+  }
+}
+
+/**
+ * Transform a sold-car record from /api/sold-cars into our app format.
+ * Optionally enriches from live inventory when the same car_id still exists there.
+ */
+function transformSoldCarData(
+  raw: RawSoldCarFromAPI,
+  inventoryById?: Map<string, CarFromAPI>,
+): CarFromAPI {
+  const carId = String(raw.car_id)
+  const base = inventoryById?.get(carId)
+  const carPics = Array.isArray(raw.car_pics) ? raw.car_pics : []
+  const allImageUrls = carPics.map((path) => `${API_BASE_URL}/public/${path}`)
+
+  const carName = raw.car_name || base?.name || "Unknown Car"
+  const yearMatch = carName.match(/^(\d{4})/)
+  const yearFromName = yearMatch ? parseInt(yearMatch[1], 10) : undefined
+  const name = carName.replace(/^\d{4}\s+/, "")
+
+  return {
+    id: carId,
+    name: base?.name ?? name,
+    year: base?.year ?? yearFromName,
+    price: raw.price_sold?.trim() || base?.price || "Sold",
+    image: allImageUrls[0] || base?.image || "/placeholder.svg",
+    images: allImageUrls.length > 0 ? allImageUrls : base?.images,
+    category: "sold-out",
+    type: base?.type,
+    condition: base?.condition,
+    company: base?.company,
+    brand: base?.brand,
+    model: base?.model,
+    mileage: base?.mileage,
+    transmission: base?.transmission,
+    fuel: base?.fuel,
+    engineSize: base?.engineSize,
+    color: base?.color,
+    chassis: base?.chassis,
+    description: base?.description,
+    registered: base?.registered,
+    registrationNumber: base?.registrationNumber,
+    location: base?.location,
+    inDar: base?.inDar,
+    createdAt: raw.created_at,
+    totalAvailable: 0,
+    testDriveAvailable: false,
+    notes: base?.notes ?? null,
+  }
+}
+
+/**
+ * Fetch sold cars from /api/sold-cars, newest first by created_at.
+ */
+export async function fetchSoldCars(
+  inventory?: CarFromAPI[],
+): Promise<CarFromAPI[]> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/sold-cars`, {
+      next: { revalidate: 0 },
+      headers: { Accept: "application/json" },
+    })
+
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`)
+    }
+
+    const apiResponse: SoldCarsAPIResponse = await response.json()
+    const inventoryById = inventory
+      ? new Map(inventory.map((car) => [car.id, car]))
+      : undefined
+
+    const byCarId = new Map<string, CarFromAPI>()
+    for (const raw of apiResponse.data ?? []) {
+      const car = transformSoldCarData(raw, inventoryById)
+      const existing = byCarId.get(car.id)
+      const carTime = car.createdAt ? Date.parse(car.createdAt) : 0
+      const existingTime = existing?.createdAt ? Date.parse(existing.createdAt) : 0
+      if (!existing || carTime >= existingTime) {
+        byCarId.set(car.id, car)
+      }
+    }
+
+    return Array.from(byCarId.values()).sort((a, b) => {
+      const ta = a.createdAt ? Date.parse(a.createdAt) : 0
+      const tb = b.createdAt ? Date.parse(b.createdAt) : 0
+      return tb - ta
+    })
+  } catch (error) {
+    console.error("❌ Error fetching sold cars from API:", error)
+    return []
   }
 }
 
