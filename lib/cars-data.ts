@@ -50,6 +50,16 @@ export function isThirdPartyCar(car: Car): boolean {
   return (car.description || "").toLowerCase().includes("[third_party]")
 }
 
+/**
+ * True when a car is in stock and not coming soon — i.e. it can be bought,
+ * booked for a test drive, or shown in "available now" listings.
+ * Backed entirely by `category`, which the API layer derives from `is_sold`
+ * and `is_coming_soon` only (no client-side date comparisons).
+ */
+export function isCarAvailableNow(car: Car): boolean {
+  return car.category !== "sold-out" && car.category !== "coming-soon"
+}
+
 // Type alias for compatibility
 export type { CarFromAPI }
 
@@ -260,8 +270,11 @@ export const getComingSoonCars = async (): Promise<Car[]> => {
       buildOrderFilter(),
     ])
     if (apiCars && apiCars.length > 0) {
-      // Only include cars that truly have is_coming_soon set — indicated by a valid arrivalDate
-      return apiCars.filter(car => !isOrdered(car) && !!car.arrivalDate)
+      // category is already "coming-soon" only when the API's is_coming_soon === "set";
+      // the backend clears it automatically once arrival_date passes, so trust it as-is.
+      return apiCars
+        .filter(car => !isOrdered(car))
+        .sort((a, b) => (a.arrivalDate ?? "").localeCompare(b.arrivalDate ?? ""))
     }
   } catch (error) {
     console.error('Error fetching coming soon cars from API, falling back to static data:', error)

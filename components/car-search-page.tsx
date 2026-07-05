@@ -7,6 +7,7 @@ import { CarSection } from "./car-section"
 import { ContentReviewsSection } from "./content-reviews-section"
 import { HomeSlotsSection } from "./home-slots-section"
 import type { Car } from "@/lib/cars-data"
+import { isCarAvailableNow } from "@/lib/cars-data"
 import type { ContentVideo, CompanyLogo } from "@/lib/api"
 import { filterLatestCars } from "@/lib/latest-cars"
 
@@ -31,9 +32,7 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, all
 
   // Only truly available cars: exclude sold-out and coming-soon for counts/company list
   const availableForBrowse = useMemo(() => {
-    return allCars.filter(
-      (car) => car.category !== "sold-out" && car.category !== "coming-soon",
-    )
+    return allCars.filter(isCarAvailableNow)
   }, [allCars])
 
   // Companies derived only from available cars so sold-out-only brands don't appear
@@ -44,13 +43,11 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, all
   }, [availableForBrowse])
 
   /** New listings: stay in this section for 30 days after upload (from API created_at).
-   *  Coming-soon cars (arrivalDate set) are excluded — they belong to the Coming Soon page. */
+   *  Coming-soon cars are excluded — they belong to the Coming Soon page. When the
+   *  backend clears a car's coming-soon status on arrival, it also bumps created_at,
+   *  so the car naturally appears here on the next fetch — no client-side date logic. */
   const latestCars = useMemo(() => {
-    // Only cars that were recently uploaded, are not coming-soon, and are not sold
-    const recent = filterLatestCars(allCars).filter(
-      (car) => !car.arrivalDate && car.category !== "sold-out",
-    )
-
+    const recent = filterLatestCars(allCars).filter(isCarAvailableNow)
     return recent.slice(0, 5) // one row at 5-column desktop grid
   }, [allCars])
 
@@ -174,7 +171,7 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, all
               mobileMaxCars={4}
             />
           ) : (
-            <section id="latest" className="scroll-mt-20 lg:scroll-mt-24 py-10 lg:py-12" aria-label="Latest cars">
+            <section id="latest" className="scroll-mt-20 lg:scroll-mt-24 py-6 lg:py-8" aria-label="Latest cars">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-muted-foreground text-sm">
                 No listings from the last 30 days right now — browse Popular or Top Picks below.
               </div>
@@ -202,7 +199,7 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, all
           ) : (
             <section
               id="content"
-              className="scroll-mt-20 lg:scroll-mt-24 py-12 lg:py-16 bg-black border-t border-white/5"
+              className="scroll-mt-20 lg:scroll-mt-24 py-6 lg:py-10 bg-black border-t border-white/5"
               aria-label="Video content"
             >
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white/50 text-sm">

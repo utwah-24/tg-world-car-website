@@ -1,7 +1,8 @@
 import type { Metadata } from "next"
 import { HeaderWrapper } from "@/components/header-wrapper"
 import { ShopContent } from "@/components/shop-content"
-import { getAllCars, getSoldCarsForShop } from "@/lib/cars-data"
+import { AutoRefreshOnFocus } from "@/components/auto-refresh-on-focus"
+import { getAllCars, getSoldCarsForShop, isCarAvailableNow } from "@/lib/cars-data"
 import { fetchCompanyLogos } from "@/lib/api"
 
 export const revalidate = 0
@@ -48,15 +49,8 @@ export async function generateMetadata({
   const logoEntry = logos.find((l) => l.company.trim().toLowerCase() === normalised)
 
   // Count available cars for this company (exclude sold-out / coming-soon)
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
   const count = allCars.filter((car) => {
-    if (car.category === "sold-out") return false
-    if (car.arrivalDate) {
-      const arrival = new Date(car.arrivalDate)
-      arrival.setHours(0, 0, 0, 0)
-      if (arrival > today) return false
-    }
+    if (!isCarAvailableNow(car)) return false
     return (car.company ?? "").trim().toLowerCase() === normalised
   }).length
 
@@ -104,23 +98,16 @@ export default async function ShopPage() {
 
   const soldCarIds = new Set(soldCars.map((car) => car.id))
 
-  // Exclude sold-out inventory, future arrivals, and cars listed in /api/sold-cars
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const availableCars = allCars.filter((car) => {
-    if (car.category === "sold-out" || soldCarIds.has(car.id)) return false
-    if (car.arrivalDate) {
-      const arrival = new Date(car.arrivalDate)
-      arrival.setHours(0, 0, 0, 0)
-      return arrival <= today
-    }
-    return true
-  })
+  // Exclude coming-soon/sold-out inventory and cars listed in /api/sold-cars.
+  // Trust the API's is_coming_soon/is_sold fields — the backend already clears
+  // coming-soon status once arrival_date passes, so no client-side date check.
+  const availableCars = allCars.filter((car) => isCarAvailableNow(car) && !soldCarIds.has(car.id))
 
   const shopCars = [...availableCars, ...soldCars]
 
   return (
     <main className="flex h-[100dvh] min-h-0 flex-col overflow-hidden bg-background">
+      <AutoRefreshOnFocus />
       <HeaderWrapper />
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden pt-16 lg:pt-[4.5rem]">
         <ShopContent cars={shopCars} companyLogos={companyLogos} />

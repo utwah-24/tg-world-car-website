@@ -49,7 +49,7 @@ export function CarSection({
     <section
       id={id}
       className={cn(
-        "py-8 lg:py-12 scroll-mt-20 lg:scroll-mt-24",
+        "py-6 lg:py-8 scroll-mt-20 lg:scroll-mt-24",
         isDark && "bg-[#0A1628] border-t border-white/10",
         isGold && "bg-[#F5DFA0] border-y border-[#D4AF37]/30",
       )}
@@ -58,7 +58,7 @@ export function CarSection({
         {/* Section Header */}
         <div
           ref={headerRef}
-          className={`mb-5 lg:mb-8 transition-all duration-700 ease-out ${
+          className={`mb-4 lg:mb-5 transition-all duration-700 ease-out ${
             headerVisible
               ? "opacity-100 translate-y-0"
               : "opacity-0 translate-y-8"
@@ -110,7 +110,7 @@ export function CarSection({
 
         {/* See More Button */}
         {!hideSeeMore && (
-          <div className="mt-10 text-center">
+          <div className="mt-6 text-center">
             <a href={seeMoreHref}>
               <Button
                 variant="outline"

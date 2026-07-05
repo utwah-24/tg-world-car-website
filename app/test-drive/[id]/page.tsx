@@ -1,7 +1,7 @@
 import { HeaderWrapper } from "@/components/header-wrapper"
 import { FooterWrapper } from "@/components/footer-wrapper"
 import { TestDriveContent } from "@/components/test-drive-content"
-import { getAllCars } from "@/lib/cars-data"
+import { getAllCars, isCarAvailableNow } from "@/lib/cars-data"
 import { notFound } from "next/navigation"
 
 export const revalidate = 60
@@ -15,7 +15,7 @@ export default async function TestDrivePage({
   const allCars = await getAllCars()
   const car = allCars.find((c) => c.id === id)
 
-  if (!car || !car.testDriveAvailable) {
+  if (!car || !car.testDriveAvailable || !isCarAvailableNow(car)) {
     notFound()
   }
 

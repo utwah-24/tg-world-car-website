@@ -32,10 +32,10 @@ export function ContentReviewsSection({ videos }: ContentReviewsSectionProps) {
   }
 
   return (
-    <section id="content" className="py-12 lg:py-20 bg-black scroll-mt-20 lg:scroll-mt-24">
+    <section id="content" className="py-6 lg:py-10 bg-black scroll-mt-20 lg:scroll-mt-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="flex items-start gap-6 mb-10">
+        <div className="flex items-start gap-6 mb-6">
           <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-4 border-primary shadow-xl shrink-0">
             <Image
               src="/SHARIF.jpeg"
@@ -65,7 +65,7 @@ export function ContentReviewsSection({ videos }: ContentReviewsSectionProps) {
           </div>
         </div>
 
-        <h3 className="text-xl font-semibold text-background mb-6">CONTENT REVIEWS 🔥</h3>
+        <h3 className="text-xl font-semibold text-background mb-4">CONTENT REVIEWS 🔥</h3>
 
         <div className="relative">
           {videos.length > 3 && (
@@ -98,7 +98,7 @@ export function ContentReviewsSection({ videos }: ContentReviewsSectionProps) {
           </div>
         </div>
 
-        <div className="mt-8 text-center">
+        <div className="mt-6 text-center">
           <Button
             asChild
             className="bg-background text-foreground hover:bg-background/90 rounded-full px-8 h-12 font-medium"

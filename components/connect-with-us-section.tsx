@@ -125,14 +125,14 @@ export function ConnectWithUsSection() {
   return (
     <section
       id="connect"
-      className="py-12 lg:py-20 bg-background scroll-mt-20 lg:scroll-mt-24 border-t border-border/60"
+      className="py-6 lg:py-10 bg-background scroll-mt-20 lg:scroll-mt-24 border-t border-border/60"
       aria-labelledby="connect-heading"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div
           ref={headerRef}
           className={cn(
-            "mb-10 lg:mb-12 text-left transition-all duration-700 ease-out",
+            "mb-6 lg:mb-8 text-left transition-all duration-700 ease-out",
             headerVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8",
           )}
         >

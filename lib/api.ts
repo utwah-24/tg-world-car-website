@@ -191,19 +191,17 @@ function transformCarData(rawCar: RawCarFromAPI, orderedKeys?: Set<string>): Car
     }
   }
 
-  // Determine category — sold status comes from is_sold field OR total_available reaching 0
+  // Determine category — trust the API: sold status comes from is_sold (or
+  // total_available reaching 0), coming-soon status comes solely from
+  // is_coming_soon. The backend automatically clears is_coming_soon and
+  // arrival_date once the arrival date is reached (cron + on every /api/cars
+  // read), so no client-side date math should ever override this.
   let category: "top-selling" | "coming-soon" | "sold-out" = "top-selling"
 
   if (rawCar.is_sold === "sold" || effectiveTotalAvailable === 0) {
     category = "sold-out"
   } else if (rawCar.is_coming_soon === "set") {
     category = "coming-soon"
-  } else if (rawCar.category) {
-    const apiCategory = rawCar.category.toUpperCase()
-    if (apiCategory === "TRUCKS") {
-      category = "coming-soon"
-    }
-    // All other category values default to "top-selling"
   }
   
   // Extract additional info from description (with null checks)

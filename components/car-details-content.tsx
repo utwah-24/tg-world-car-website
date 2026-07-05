@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ChevronLeft, ChevronRight, MapPin, Fuel, Gauge, Calendar, Car as CarIcon, DollarSign, Cog, Palette, Settings, Users, Check, Link as LinkIcon, CheckCheck, Download, Phone } from "lucide-react"
 import type { Car } from "@/lib/cars-data"
-import { isThirdPartyCar } from "@/lib/cars-data"
+import { isThirdPartyCar, isCarAvailableNow } from "@/lib/cars-data"
 import { DEALER_CONTACTS, tzPhoneHref, tzWhatsAppHref } from "@/lib/dealer-contacts"
 import { CarCard } from "@/components/car-card"
 
@@ -342,8 +342,8 @@ export function CarDetailsContent({ car, relatedCars = [] }: CarDetailsContentPr
             )}
 
             {/* Overview Section */}
-            {/* Book a Test Drive banner — only when API sets test_drive_available to true */}
-            {car.testDriveAvailable && (
+            {/* Book a Test Drive banner — only when the car is in stock, not coming soon, and test_drive_available is true */}
+            {car.testDriveAvailable && isCarAvailableNow(car) && (
               <div className="mt-8 rounded-2xl overflow-hidden border border-border animate-fade-in-up flex flex-col sm:flex-row" style={{ animationDelay: "0.35s", opacity: 0, animationFillMode: "forwards", minHeight: "160px" }}>
                 {/* Left: dark text panel */}
                 <div className="flex-1 bg-black flex flex-col justify-center px-7 py-8 sm:py-6">

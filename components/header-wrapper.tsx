@@ -1,24 +1,13 @@
 import { Header } from "./header"
 import { fetchCompanyLogos, fetchLogos, type CompanyLogo } from "@/lib/api"
-import { isThirdPartyCar, getAllCars, type Car } from "@/lib/cars-data"
+import { isThirdPartyCar, isCarAvailableNow, getAllCars, type Car } from "@/lib/cars-data"
 import { normalizeCarType } from "@/lib/car-type"
 import { parsePriceMillions } from "@/lib/find-your-car-filter"
 import { isCarInLatestWindow } from "@/lib/latest-cars"
 import { parseMileageKm } from "@/lib/mileage-km"
 
 function availableStockCars(cars: Car[]): Car[] {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-
-  return cars.filter((car) => {
-    if (car.category === "sold-out") return false
-    if (car.arrivalDate) {
-      const arrival = new Date(car.arrivalDate)
-      arrival.setHours(0, 0, 0, 0)
-      return arrival <= today
-    }
-    return true
-  })
+  return cars.filter(isCarAvailableNow)
 }
 
 function companyKey(value: string | undefined): string {
