@@ -4,14 +4,22 @@ import Image from "next/image"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 
-const HOME_SLOTS: { src: string; href?: string; label?: string }[] = [
-  { src: "/cards%20images/specail_offer_img.png" },
-  { src: "/cards%20images/coming_soon_img.png", href: "/coming-soon", label: "View coming soon vehicles" },
-  { src: "/cards%20images/in_dar_img.jpeg", href: "/shop?in_dar=1", label: "View vehicles in Dar es Salaam" },
-  { src: "/cards%20images/top_selling_img.jpeg" },
+const HOME_SLOTS: { src: string; href?: string; label?: string; id?: string }[] = [
+  { src: "/cards%20images/specail_offer_img.png", id: "special-offer" },
+  { src: "/cards%20images/coming_soon_img.png", href: "/coming-soon", label: "View coming soon vehicles", id: "coming-soon" },
+  { src: "/cards%20images/in_dar_img.jpeg", href: "/shop?in_dar=1", label: "View vehicles in Dar es Salaam", id: "in-dar" },
+  { src: "/cards%20images/top_selling_img.jpeg", id: "top-selling" },
 ]
 
-export function HomeSlotsSection() {
+interface HomeSlotsSectionProps {
+  showComingSoon?: boolean
+}
+
+export function HomeSlotsSection({ showComingSoon = true }: HomeSlotsSectionProps) {
+  const slots = showComingSoon
+    ? HOME_SLOTS
+    : HOME_SLOTS.filter((slot) => slot.id !== "coming-soon")
+
   return (
     <section
       id="home-slots"
@@ -20,7 +28,7 @@ export function HomeSlotsSection() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-          {HOME_SLOTS.map(({ src, href, label }, i) => {
+          {slots.map(({ src, href, label, id }) => {
             const card = (
               <div
                 className={cn(
@@ -44,11 +52,11 @@ export function HomeSlotsSection() {
             )
 
             return href ? (
-              <Link key={i} href={href} aria-label={label}>
+              <Link key={id ?? src} href={href} aria-label={label}>
                 {card}
               </Link>
             ) : (
-              <div key={i} aria-hidden>
+              <div key={id ?? src} aria-hidden>
                 {card}
               </div>
             )

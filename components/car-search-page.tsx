@@ -111,7 +111,7 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, all
       )}
 
       {/* Coming Soon / Home Slots */}
-      {!hasFilters && <HomeSlotsSection />}
+      {!hasFilters && <HomeSlotsSection showComingSoon={comingSoonCars.length > 0} />}
 
       {/* Search Results or Category Sections */}
       {filteredCars !== null ? (

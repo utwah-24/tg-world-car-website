@@ -269,17 +269,15 @@ export const getComingSoonCars = async (): Promise<Car[]> => {
       fetchCarsByCategory("coming-soon"),
       buildOrderFilter(),
     ])
-    if (apiCars && apiCars.length > 0) {
-      // category is already "coming-soon" only when the API's is_coming_soon === "set";
-      // the backend clears it automatically once arrival_date passes, so trust it as-is.
-      return apiCars
-        .filter(car => !isOrdered(car))
-        .sort((a, b) => (a.arrivalDate ?? "").localeCompare(b.arrivalDate ?? ""))
-    }
+    // category is already "coming-soon" only when the API's is_coming_soon === "set";
+    // the backend clears it automatically once arrival_date passes, so trust it as-is.
+    return apiCars
+      .filter(car => !isOrdered(car))
+      .sort((a, b) => (a.arrivalDate ?? "").localeCompare(b.arrivalDate ?? ""))
   } catch (error) {
     console.error('Error fetching coming soon cars from API, falling back to static data:', error)
+    return cars.filter(car => car.category === "coming-soon")
   }
-  return cars.filter(car => car.category === "coming-soon")
 }
 
 export const getSoldOutCars = async (): Promise<Car[]> => {

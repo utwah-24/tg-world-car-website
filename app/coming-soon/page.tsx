@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation"
 import { HeaderWrapper } from "@/components/header-wrapper"
 import { ComingSoonContent } from "@/components/coming-soon-content"
 import { AutoRefreshOnFocus } from "@/components/auto-refresh-on-focus"
@@ -10,6 +11,10 @@ const COMING_SOON_POLL_MS = 5 * 60 * 1000
 
 export default async function ComingSoonPage() {
   const cars = await getComingSoonCars()
+
+  if (cars.length === 0) {
+    redirect("/")
+  }
 
   return (
     <main className="flex h-[100dvh] min-h-0 flex-col overflow-hidden bg-background">

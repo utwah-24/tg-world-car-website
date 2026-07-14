@@ -1,6 +1,6 @@
 import { Header } from "./header"
 import { fetchCompanyLogos, fetchLogos, type CompanyLogo } from "@/lib/api"
-import { isThirdPartyCar, isCarAvailableNow, getAllCars, type Car } from "@/lib/cars-data"
+import { isThirdPartyCar, isCarAvailableNow, getAllCars, getComingSoonCars, type Car } from "@/lib/cars-data"
 import { normalizeCarType } from "@/lib/car-type"
 import { parsePriceMillions } from "@/lib/find-your-car-filter"
 import { isCarInLatestWindow } from "@/lib/latest-cars"
@@ -81,7 +81,12 @@ function buildStockCounts(cars: Car[]): Record<string, number> {
 }
 
 export async function HeaderWrapper() {
-  const [logos, allCars, companyLogos] = await Promise.all([fetchLogos(), getAllCars(), fetchCompanyLogos()])
+  const [logos, allCars, companyLogos, comingSoonCars] = await Promise.all([
+    fetchLogos(),
+    getAllCars(),
+    fetchCompanyLogos(),
+    getComingSoonCars(),
+  ])
   const stockCars = availableStockCars(allCars)
 
   return (
@@ -91,6 +96,7 @@ export async function HeaderWrapper() {
       stockCompanies={buildStockCompanies(companyLogos, stockCars)}
       stockCounts={buildStockCounts(stockCars)}
       totalStockCount={stockCars.length}
+      hasComingSoonCars={comingSoonCars.length > 0}
     />
   )
 }

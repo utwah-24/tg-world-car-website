@@ -23,6 +23,7 @@ interface HeaderProps {
   stockCompanies?: StockCompany[]
   stockCounts?: Record<string, number>
   totalStockCount?: number
+  hasComingSoonCars?: boolean
 }
 
 interface StockCompany {
@@ -100,6 +101,7 @@ export function Header({
   stockCompanies = [],
   stockCounts = {},
   totalStockCount,
+  hasComingSoonCars = false,
 }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [stockMenuOpen, setStockMenuOpen] = useState(false)
@@ -215,7 +217,9 @@ export function Header({
                 <DropdownMenuContent align="end" className="z-[60] min-w-[12rem]">
                   <DropdownMenuItem onClick={() => goToSection("latest")}>Latest</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => goToSection("popular")}>Popular</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => goToSection("coming-soon-preview")}>Coming soon</DropdownMenuItem>
+                  {hasComingSoonCars && (
+                    <DropdownMenuItem onClick={() => goToSection("coming-soon-preview")}>Coming soon</DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
 
@@ -421,13 +425,15 @@ export function Header({
             >
               Popular
             </button>
-            <button
-              type="button"
-              onClick={() => goToSection("coming-soon-preview")}
-              className="text-left pl-4 py-3 text-base text-white/95 rounded-xl hover:bg-white/10 transition-colors"
-            >
-              Coming soon
-            </button>
+            {hasComingSoonCars && (
+              <button
+                type="button"
+                onClick={() => goToSection("coming-soon-preview")}
+                className="text-left pl-4 py-3 text-base text-white/95 rounded-xl hover:bg-white/10 transition-colors"
+              >
+                Coming soon
+              </button>
+            )}
             <button
               type="button"
               onClick={() => goToSection("content")}
