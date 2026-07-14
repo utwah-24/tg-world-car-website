@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ArrowLeft, MapPin, User, CheckCircle } from "lucide-react"
 import type { Car } from "@/lib/cars-data"
+import { getDisplayPrice } from "@/lib/promotions"
 import {
   checkoutDraftFromStorage,
   checkoutDraftStorageKey,
@@ -77,8 +78,9 @@ export function CheckoutContent({ car }: CheckoutContentProps) {
   }, [formData, car.id, draftHydrated])
 
   // Car price is in millions from the API (e.g. "31" = 31 Million Tshs).
-  // Convert everything to exact Tshs so sub-million amounts are exact.
-  const totalTshs = parseNumeric(car.price) * 1_000_000
+  // Use promo_price from the API when the car is on promotion.
+  const displayPrice = getDisplayPrice(car)
+  const totalTshs = parseNumeric(displayPrice.current) * 1_000_000
   const paidTshs = parseFloat(formData.amountPaid) || 0
   const dueTshs = Math.max(0, totalTshs - paidTshs)
 
@@ -114,7 +116,7 @@ export function CheckoutContent({ car }: CheckoutContentProps) {
         id: car.id,
         name: car.name,
         year: car.year,
-        price: car.price,
+        price: displayPrice.current,
         image: car.image,
         color: car.color,
         chassis: car.chassis,
@@ -410,7 +412,12 @@ export function CheckoutContent({ car }: CheckoutContentProps) {
               <div className="space-y-3 py-4 border-y border-border">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Vehicle Price</span>
-                  <span className="font-medium text-foreground">{car.price}</span>
+                  <span className="font-medium text-foreground text-right">
+                    {displayPrice.original && (
+                      <span className="block text-xs text-muted-foreground line-through">{displayPrice.original}</span>
+                    )}
+                    <span className={displayPrice.original ? "text-red-600" : ""}>{displayPrice.current}</span>
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Registration Fee</span>
@@ -425,7 +432,9 @@ export function CheckoutContent({ car }: CheckoutContentProps) {
               {/* Total */}
               <div className="flex justify-between mt-4 pb-3 border-b border-border">
                 <span className="text-lg font-bold text-foreground">Total</span>
-                <span className="text-2xl font-bold text-primary">{car.price}</span>
+                <span className={`text-2xl font-bold ${displayPrice.original ? "text-red-600" : "text-primary"}`}>
+                  {displayPrice.current}
+                </span>
               </div>
 
               {/* Payment status — shown once user types an amount */}

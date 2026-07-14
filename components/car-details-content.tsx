@@ -10,6 +10,8 @@ import type { Car } from "@/lib/cars-data"
 import { isThirdPartyCar, isCarAvailableNow } from "@/lib/cars-data"
 import { DEALER_CONTACTS, tzPhoneHref, tzWhatsAppHref } from "@/lib/dealer-contacts"
 import { CarCard } from "@/components/car-card"
+import { CarPrice } from "@/components/car-price"
+import { formatPromoDateRange, getActivePromotions, getDisplayPrice } from "@/lib/promotions"
 
 interface CarDetailsContentProps {
   car: Car
@@ -42,6 +44,8 @@ export function CarDetailsContent({ car, relatedCars = [] }: CarDetailsContentPr
   const images = car.images && car.images.length > 0 ? car.images : [car.image]
   const yearPrefix = car.year ? `${car.year} ` : ""
   const isThirdParty = isThirdPartyCar(car)
+  const activePromotions = getActivePromotions(car)
+  const displayPrice = getDisplayPrice(car)
 
   const [downloading, setDownloading] = useState(false)
   const [carPageUrl, setCarPageUrl] = useState("")
@@ -586,8 +590,25 @@ export function CarDetailsContent({ car, relatedCars = [] }: CarDetailsContentPr
             <div className="bg-card rounded-2xl p-6 border border-border sticky top-24 animate-slide-in-right" style={{ animationDelay: "0.3s", opacity: 0, animationFillMode: "forwards" }}>
               <div className="mb-6">
                 <p className="text-sm text-muted-foreground mb-1">Price</p>
-                <div className="text-3xl font-bold text-foreground">{car.price}</div>
+                <CarPrice car={car} size="detail" />
               </div>
+
+              {activePromotions.length > 0 && (
+                <div className="mb-6 rounded-xl border border-red-200 bg-red-50/60 p-4">
+                  <h3 className="font-semibold text-foreground mb-2">Active Promotions</h3>
+                  <ul className="space-y-2">
+                    {activePromotions.map((promo) => (
+                      <li key={promo.promoID} className="text-sm">
+                        <p className="font-medium text-foreground">{promo.promo_name}</p>
+                        <p className="text-red-600 font-semibold">{promo.price_reduction_label} OFF</p>
+                        <p className="text-muted-foreground text-xs">
+                          {formatPromoDateRange(promo.start_date, promo.end_date)}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               <Button 
                 onClick={() => window.location.href = `/checkout/${car.id}`}
@@ -602,7 +623,12 @@ export function CarDetailsContent({ car, relatedCars = [] }: CarDetailsContentPr
                 
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Sales Price*</span>
-                  <span className="font-medium text-foreground">{car.price}</span>
+                  <span className="font-medium text-foreground text-right">
+                    {displayPrice.original && (
+                      <span className="block text-xs text-muted-foreground line-through">{displayPrice.original}</span>
+                    )}
+                    <span className={displayPrice.original ? "text-red-600" : ""}>{displayPrice.current}</span>
+                  </span>
                 </div>
                 
                 {car.mileage && (

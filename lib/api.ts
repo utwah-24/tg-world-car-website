@@ -46,8 +46,22 @@ interface RawCarFromAPI {
   test_drive_available?: boolean
   /** Optional dealer notes shown on the car details page */
   notes?: string | null
+  promo_set?: boolean
+  promo_price?: string | null
+  promotions?: RawCarPromotion[]
   created_at: string
   updated_at: string
+}
+
+interface RawCarPromotion {
+  promoID: number
+  promo_name: string
+  price_reduction: number
+  price_reduction_label: string
+  start_date: string
+  end_date: string
+  status: "active" | "inactive"
+  is_active: boolean
 }
 
 interface APIResponse {
@@ -116,6 +130,12 @@ export interface CarFromAPI {
   testDriveAvailable?: boolean
   /** Dealer notes from API; null when empty */
   notes?: string | null
+  /** true when the API has an active promotional price for this car */
+  promoSet?: boolean
+  /** Backend-calculated promo price — never compute discounts client-side */
+  promoPrice?: string | null
+  /** Promotions linked to this car (may include inactive entries) */
+  promotions?: import("./promotions").CarPromotion[]
 }
 
 /** Map Laravel `registration` string to boolean; unknown/missing → undefined (no UI badge). */
@@ -247,10 +267,28 @@ function transformCarData(rawCar: RawCarFromAPI, orderedKeys?: Set<string>): Car
   })()
 
   // Clean up price - remove "With New Registration" and other common suffixes
-  let cleanPrice = rawCar.car_price || 'Contact for price'
-  cleanPrice = cleanPrice.replace(/\s*With New Registration\s*/gi, '')
-  cleanPrice = cleanPrice.replace(/\s*with registration\s*/gi, '')
-  cleanPrice = cleanPrice.trim()
+  const cleanPriceString = (raw: string | null | undefined, fallback = "Contact for price") => {
+    let value = raw || fallback
+    value = value.replace(/\s*With New Registration\s*/gi, "")
+    value = value.replace(/\s*with registration\s*/gi, "")
+    return value.trim()
+  }
+
+  const cleanPrice = cleanPriceString(rawCar.car_price)
+  const cleanPromoPrice = rawCar.promo_price ? cleanPriceString(rawCar.promo_price, "") || null : null
+
+  const promotions = Array.isArray(rawCar.promotions)
+    ? rawCar.promotions.map((p) => ({
+        promoID: p.promoID,
+        promo_name: p.promo_name,
+        price_reduction: p.price_reduction,
+        price_reduction_label: p.price_reduction_label,
+        start_date: p.start_date,
+        end_date: p.end_date,
+        status: p.status,
+        is_active: p.is_active,
+      }))
+    : []
   
   return {
     id: rawCar.car_id.toString(),
@@ -287,6 +325,9 @@ function transformCarData(rawCar: RawCarFromAPI, orderedKeys?: Set<string>): Car
     })(),
     testDriveAvailable: rawCar.test_drive_available === true,
     notes: rawCar.notes?.trim() ? rawCar.notes.trim() : null,
+    promoSet: rawCar.promo_set === true,
+    promoPrice: cleanPromoPrice,
+    promotions,
   }
 }
 
@@ -670,6 +711,65 @@ export async function fetchCompanyLogos(): Promise<CompanyLogo[]> {
     return logos
   } catch (error) {
     console.error('❌ Error fetching company logos from API:', error)
+    return []
+  }
+}
+
+interface RawPromotionFromAPI {
+  promoID: number
+  promo_name: string
+  price_reduction: number
+  price_reduction_label: string
+  promo_pics?: string[] | null
+  promo_pic_urls?: string[]
+  start_date: string
+  end_date: string
+  status: "active" | "inactive"
+  is_active: boolean
+  car_ids?: number[]
+  created_at?: string
+  updated_at?: string
+}
+
+interface PromotionsAPIResponse {
+  data: RawPromotionFromAPI[]
+}
+
+export type { Promotion } from "./promotions"
+
+/**
+ * Fetch all promotions (banners, promo pages, homepage sliders).
+ */
+export async function fetchPromotions(): Promise<import("./promotions").Promotion[]> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/promotions`, {
+      next: { revalidate: 0 },
+      headers: { Accept: "application/json" },
+    })
+
+    if (!response.ok) {
+      console.log(`Promotions API returned ${response.status}`)
+      return []
+    }
+
+    const json: PromotionsAPIResponse = await response.json()
+    const rows = Array.isArray(json?.data) ? json.data : []
+
+    return rows.map((row) => ({
+      promoID: row.promoID,
+      promo_name: row.promo_name,
+      price_reduction: row.price_reduction,
+      price_reduction_label: row.price_reduction_label,
+      promo_pics: row.promo_pics ?? null,
+      promo_pic_urls: Array.isArray(row.promo_pic_urls) ? row.promo_pic_urls : [],
+      start_date: row.start_date,
+      end_date: row.end_date,
+      status: row.status,
+      is_active: row.is_active,
+      car_ids: Array.isArray(row.car_ids) ? row.car_ids : [],
+    }))
+  } catch (error) {
+    console.error("❌ Error fetching promotions from API:", error)
     return []
   }
 }

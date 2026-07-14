@@ -6,19 +6,23 @@ import { ConnectWithUsSection } from "@/components/connect-with-us-section"
 import { FooterWrapper } from "@/components/footer-wrapper"
 import { AutoRefreshOnFocus } from "@/components/auto-refresh-on-focus"
 import { getTopSellingCars, getComingSoonCars, getSoldOutCars, getAllCars } from "@/lib/cars-data"
-import { fetchContent, fetchCompanyLogos } from "@/lib/api"
+import { fetchContent, fetchCompanyLogos, fetchPromotions } from "@/lib/api"
+import { getActivePromotionsFromList } from "@/lib/promotions"
 
 export const revalidate = 0
 
 export default async function Home() {
-  const [topSellingCars, comingSoonCars, soldOutCars, allCars, contentVideos, companyLogos] = await Promise.all([
+  const [topSellingCars, comingSoonCars, soldOutCars, allCars, contentVideos, companyLogos, promotions] = await Promise.all([
     getTopSellingCars(),
     getComingSoonCars(),
     getSoldOutCars(),
     getAllCars(),
     fetchContent(),
     fetchCompanyLogos(),
+    fetchPromotions(),
   ])
+
+  const activePromotions = getActivePromotionsFromList(promotions)
 
   return (
     <main className="min-h-screen bg-background">
@@ -34,6 +38,7 @@ export default async function Home() {
         allCars={allCars}
         contentVideos={contentVideos}
         companyLogos={companyLogos}
+        promotions={activePromotions}
       />
 
       {/* Contact Section */}

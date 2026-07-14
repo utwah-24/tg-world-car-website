@@ -14,6 +14,9 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination"
 import { isThirdPartyCar, type Car } from "@/lib/cars-data"
+import type { Promotion } from "@/lib/promotions"
+import { filterCarsByPromotion, getDisplayPrice } from "@/lib/promotions"
+import { useRouter } from "next/navigation"
 import { Car as CarIcon, Search, X, RotateCcw, SlidersHorizontal, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react"
 import {
   Sheet,
@@ -56,6 +59,7 @@ function ShopTypeIcon({ canon, label }: { canon: string; label: string }) {
 interface ShopContentProps {
   cars: Car[]
   companyLogos?: CompanyLogo[]
+  promotions?: Promotion[]
 }
 
 const conditionFilters = [
@@ -119,7 +123,7 @@ function filterByPriceBucket(cars: Car[], bucketId: string | null): Car[] {
   const bucket = PRICE_BUCKETS.find((b) => b.id === bucketId)
   if (!bucket) return cars
   return cars.filter((car) => {
-    const pm = parsePriceMillions(car.price || "")
+    const pm = parsePriceMillions(getDisplayPrice(car).current || "")
     if (pm == null) return false
     return bucket.match(pm)
   })
@@ -159,7 +163,8 @@ function filterByMileageBucket(cars: Car[], bucketId: string | null): Car[] {
   })
 }
 
-export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
+export function ShopContent({ cars, companyLogos = [], promotions = [] }: ShopContentProps) {
+  const router = useRouter()
   const didMountPageResetRef = useRef(false)
   const skipNextPageResetRef = useRef(false)
   const [activeType, setActiveType] = useState<string | null>(null)
@@ -183,6 +188,17 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
   const [stockListMode, setStockListMode] = useState(false)
   const [highlightedCarId, setHighlightedCarId] = useState<string | null>(null)
   const [highlightActive, setHighlightActive] = useState(false)
+  const [activePromoId, setActivePromoId] = useState<string | null>(null)
+
+  const activePromotion = useMemo(
+    () => promotions.find((p) => String(p.promoID) === activePromoId && p.is_active) ?? null,
+    [activePromoId, promotions],
+  )
+
+  const shopInventory = useMemo(() => {
+    if (!activePromotion) return cars
+    return filterCarsByPromotion(cars, activePromotion)
+  }, [cars, activePromotion])
 
   const hasActiveFilters =
     activeType !== null ||
@@ -192,7 +208,8 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
     activeLatest ||
     activeRegistration !== null ||
     !!selectedCompany ||
-    filterInDar
+    filterInDar ||
+    !!activePromotion
 
   // Prevent document scroll; only the car list panel scrolls (see layout: h-[100dvh] overflow-hidden).
   useEffect(() => {
@@ -211,14 +228,14 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
   // Unique sorted company list from all cars
   const companyOptions = useMemo(() => {
     const set = new Set<string>()
-    cars.forEach(car => { if (car.company) set.add(car.company) })
+    shopInventory.forEach(car => { if (car.company) set.add(car.company) })
     return Array.from(set).sort()
-  }, [cars])
+  }, [shopInventory])
 
   const companyLogoMap = useMemo(() => buildCompanyLogoMap(companyLogos), [companyLogos])
 
   /** Type filters: built from live inventory so any new API `type` appears after normalizeCarType(). */
-  const typeFilters = useMemo(() => buildShopTypeFilterRows(cars), [cars])
+  const typeFilters = useMemo(() => buildShopTypeFilterRows(shopInventory), [shopInventory])
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -269,6 +286,8 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
       setActiveRegistration(registration)
       setListingOpen(true)
     }
+    const promo = params.get("promo")
+    if (promo) setActivePromoId(promo)
   }, [])
 
   // Apply ?category= once inventory lists that type (new API types included automatically)
@@ -276,17 +295,17 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
     const params = new URLSearchParams(window.location.search)
     const category = params.get("category")
     const showStockList = params.get("stock") === "list"
-    const rows = buildShopTypeFilterRows(cars)
+    const rows = buildShopTypeFilterRows(shopInventory)
     if (showStockList) setTypeOpen(true)
     if (category && rows.some((f) => f.id === category)) {
       skipNextPageResetRef.current = true
       setActiveType(category)
       setTypeOpen(true)
     }
-  }, [cars])
+  }, [shopInventory])
 
   const carsMatchingFiltersExceptPriceAndRegistration = useMemo(() => {
-    let filtered = filterByInDar(cars, filterInDar)
+    let filtered = filterByInDar(shopInventory, filterInDar)
     filtered = filterByType(filtered, activeType)
     filtered = filterByCondition(filtered, activeCondition)
     filtered = filterByCompany(filtered, selectedCompany)
@@ -301,7 +320,7 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
     }
 
     return filtered
-  }, [cars, filterInDar, activeType, activeCondition, selectedCompany, activeLatest, searchQuery])
+  }, [shopInventory, filterInDar, activeType, activeCondition, selectedCompany, activeLatest, searchQuery])
 
   const carsMatchingFiltersExceptPrice = useMemo(
     () => filterByRegistration(carsMatchingFiltersExceptPriceAndRegistration, activeRegistration),
@@ -400,15 +419,22 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
     if (activeCondition) params.set("condition", activeCondition)
     if (activeRegistration) params.set("registration", activeRegistration)
     if (activeType) params.set("category", activeType)
+    if (activePromoId) params.set("promo", activePromoId)
     params.set("page", String(currentPage))
     params.set("highlight", carId)
     return `/shop?${params.toString()}`
   }
 
-  const shopTitle = filterInDar ? "Vehicles in Dar es Salaam" : "Shop All Vehicles"
-  const shopSubtitle = filterInDar
-    ? `Showing ${filteredCars.length} vehicle${filteredCars.length === 1 ? "" : "s"} available in Dar es Salaam`
-    : `Browse our complete inventory of ${cars.length} quality vehicles`
+  const shopTitle = activePromotion
+    ? activePromotion.promo_name
+    : filterInDar
+      ? "Vehicles in Dar es Salaam"
+      : "Shop All Vehicles"
+  const shopSubtitle = activePromotion
+    ? `${filteredCars.length} vehicle${filteredCars.length === 1 ? "" : "s"} in this promotion · ${activePromotion.price_reduction_label} OFF · ${activePromotion.start_date} – ${activePromotion.end_date}`
+    : filterInDar
+      ? `Showing ${filteredCars.length} vehicle${filteredCars.length === 1 ? "" : "s"} available in Dar es Salaam`
+      : `Browse our complete inventory of ${shopInventory.length} quality vehicles`
 
   // Banner: use the selected company logo as the bg image (cross-fades to/from the default photo)
   const bannerLogoUrl = selectedCompany
@@ -427,7 +453,16 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
     setTypeOpen(false)
     setSelectedCompany("")
     setFilterInDar(false)
+    setActivePromoId(null)
     setCurrentPage(1)
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search)
+      if (params.has("promo")) {
+        params.delete("promo")
+        const next = params.toString()
+        router.replace(next ? `/shop?${next}` : "/shop")
+      }
+    }
   }
 
   const handleCompanyChange = (value: string) => {
@@ -519,7 +554,7 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
           <div className="flex flex-col gap-2 pt-1">
             {PRICE_BUCKETS.map((bucket) => {
               const count = carsMatchingFiltersExceptPrice.filter((car) => {
-                const pm = parsePriceMillions(car.price || "")
+                const pm = parsePriceMillions(getDisplayPrice(car).current || "")
                 return pm != null && bucket.match(pm)
               }).length
               const isActive = activePriceRange === bucket.id
@@ -607,7 +642,7 @@ export function ShopContent({ cars, companyLogos = [] }: ShopContentProps) {
         {listingOpen && (
           <div className="flex flex-col gap-2 pt-1">
             {(() => {
-              const latestCount = cars.filter((car) => isCarInLatestWindow(car.createdAt)).length
+              const latestCount = shopInventory.filter((car) => isCarInLatestWindow(car.createdAt)).length
               return (
                 <Button
                   variant={activeLatest ? "default" : "outline"}

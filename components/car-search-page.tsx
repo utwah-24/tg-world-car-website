@@ -6,9 +6,11 @@ import { InfoCards } from "./info-cards"
 import { CarSection } from "./car-section"
 import { ContentReviewsSection } from "./content-reviews-section"
 import { HomeSlotsSection } from "./home-slots-section"
+import { PromotionsSection } from "./promotions-section"
 import type { Car } from "@/lib/cars-data"
 import { isCarAvailableNow } from "@/lib/cars-data"
 import type { ContentVideo, CompanyLogo } from "@/lib/api"
+import type { Promotion } from "@/lib/promotions"
 import { filterLatestCars } from "@/lib/latest-cars"
 
 interface CarSearchPageProps {
@@ -18,9 +20,10 @@ interface CarSearchPageProps {
   allCars: Car[]
   contentVideos: ContentVideo[]
   companyLogos?: CompanyLogo[]
+  promotions?: Promotion[]
 }
 
-export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, allCars, contentVideos, companyLogos = [] }: CarSearchPageProps) {
+export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, allCars, contentVideos, companyLogos = [], promotions = [] }: CarSearchPageProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCompany, setSelectedCompany] = useState("")
   const [selectedBrand, setSelectedBrand] = useState("")
@@ -53,6 +56,11 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, all
 
   /** Top Picks — available inventory only (no coming-soon or sold-out). */
   const topPicksCars = useMemo(() => availableForBrowse, [availableForBrowse])
+
+  const activePromotions = useMemo(
+    () => promotions.filter((p) => p.is_active),
+    [promotions],
+  )
 
   const hasFilters = !!searchQuery.trim() || !!selectedCompany || !!selectedBrand
 
@@ -110,8 +118,14 @@ export function CarSearchPage({ topSellingCars, comingSoonCars, soldOutCars, all
         />
       )}
 
-      {/* Coming Soon / Home Slots */}
-      {!hasFilters && <HomeSlotsSection showComingSoon={comingSoonCars.length > 0} />}
+      {/* Promotions + Home Slots */}
+      {!hasFilters && activePromotions.length > 0 && <PromotionsSection promotions={activePromotions} />}
+      {!hasFilters && (
+        <HomeSlotsSection
+          showComingSoon={comingSoonCars.length > 0}
+          promotions={activePromotions}
+        />
+      )}
 
       {/* Search Results or Category Sections */}
       {filteredCars !== null ? (

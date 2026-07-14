@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Calendar, Fuel, Gauge, MapPin, Tag } from "lucide-react"
 import type { Car as CarType } from "@/lib/cars-data"
 import { isThirdPartyCar } from "@/lib/cars-data"
+import { isCarOnPromo } from "@/lib/promotions"
+import { CarPrice } from "@/components/car-price"
 import { useScrollAnimation } from "@/hooks/use-scroll-animation"
 import { cn } from "@/lib/utils"
 
@@ -67,6 +69,7 @@ export function CarCard({
 }: CarCardProps) {
   const isSoldOut = car.category === "sold-out"
   const isComingSoon = car.category === "coming-soon"
+  const isOnPromo = isCarOnPromo(car)
   const yearPrefix = car.year ? `${car.year} ` : ""
   const isThirdParty = isThirdPartyCar(car)
   const { ref, isVisible } = useScrollAnimation({ threshold: 0.1 })
@@ -312,6 +315,18 @@ export function CarCard({
                 Coming Soon
               </Badge>
             )}
+            {isOnPromo && !isSoldOut && !isComingSoon && (
+              <Badge
+                className={cn(
+                  "font-medium bg-red-600 text-white",
+                  compact
+                    ? "text-[9px] px-1.5 py-px leading-tight"
+                    : "text-[10px] sm:text-xs px-2 py-0.5 sm:px-2.5 sm:py-1",
+                )}
+              >
+                PROMO
+              </Badge>
+            )}
           </div>
         )}
       </div>
@@ -338,14 +353,7 @@ export function CarCard({
 
         {/* Price */}
         <div className={cn(compact ? "mb-1.5" : "mb-2", minimalListing && "mb-0")}>
-          <span
-            className={cn(
-              "font-bold text-foreground leading-tight block",
-              compact ? "text-xs sm:text-sm" : "text-base sm:text-xl",
-            )}
-          >
-            {car.price}
-          </span>
+          <CarPrice car={car} compact={compact} />
         </div>
 
         {/* Arrival date — coming-soon cards only */}

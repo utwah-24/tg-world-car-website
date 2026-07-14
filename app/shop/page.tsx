@@ -3,7 +3,8 @@ import { HeaderWrapper } from "@/components/header-wrapper"
 import { ShopContent } from "@/components/shop-content"
 import { AutoRefreshOnFocus } from "@/components/auto-refresh-on-focus"
 import { getAllCars, getSoldCarsForShop, isCarAvailableNow } from "@/lib/cars-data"
-import { fetchCompanyLogos } from "@/lib/api"
+import { fetchCompanyLogos, fetchPromotions } from "@/lib/api"
+import { getActivePromotionsFromList } from "@/lib/promotions"
 
 export const revalidate = 0
 
@@ -91,10 +92,13 @@ export async function generateMetadata({
 
 export default async function ShopPage() {
   const allCars = await getAllCars()
-  const [companyLogos, soldCars] = await Promise.all([
+  const [companyLogos, soldCars, promotions] = await Promise.all([
     fetchCompanyLogos(),
     getSoldCarsForShop(allCars),
+    fetchPromotions(),
   ])
+
+  const activePromotions = getActivePromotionsFromList(promotions)
 
   const soldCarIds = new Set(soldCars.map((car) => car.id))
 
@@ -110,7 +114,7 @@ export default async function ShopPage() {
       <AutoRefreshOnFocus />
       <HeaderWrapper />
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden pt-16 lg:pt-[4.5rem]">
-        <ShopContent cars={shopCars} companyLogos={companyLogos} />
+        <ShopContent cars={shopCars} companyLogos={companyLogos} promotions={activePromotions} />
       </div>
     </main>
   )

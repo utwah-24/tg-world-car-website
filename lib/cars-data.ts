@@ -42,6 +42,12 @@ export interface Car {
   testDriveAvailable?: boolean
   /** Dealer notes from API; null when empty */
   notes?: string | null
+  /** true when the API has an active promotional price for this car */
+  promoSet?: boolean
+  /** Backend-calculated promo price — never compute discounts client-side */
+  promoPrice?: string | null
+  /** Promotions linked to this car (may include inactive entries) */
+  promotions?: import("./promotions").CarPromotion[]
 }
 
 /** Third-party: `condition` from the main API and/or `[THIRD_PARTY]` from the partner feed */
