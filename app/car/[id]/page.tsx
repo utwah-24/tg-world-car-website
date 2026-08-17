@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { HeaderWrapper } from "@/components/header-wrapper"
 import { FooterWrapper } from "@/components/footer-wrapper"
 import { CarDetailsContent } from "@/components/car-details-content"
-import { getAllCars } from "@/lib/cars-data"
+import { getAllCars, getCarShareImage } from "@/lib/cars-data"
 import { getDisplayPrice } from "@/lib/promotions"
 import { notFound } from "next/navigation"
 
@@ -22,7 +22,7 @@ export async function generateMetadata({
   const title = `${yearPrefix}${car.name} — TG World International`
   const { current: displayPrice } = getDisplayPrice(car)
   const description = `${displayPrice}${car.mileage ? ` · ${car.mileage}` : ""}${car.fuel ? ` · ${car.fuel}` : ""}. Available at TG World International, Dar es Salaam.`
-  const ogImageUrl = `/api/og/car/${id}`
+  const shareImage = getCarShareImage(car)
 
   return {
     title,
@@ -32,14 +32,16 @@ export async function generateMetadata({
       description,
       url: `https://tgworldtz.com/car/${id}`,
       siteName: "TG World International",
-      images: [{ url: ogImageUrl, width: 1200, height: 630, alt: `${yearPrefix}${car.name}` }],
+      ...(shareImage && {
+        images: [{ url: shareImage, alt: `${yearPrefix}${car.name}` }],
+      }),
       type: "website",
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: [ogImageUrl],
+      ...(shareImage && { images: [shareImage] }),
     },
   }
 }

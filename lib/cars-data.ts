@@ -66,6 +66,12 @@ export function isCarAvailableNow(car: Car): boolean {
   return car.category !== "sold-out" && car.category !== "coming-soon"
 }
 
+/** First car photo URL for link previews and Meta catalog feeds. */
+export function getCarShareImage(car: Car): string | undefined {
+  const url = car.images?.[0] ?? car.image
+  return url?.startsWith("http") ? url : undefined
+}
+
 // Type alias for compatibility
 export type { CarFromAPI }
 

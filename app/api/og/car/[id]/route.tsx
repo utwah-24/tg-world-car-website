@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og"
 import { fetchCarById } from "@/lib/api"
-import type { Car } from "@/lib/cars-data"
+import { getCarShareImage, type Car } from "@/lib/cars-data"
 import { imageToDataUri, truncateText } from "@/lib/og-image-utils"
 import { getActivePromotions, getDisplayPrice, isCarOnPromo } from "@/lib/promotions"
 
@@ -18,9 +18,10 @@ export async function GET(
   const car = await fetchCarById(id)
 
   const logoUrl = `${origin}/logos/Logo%20tg2.png`
+  const shareImageUrl = car ? getCarShareImage(car as Car) : undefined
   const [logoDataUri, carImageDataUri] = await Promise.all([
     imageToDataUri(logoUrl),
-    car?.image?.startsWith("http") ? imageToDataUri(car.image) : Promise.resolve(null),
+    shareImageUrl ? imageToDataUri(shareImageUrl) : Promise.resolve(null),
   ])
 
   const displayPrice = car ? getDisplayPrice(car as Car) : null

@@ -460,19 +460,25 @@ export async function fetchCars(orderedKeys?: Set<string>): Promise<CarFromAPI[]
  */
 export async function fetchCarById(id: string): Promise<CarFromAPI | null> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/cars/${id}`, {
-      cache: 'no-store',
-      headers: {
-        'Accept': 'application/json',
-      }
-    })
-    
+    const [response, orderedKeys] = await Promise.all([
+      fetch(`${API_BASE_URL}/api/cars/${id}`, {
+        cache: 'no-store',
+        headers: {
+          'Accept': 'application/json',
+        },
+      }),
+      fetchOrderedCarKeys(),
+    ])
+
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`)
     }
-    
-    const rawCar: RawCarFromAPI = await response.json()
-    return transformCarData(rawCar)
+
+    const json = await response.json()
+    const rawCar: RawCarFromAPI = json?.data ?? json
+    if (!rawCar?.car_id) return null
+
+    return transformCarData(rawCar, orderedKeys)
   } catch (error) {
     console.error(`❌ Error fetching car ${id}:`, error)
     return null
