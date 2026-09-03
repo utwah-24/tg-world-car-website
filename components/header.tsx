@@ -8,11 +8,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Menu, X, ChevronDown } from "lucide-react"
+import { Menu, X, ChevronDown, LogOut, UserRound } from "lucide-react"
 import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
 import { candidateCarTypeIconPaths } from "@/lib/car-type"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/components/auth-provider"
 
 /** Header logo once the nav turns white on scroll (`Logo tg2.png`). */
 const HEADER_LOGO_MARKETING = "/logos/Logo%20tg2.png"
@@ -107,6 +108,7 @@ export function Header({
   const [stockMenuOpen, setStockMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const router = useRouter()
+  const { user, isLoading: authIsLoading, logout } = useAuth()
   const pathname = usePathname()
   const normalizedPath = pathname.replace(/\/$/, "") || "/"
   const isHome = normalizedPath === "/"
@@ -173,6 +175,13 @@ export function Header({
   }
 
   const closeMenu = () => setIsMenuOpen(false)
+
+  const handleLogout = async () => {
+    await logout()
+    closeMenu()
+    router.replace("/")
+    router.refresh()
+  }
 
   return (
     <>
@@ -330,20 +339,43 @@ export function Header({
               </button>
             </nav>
 
-            {/* Sign In button — temporarily hidden
-            <Button
-              variant="outline"
-              onClick={() => router.push("/signin")}
-              className={cn(
-                "hidden md:inline-flex rounded-full bg-transparent px-6 font-bold h-10",
-                heroContrast
-                  ? "border-white/40 text-white hover:bg-white/10 hover:text-white"
-                  : "border-black/25 text-black hover:bg-muted hover:text-black",
-              )}
-            >
-              Sign In
-            </Button>
-            */}
+            {authIsLoading ? (
+              <div className="hidden h-9 w-24 lg:block" aria-hidden />
+            ) : user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  className={cn(
+                    "hidden lg:inline-flex h-9 items-center gap-2 rounded-full border bg-transparent px-4 text-sm font-bold",
+                    heroContrast
+                      ? "border-white/40 text-white hover:bg-white/10"
+                      : "border-black/25 text-black hover:bg-muted",
+                  )}
+                >
+                  <UserRound className="h-4 w-4" />
+                  <span className="max-w-28 truncate">{user.username}</span>
+                  <ChevronDown className="h-4 w-4 opacity-70" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="z-[80] min-w-44">
+                  <DropdownMenuItem onClick={() => void handleLogout()}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Log out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button
+                variant="outline"
+                onClick={() => router.push("/signin")}
+                className={cn(
+                  "hidden lg:inline-flex rounded-full bg-transparent px-5 font-bold h-9",
+                  heroContrast
+                    ? "border-white/40 text-white hover:bg-white/10 hover:text-white"
+                    : "border-black/25 text-black hover:bg-muted hover:text-black",
+                )}
+              >
+                Sign In
+              </Button>
+            )}
 
             <button
               type="button"
@@ -469,20 +501,34 @@ export function Header({
               Get in touch
             </button>
 
-            {/* Sign In button (mobile) — temporarily hidden
-            <div className="mt-auto pt-8 border-t border-white/10">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  router.push("/signin")
-                  closeMenu()
-                }}
-                className="w-full rounded-full bg-transparent border-white/30 text-white hover:bg-white/15 hover:text-white"
-              >
-                Sign In
-              </Button>
-            </div>
-            */}
+            {!authIsLoading && (
+              <div className="mt-auto pt-8 border-t border-white/10">
+                {user ? (
+                  <div className="space-y-3">
+                    <p className="text-center text-sm font-medium text-white">Signed in as {user.username}</p>
+                    <Button
+                      variant="outline"
+                      onClick={() => void handleLogout()}
+                      className="w-full rounded-full bg-transparent border-white/30 text-white hover:bg-white/15 hover:text-white"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Log out
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      router.push("/signin")
+                      closeMenu()
+                    }}
+                    className="w-full rounded-full bg-transparent border-white/30 text-white hover:bg-white/15 hover:text-white"
+                  >
+                    Sign In
+                  </Button>
+                )}
+              </div>
+            )}
           </nav>
         </div>
       </div>

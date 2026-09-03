@@ -7,20 +7,31 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Eye, EyeOff } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { useAuth } from "@/components/auth-provider"
+import { authApi, AuthApiError, safeRedirect } from "@/lib/auth-api"
 
 interface SignInContentProps {
   darkLogoUrl: string
 }
 
 export function SignInContent({ darkLogoUrl }: SignInContentProps) {
+  const router = useRouter()
+  const { setAuthenticatedUser } = useAuth()
   const [isSignUp, setIsSignUp] = useState(false)
   const [visible, setVisible] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
 
   const [signInData, setSignInData] = useState({ usernameOrEmail: "", password: "" })
   const [signUpData, setSignUpData] = useState({ username: "", email: "", phone: "", password: "" })
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [formError, setFormError] = useState("")
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
 
   const switchMode = (toSignUp: boolean) => {
+    setFormError("")
+    setFieldErrors({})
     setVisible(false)
     setTimeout(() => {
       setIsSignUp(toSignUp)
@@ -29,13 +40,55 @@ export function SignInContent({ darkLogoUrl }: SignInContentProps) {
     }, 150)
   }
 
-  const handleSignIn = (e: React.FormEvent) => {
-    e.preventDefault()
+  const messageForError = (error: unknown) => {
+    if (!(error instanceof AuthApiError)) return "Something went wrong. Please try again."
+    if (error.code === "RATE_LIMITED") return "Too many attempts. Please wait before trying again."
+    if (error.code === "INVALID_CREDENTIALS") return "The supplied credentials are invalid."
+    return error.message
   }
 
-  const handleSignUp = (e: React.FormEvent) => {
-    e.preventDefault()
+  const finishAuthentication = (user: Awaited<ReturnType<typeof authApi.login>>["user"]) => {
+    setAuthenticatedUser(user)
+    const next = new URLSearchParams(window.location.search).get("next")
+    router.replace(safeRedirect(next, "/"))
+    router.refresh()
   }
+
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+    setFormError("")
+    setFieldErrors({})
+    try {
+      const response = await authApi.login(signInData)
+      finishAuthentication(response.user)
+    } catch (error) {
+      setSignInData((data) => ({ ...data, password: "" }))
+      setFieldErrors(error instanceof AuthApiError ? error.fields : {})
+      setFormError(messageForError(error))
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+    setFormError("")
+    setFieldErrors({})
+    try {
+      const response = await authApi.register(signUpData)
+      finishAuthentication(response.user)
+    } catch (error) {
+      setSignUpData((data) => ({ ...data, password: "" }))
+      setFieldErrors(error instanceof AuthApiError ? error.fields : {})
+      setFormError(messageForError(error))
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const fieldMessage = (name: string) => fieldErrors[name]?.[0]
 
   return (
     <div className="min-h-screen flex">
@@ -66,7 +119,7 @@ export function SignInContent({ darkLogoUrl }: SignInContentProps) {
         {/* Animated form container */}
         <div className="flex-1 flex items-center justify-center">
           <div
-            className="w-full max-w-md relative pt-16"
+            className="w-full max-w-md relative pt-32"
             style={{
               opacity: visible ? 1 : 0,
               transform: visible ? "translateY(0)" : "translateY(8px)",
@@ -75,12 +128,12 @@ export function SignInContent({ darkLogoUrl }: SignInContentProps) {
           >
             {/* Logo */}
             <Link href="/" className="absolute top-0 left-0">
-              <div className="relative h-10 w-36">
+              <div className="relative h-24 w-48">
                 <Image
                   src={darkLogoUrl}
                   alt="TG World"
                   fill
-                  className="object-contain object-left"
+                  className="origin-left scale-150 object-contain object-left"
                   priority
                   unoptimized={darkLogoUrl?.startsWith("http")}
                   onError={(e) => {
@@ -98,6 +151,7 @@ export function SignInContent({ darkLogoUrl }: SignInContentProps) {
                 </p>
 
                 <form onSubmit={handleSignUp} className="space-y-4">
+                  {formError && <Alert variant="destructive"><AlertDescription>{formError}</AlertDescription></Alert>}
                   <div className="space-y-1.5">
                     <Label htmlFor="username">Username</Label>
                     <Input
@@ -108,7 +162,9 @@ export function SignInContent({ darkLogoUrl }: SignInContentProps) {
                       onChange={(e) => setSignUpData({ ...signUpData, username: e.target.value })}
                       required
                       className="h-11"
+                      disabled={isSubmitting}
                     />
+                    {fieldMessage("username") && <p className="text-xs text-destructive">{fieldMessage("username")}</p>}
                   </div>
 
                   <div className="space-y-1.5">
@@ -121,7 +177,9 @@ export function SignInContent({ darkLogoUrl }: SignInContentProps) {
                       onChange={(e) => setSignUpData({ ...signUpData, email: e.target.value })}
                       required
                       className="h-11"
+                      disabled={isSubmitting}
                     />
+                    {fieldMessage("email") && <p className="text-xs text-destructive">{fieldMessage("email")}</p>}
                   </div>
 
                   <div className="space-y-1.5">
@@ -134,7 +192,9 @@ export function SignInContent({ darkLogoUrl }: SignInContentProps) {
                       onChange={(e) => setSignUpData({ ...signUpData, phone: e.target.value })}
                       required
                       className="h-11"
+                      disabled={isSubmitting}
                     />
+                    {fieldMessage("phone") && <p className="text-xs text-destructive">{fieldMessage("phone")}</p>}
                   </div>
 
                   <div className="space-y-1.5">
@@ -148,6 +208,8 @@ export function SignInContent({ darkLogoUrl }: SignInContentProps) {
                         onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })}
                         required
                         className="h-11 pr-10"
+                        minLength={10}
+                        disabled={isSubmitting}
                       />
                       <button
                         type="button"
@@ -158,10 +220,11 @@ export function SignInContent({ darkLogoUrl }: SignInContentProps) {
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+                    {fieldMessage("password") && <p className="text-xs text-destructive">{fieldMessage("password")}</p>}
                   </div>
 
-                  <Button type="submit" className="w-full h-11 text-base font-medium !mt-5">
-                    Create Account
+                  <Button type="submit" className="w-full h-11 text-base font-medium !mt-5" disabled={isSubmitting}>
+                    {isSubmitting ? "Creating account…" : "Create Account"}
                   </Button>
                 </form>
 
@@ -183,6 +246,7 @@ export function SignInContent({ darkLogoUrl }: SignInContentProps) {
                 </p>
 
                 <form onSubmit={handleSignIn} className="space-y-5">
+                  {formError && <Alert variant="destructive"><AlertDescription>{formError}</AlertDescription></Alert>}
                   <div className="space-y-1.5">
                     <Label htmlFor="usernameOrEmail">Username / Email</Label>
                     <Input
@@ -193,7 +257,9 @@ export function SignInContent({ darkLogoUrl }: SignInContentProps) {
                       onChange={(e) => setSignInData({ ...signInData, usernameOrEmail: e.target.value })}
                       required
                       className="h-11"
+                      disabled={isSubmitting}
                     />
+                    {fieldMessage("usernameOrEmail") && <p className="text-xs text-destructive">{fieldMessage("usernameOrEmail")}</p>}
                   </div>
 
                   <div className="space-y-1.5">
@@ -207,6 +273,7 @@ export function SignInContent({ darkLogoUrl }: SignInContentProps) {
                         onChange={(e) => setSignInData({ ...signInData, password: e.target.value })}
                         required
                         className="h-11 pr-10"
+                        disabled={isSubmitting}
                       />
                       <button
                         type="button"
@@ -217,16 +284,17 @@ export function SignInContent({ darkLogoUrl }: SignInContentProps) {
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+                    {fieldMessage("password") && <p className="text-xs text-destructive">{fieldMessage("password")}</p>}
                   </div>
 
                   <div className="flex items-center justify-end">
-                    <Link href="#" className="text-sm text-primary hover:underline">
+                    <Link href="/forgot-password" className="text-sm text-primary hover:underline">
                       Forgot password?
                     </Link>
                   </div>
 
-                  <Button type="submit" className="w-full h-11 text-base font-medium">
-                    Sign In
+                  <Button type="submit" className="w-full h-11 text-base font-medium" disabled={isSubmitting}>
+                    {isSubmitting ? "Signing in…" : "Sign In"}
                   </Button>
                 </form>
 
