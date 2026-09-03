@@ -26,6 +26,14 @@ async function proxyAuthRequest(
     )
   }
 
+  const requestOrigin = request.headers.get("origin")
+  if (request.method !== "GET" && requestOrigin && requestOrigin !== request.nextUrl.origin) {
+    return NextResponse.json(
+      { error: { code: "INVALID_ORIGIN", message: "The request origin is not allowed.", fields: {} } },
+      { status: 403 },
+    )
+  }
+
   const headers = new Headers({ Accept: "application/json" })
   const contentType = request.headers.get("content-type")
   const cookie = request.headers.get("cookie")

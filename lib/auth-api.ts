@@ -1,14 +1,5 @@
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://tgworld.e-saloon.online"
-
 function getAuthBaseUrl() {
-  if (
-    typeof window !== "undefined" &&
-    (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
-  ) {
-    return "/api/auth"
-  }
-  return `${API_BASE_URL}/api/auth`
+  return "/api/auth"
 }
 
 export type AuthUser = {
@@ -89,7 +80,10 @@ export const authApi = {
     return authRequest<AuthResponse>("/me")
   },
   logout() {
-    return authRequest<void>("/logout", { method: "POST" })
+    return authRequest<void>("/logout", {
+      method: "POST",
+      body: JSON.stringify({}),
+    })
   },
   forgotPassword(email: string) {
     return authRequest<{ message: string }>("/forgot-password", {
@@ -108,4 +102,9 @@ export const authApi = {
 export function safeRedirect(value: string | null, fallback = "/") {
   if (!value || !value.startsWith("/") || value.startsWith("//")) return fallback
   return value
+}
+
+export function normalizeTanzanianPhone(value: string) {
+  const compact = value.trim().replace(/[\s()-]/g, "")
+  return /^0\d{9}$/.test(compact) ? `+255${compact.slice(1)}` : compact
 }

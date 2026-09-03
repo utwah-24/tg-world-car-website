@@ -5,13 +5,16 @@ import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ChevronLeft, ChevronRight, MapPin, Fuel, Gauge, Calendar, Car as CarIcon, DollarSign, Cog, Palette, Settings, Users, Check, Link as LinkIcon, CheckCheck, Download, Phone } from "lucide-react"
+import { ChevronLeft, ChevronRight, MapPin, Fuel, Gauge, Calendar, Car as CarIcon, DollarSign, Cog, Palette, Settings, Users, Check, Link as LinkIcon, CheckCheck, Download, Phone, Heart } from "lucide-react"
 import type { Car } from "@/lib/cars-data"
 import { isThirdPartyCar, isCarAvailableNow } from "@/lib/cars-data"
 import { DEALER_CONTACTS, tzPhoneHref, tzWhatsAppHref } from "@/lib/dealer-contacts"
 import { CarCard } from "@/components/car-card"
 import { CarPrice } from "@/components/car-price"
 import { formatPromoDateRange, getActivePromotions, getDisplayPrice } from "@/lib/promotions"
+import { useAuth } from "@/components/auth-provider"
+import { useFavorites } from "@/lib/favorites"
+import { FavoritesApiError } from "@/lib/favorites-api"
 
 interface CarDetailsContentProps {
   car: Car
@@ -39,6 +42,9 @@ function crc32(data: Uint8Array): number {
 }
 
 export function CarDetailsContent({ car, relatedCars = [] }: CarDetailsContentProps) {
+  const { user, isLoading: authIsLoading } = useAuth()
+  const { isFavorite, isPending, toggleFavorite } = useFavorites()
+  const [favoriteError, setFavoriteError] = useState("")
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [copied, setCopied] = useState(false)
   const images = car.images && car.images.length > 0 ? car.images : [car.image]
@@ -62,6 +68,25 @@ export function CarDetailsContent({ car, relatedCars = [] }: CarDetailsContentPr
   }, [car.id, fallbackReturnToShopHref])
 
   const carLabel = `${yearPrefix}${car.name}`.trim()
+  const carIsFavorite = isFavorite(car.id)
+
+  const handleFavorite = async () => {
+    if (!user) {
+      window.location.href = `/signin?next=${encodeURIComponent(`/car/${car.id}`)}`
+      return
+    }
+    setFavoriteError("")
+    try {
+      await toggleFavorite(car.id)
+    } catch (error) {
+      const expired = error instanceof FavoritesApiError && error.status === 401
+      if (expired) {
+        window.location.href = `/signin?next=${encodeURIComponent(`/car/${car.id}`)}`
+        return
+      }
+      setFavoriteError(error instanceof Error ? error.message : "Unable to update favorites. Please try again.")
+    }
+  }
 
   const buildCarInquiryWhatsAppHref = (whatsapp: string) => {
     const pageUrl = carPageUrl
@@ -585,6 +610,19 @@ export function CarDetailsContent({ car, relatedCars = [] }: CarDetailsContentPr
                 {car.notes?.trim() ? car.notes.trim() : "null"}
               </p>
             </div>
+
+            <Button
+              type="button"
+              variant={carIsFavorite ? "default" : "outline"}
+              onClick={() => void handleFavorite()}
+              disabled={authIsLoading || isPending(car.id)}
+              aria-pressed={carIsFavorite}
+              className="h-12 w-full rounded-xl text-base font-semibold"
+            >
+              <Heart className={carIsFavorite ? "fill-current" : ""} />
+              {isPending(car.id) ? "Updating favorites…" : carIsFavorite ? "Remove from favorites" : "Add to favorites"}
+            </Button>
+            {favoriteError && <p role="alert" className="text-sm text-destructive">{favoriteError}</p>}
 
             {/* Pricing Card */}
             <div className="bg-card rounded-2xl p-6 border border-border sticky top-24 animate-slide-in-right" style={{ animationDelay: "0.3s", opacity: 0, animationFillMode: "forwards" }}>

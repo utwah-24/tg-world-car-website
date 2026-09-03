@@ -10,7 +10,7 @@ import { Eye, EyeOff } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useAuth } from "@/components/auth-provider"
-import { authApi, AuthApiError, safeRedirect } from "@/lib/auth-api"
+import { authApi, AuthApiError, normalizeTanzanianPhone, safeRedirect } from "@/lib/auth-api"
 
 interface SignInContentProps {
   darkLogoUrl: string
@@ -44,6 +44,7 @@ export function SignInContent({ darkLogoUrl }: SignInContentProps) {
     if (!(error instanceof AuthApiError)) return "Something went wrong. Please try again."
     if (error.code === "RATE_LIMITED") return "Too many attempts. Please wait before trying again."
     if (error.code === "INVALID_CREDENTIALS") return "The supplied credentials are invalid."
+    if (error.code === "ACCOUNT_EXISTS") return "That username, email, or phone number is already registered. Try different details or sign in."
     return error.message
   }
 
@@ -77,12 +78,22 @@ export function SignInContent({ darkLogoUrl }: SignInContentProps) {
     setFormError("")
     setFieldErrors({})
     try {
-      const response = await authApi.register(signUpData)
+      const response = await authApi.register({
+        ...signUpData,
+        phone: normalizeTanzanianPhone(signUpData.phone),
+      })
       finishAuthentication(response.user)
     } catch (error) {
       setSignUpData((data) => ({ ...data, password: "" }))
-      setFieldErrors(error instanceof AuthApiError ? error.fields : {})
-      setFormError(messageForError(error))
+      const nextFieldErrors = error instanceof AuthApiError ? error.fields : {}
+      setFieldErrors(nextFieldErrors)
+      setFormError(
+        error instanceof AuthApiError &&
+        error.code === "ACCOUNT_EXISTS" &&
+        Object.keys(nextFieldErrors).length > 0
+          ? ""
+          : messageForError(error),
+      )
     } finally {
       setIsSubmitting(false)
     }

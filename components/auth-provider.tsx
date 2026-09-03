@@ -8,6 +8,7 @@ type AuthContextValue = {
   isLoading: boolean
   isAuthenticated: boolean
   setAuthenticatedUser: (user: AuthUser) => void
+  clearAuthenticatedUser: () => void
   refreshUser: () => Promise<void>
   logout: () => Promise<void>
 }
@@ -53,6 +54,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(nextUser)
       setIsLoading(false)
     },
+    clearAuthenticatedUser: () => {
+      setUser(null)
+      setIsLoading(false)
+    },
     refreshUser,
     logout,
   }), [user, isLoading, refreshUser, logout])
@@ -65,4 +70,3 @@ export function useAuth() {
   if (!context) throw new Error("useAuth must be used inside AuthProvider")
   return context
 }
-

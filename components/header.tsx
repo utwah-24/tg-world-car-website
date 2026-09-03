@@ -345,9 +345,9 @@ export function Header({
               <DropdownMenu>
                 <DropdownMenuTrigger
                   className={cn(
-                    "hidden lg:inline-flex h-9 items-center gap-2 rounded-full border bg-transparent px-4 text-sm font-bold",
+                    "hidden lg:inline-flex h-9 items-center gap-2 rounded-full border bg-transparent px-4 text-sm font-bold transition-colors",
                     heroContrast
-                      ? "border-white/40 text-white hover:bg-white/10"
+                      ? "border-white/40 text-white hover:bg-white hover:text-black data-[state=open]:bg-white data-[state=open]:text-black"
                       : "border-black/25 text-black hover:bg-muted",
                   )}
                 >
@@ -356,6 +356,10 @@ export function Header({
                   <ChevronDown className="h-4 w-4 opacity-70" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="z-[80] min-w-44">
+                  <DropdownMenuItem onClick={() => router.push("/profile")}>
+                    <UserRound className="mr-2 h-4 w-4" />
+                    Profile
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => void handleLogout()}>
                     <LogOut className="mr-2 h-4 w-4" />
                     Log out
@@ -506,6 +510,17 @@ export function Header({
                 {user ? (
                   <div className="space-y-3">
                     <p className="text-center text-sm font-medium text-white">Signed in as {user.username}</p>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        router.push("/profile")
+                        closeMenu()
+                      }}
+                      className="w-full rounded-full bg-white text-black border-white hover:bg-white/90 hover:text-black"
+                    >
+                      <UserRound className="h-4 w-4" />
+                      Profile
+                    </Button>
                     <Button
                       variant="outline"
                       onClick={() => void handleLogout()}

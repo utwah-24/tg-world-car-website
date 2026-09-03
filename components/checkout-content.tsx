@@ -3,487 +3,119 @@
 import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { ArrowLeft, CheckCircle2, FileText, Loader2, MapPin, User, X } from "lucide-react"
+import { useAuth } from "@/components/auth-provider"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
-import { ArrowLeft, MapPin, User, CheckCircle } from "lucide-react"
 import type { Car } from "@/lib/cars-data"
+import { checkoutDraftFromStorage, checkoutDraftStorageKey, EMPTY_CHECKOUT_FORM, type CheckoutFormData } from "@/lib/checkout-draft"
 import { getDisplayPrice } from "@/lib/promotions"
-import {
-  checkoutDraftFromStorage,
-  checkoutDraftStorageKey,
-  EMPTY_CHECKOUT_FORM,
-  type CheckoutFormData,
-} from "@/lib/checkout-draft"
-import {
-  PROFORMA_STORAGE_KEY,
-  type ProformaInvoicePayload,
-} from "@/lib/proforma-types"
-import { extractChassisFromText, generateInvoiceNo } from "@/lib/proforma-utils"
 
-/** Strip non-numeric chars (keep decimal point) and return a number, or 0. */
-function parseNumeric(raw: string): number {
-  const n = parseFloat(raw.replace(/[^0-9.]/g, ""))
-  return isNaN(n) ? 0 : n
+function money(value: string) {
+  const amount = Number(value)
+  return amount > 0 ? `${amount.toLocaleString("en-US")} Tshs` : "—"
 }
 
-/** Format a number like 45000000 → "45,000,000" */
-function fmtNum(n: number): string {
-  return n.toLocaleString("en-US", { maximumFractionDigits: 0 })
-}
-
-/** Prefix with "SH " to match the rest of the invoice */
-function fmtAmt(n: number): string {
-  return `SH ${fmtNum(n)}`
-}
-
-interface CheckoutContentProps {
-  car: Car
-}
-
-export function CheckoutContent({ car }: CheckoutContentProps) {
-  const router = useRouter()
-  const [formData, setFormData] = useState<CheckoutFormData>(() => ({
-    ...EMPTY_CHECKOUT_FORM,
-  }))
-  const [draftHydrated, setDraftHydrated] = useState(false)
-  const skipNextPersist = useRef(false)
+export function CheckoutContent({ car }: { car: Car }) {
+  const { user, isAuthenticated, clearAuthenticatedUser } = useAuth()
+  const [form, setForm] = useState<CheckoutFormData>({ ...EMPTY_CHECKOUT_FORM })
+  const [hydrated, setHydrated] = useState(false)
+  const [preview, setPreview] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState("")
+  const [reference, setReference] = useState("")
+  const skipPersist = useRef(false)
+  const listedPrice = getDisplayPrice(car).current
+  const gallery = Array.from(new Set([car.image, ...(car.images ?? [])].filter(Boolean))).slice(0, 4)
 
   useEffect(() => {
-    skipNextPersist.current = true
-    const key = checkoutDraftStorageKey(car.id)
-    try {
-      setFormData(checkoutDraftFromStorage(sessionStorage.getItem(key)))
-    } catch {
-      setFormData({ ...EMPTY_CHECKOUT_FORM })
-    }
-    setDraftHydrated(true)
-  }, [car.id])
+    skipPersist.current = true
+    const saved = checkoutDraftFromStorage(sessionStorage.getItem(checkoutDraftStorageKey(car.id)))
+    setForm({ ...saved, fullName: saved.fullName || user?.username?.toUpperCase() || "", email: saved.email || user?.email || "", phone: saved.phone || user?.phone || "" })
+    setHydrated(true)
+  }, [car.id, user])
 
   useEffect(() => {
-    if (!draftHydrated) return
-    if (skipNextPersist.current) {
-      skipNextPersist.current = false
-      return
-    }
-    const key = checkoutDraftStorageKey(car.id)
-    try {
-      sessionStorage.setItem(key, JSON.stringify(formData))
-    } catch {
-      /* private mode / quota */
-    }
-  }, [formData, car.id, draftHydrated])
+    if (!hydrated) return
+    if (skipPersist.current) { skipPersist.current = false; return }
+    sessionStorage.setItem(checkoutDraftStorageKey(car.id), JSON.stringify(form))
+  }, [form, car.id, hydrated])
 
-  // Car price is in millions from the API (e.g. "31" = 31 Million Tshs).
-  // Use promo_price from the API when the car is on promotion.
-  const displayPrice = getDisplayPrice(car)
-  const totalTshs = parseNumeric(displayPrice.current) * 1_000_000
-  const paidTshs = parseFloat(formData.amountPaid) || 0
-  const dueTshs = Math.max(0, totalTshs - paidTshs)
+  const set = (field: keyof CheckoutFormData, value: string | boolean) => setForm((current) => ({ ...current, [field]: value }))
 
-  const handleRequestProforma = () => {
-    if (!formData.agreeToTerms) {
-      alert("Please agree to the terms and conditions")
-      return
-    }
-    const missing: string[] = []
-    if (!formData.fullName.trim()) missing.push("Full name")
-    if (!formData.phone.trim()) missing.push("Phone")
-    if (!formData.email.trim()) missing.push("Email")
-    if (missing.length) {
-      alert(`Please fill in: ${missing.join(", ")}`)
-      return
-    }
-
-    const additionalTrimmed = formData.additionalInfo.trim()
-    const payload: ProformaInvoicePayload = {
-      buyer: {
-        fullName: formData.fullName.trim(),
-        email: formData.email.trim(),
-        phone: formData.phone.trim(),
-      },
-      delivery: {
-        address: formData.address.trim(),
-        city: formData.city.trim(),
-        region: formData.region.trim(),
-        postalCode: formData.postalCode.trim(),
-      },
-      ...(additionalTrimmed ? { additionalInfo: additionalTrimmed } : {}),
-      car: {
-        id: car.id,
-        name: car.name,
-        year: car.year,
-        price: displayPrice.current,
-        image: car.image,
-        color: car.color,
-        chassis: car.chassis,
-        description: car.description,
-      },
-      chassis: car.chassis || extractChassisFromText(car.description),
-      invoiceNo: generateInvoiceNo(),
-      invoiceDate: new Date().toISOString(),
-      ...(paidTshs > 0 ? {
-        amountPaid: `${fmtNum(paidTshs)} Tshs`,
-        amountDue: `${fmtNum(dueTshs)} Tshs`,
-      } : {}),
-    }
-
-    try {
-      sessionStorage.setItem(PROFORMA_STORAGE_KEY, JSON.stringify(payload))
-    } catch {
-      alert("Could not save invoice data. Please try again or disable private mode.")
-      return
-    }
-    router.push("/proforma-invoice")
+  function showPreview() {
+    const missing = [!form.fullName.trim() && "full name", !form.phone.trim() && "phone number", !form.email.trim() && "email", !(Number(form.quotationPrice) > 0) && "proposed price"].filter(Boolean)
+    if (missing.length) return setError(`Please enter your ${missing.join(", ")}.`)
+    if (!form.agreeToTerms) return setError("Please agree to the terms before previewing your request.")
+    setError("")
+    setPreview(true)
   }
 
-  return (
-    <div className="pt-20 pb-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Back to this vehicle’s detail page (history.back() is unreliable after proforma / deep links) */}
-        <Link
-          href={`/car/${car.id}`}
-          className="mb-6 flex items-center gap-2 text-muted-foreground transition-colors animate-fade-in-up hover:text-foreground"
-        >
-          <ArrowLeft className="h-4 w-4 shrink-0" />
-          <span>Back to car details</span>
-        </Link>
+  async function submit() {
+    if (!isAuthenticated) { window.location.href = `/signin?next=${encodeURIComponent(`/checkout/${car.id}`)}`; return }
+    setSubmitting(true)
+    const pdfWindow = window.open("", "_blank")
+    if (pdfWindow) pdfWindow.opener = null
+    try {
+      const response = await fetch("/api/quotations", {
+        method: "POST", credentials: "include", headers: { Accept: "application/json", "Content-Type": "application/json" },
+        body: JSON.stringify({ carId: Number(car.id), proposedPrice: Number(form.quotationPrice), currency: "TZS", buyer: { fullName: form.fullName.trim(), email: form.email.trim(), phone: form.phone.trim() }, delivery: { address: form.address.trim(), city: form.city.trim(), region: form.region.trim(), postalCode: form.postalCode.trim() }, notes: form.additionalInfo.trim() || null }),
+      })
+      const body = await response.json().catch(() => null)
+      if (!response.ok) {
+        const apiError = body?.error
+        if (response.status === 401) {
+          pdfWindow?.close()
+          clearAuthenticatedUser()
+          window.location.href = `/signin?next=${encodeURIComponent(`/checkout/${car.id}`)}`
+          return
+        }
+        const fieldMessages = Object.values(apiError?.fields ?? {}).flat().filter((value): value is string => typeof value === "string")
+        const message = apiError?.code === "CAR_NOT_AVAILABLE"
+          ? "This vehicle is no longer available for quotation."
+          : apiError?.code === "DUPLICATE_QUOTATION"
+            ? "You recently submitted the same quotation request. Check the Quotes tab in your profile."
+            : fieldMessages.length
+              ? fieldMessages.join(" ")
+              : apiError?.message ?? "The quotation request could not be sent. Please try again."
+        throw new Error(`${message}${apiError?.requestId ? ` Support reference: ${apiError.requestId}` : ""}`)
+      }
+      const quotation = body?.quotation
+      setReference(String(quotation?.reference ?? "Submitted"))
+      sessionStorage.removeItem(checkoutDraftStorageKey(car.id))
+      const previewUrl = quotation?.id ? `/api/quotations/${quotation.id}/preview` : quotation?.previewPdfUrl
+      if (previewUrl) {
+        if (pdfWindow) pdfWindow.location.href = previewUrl
+        else window.open(previewUrl, "_blank", "noopener,noreferrer")
+      } else pdfWindow?.close()
+    } catch (cause) {
+      pdfWindow?.close()
+      setError(cause instanceof Error ? cause.message : "The quotation request could not be sent. Please try again.")
+      setPreview(false)
+    } finally { setSubmitting(false) }
+  }
 
-        {/* Page Title */}
-        <h1 className="text-3xl font-bold text-foreground mb-8 animate-fade-in-up" style={{ animationDelay: "0.1s", opacity: 0, animationFillMode: "forwards" }}>Checkout</h1>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Forms */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Bank Details */}
-            <div className="bg-card rounded-none p-6 border-2 border-black animate-fade-in-up shadow-[6px_6px_0px_0px_#000]" style={{ animationDelay: "0.15s", opacity: 0, animationFillMode: "forwards" }}>
-              <h2 className="text-xl font-bold mb-1 text-primary">Bank Details</h2>
-              <p className="text-sm text-muted-foreground mb-5">Please use the details below to make your payment before submitting the order.</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Account Name</span>
-                  <span className="font-semibold text-foreground">TG WORLD INTERNATIONAL LTD</span>
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Bank Name</span>
-                  <span className="font-semibold text-foreground">NMB BANK</span>
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Account No (TZS)</span>
-                  <span className="font-mono font-bold text-foreground text-base tracking-wide">42810004330</span>
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Account No (USD)</span>
-                  <span className="font-mono font-bold text-foreground text-base tracking-wide">42810004331</span>
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">SWIFT Code</span>
-                  <span className="font-mono font-semibold text-foreground">NMIBTZTZXXX</span>
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Address</span>
-                  <span className="font-semibold text-foreground">16860 Dar es Salaam</span>
-                </div>
-              </div>
-            </div>
-
-          {/* Buyer Information */}
-            <div className="bg-card rounded-2xl p-6 border border-border animate-fade-in-up" style={{ animationDelay: "0.2s", opacity: 0, animationFillMode: "forwards" }}>
-              <h2 className="text-xl font-bold mb-6 text-foreground flex items-center gap-2">
-                <User className="w-5 h-5" />
-                Buyer Information
-              </h2>
-              
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="fullName">Full Name *</Label>
-                  <Input
-                    id="fullName"
-                    placeholder="JOHN DOE"
-                    autoCapitalize="characters"
-                    value={formData.fullName}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        fullName: e.target.value.toLocaleUpperCase(),
-                      })
-                    }
-                    className="h-11"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number *</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="+255 123 456 789"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="h-11"
-                  />
-                </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address *</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="john@example.com"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="h-11"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="amountPaid">Amount Paid</Label>
-                    <div className="relative">
-                      <Input
-                        id="amountPaid"
-                        type="number"
-                        min="0"
-                        step="1"
-                        placeholder="e.g. 500000"
-                        value={formData.amountPaid}
-                        onChange={(e) => setFormData({ ...formData, amountPaid: e.target.value })}
-                        className="h-11 pr-14"
-                      />
-                      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                        Tshs
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Leave blank if no deposit paid yet.
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="amountDue">Amount Due</Label>
-                    <div className="relative">
-                      <Input
-                        id="amountDue"
-                        readOnly
-                        value={totalTshs > 0 ? fmtNum(dueTshs) : ""}
-                        placeholder="Auto-calculated"
-                        className="h-11 pr-14 bg-muted/50 cursor-not-allowed font-medium text-foreground"
-                      />
-                      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                        Tshs
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Total minus amount paid.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Delivery Address in Tanzania */}
-            <div className="bg-card rounded-2xl p-6 border border-border animate-fade-in-up" style={{ animationDelay: "0.3s", opacity: 0, animationFillMode: "forwards" }}>
-              <h2 className="text-xl font-bold mb-6 text-foreground flex items-center gap-2">
-                <MapPin className="w-5 h-5" />
-                Delivery Address (Tanzania)
-              </h2>
-              <p className="mb-4 text-sm text-muted-foreground">
-                Optional — add if you want delivery details on the proforma.
-              </p>
-              
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="address">Street Address</Label>
-                  <Input
-                    id="address"
-                    placeholder="123 Main Street"
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    className="h-11"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="city">City</Label>
-                    <Input
-                      id="city"
-                      placeholder="Dar es Salaam"
-                      value={formData.city}
-                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                      className="h-11"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="region">Region</Label>
-                    <Input
-                      id="region"
-                      placeholder="Kinondoni"
-                      value={formData.region}
-                      onChange={(e) => setFormData({ ...formData, region: e.target.value })}
-                      className="h-11"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="postalCode">Postal Code</Label>
-                    <Input
-                      id="postalCode"
-                      placeholder="14111"
-                      value={formData.postalCode}
-                      onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
-                      className="h-11"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Additional Information */}
-            <div className="bg-card rounded-2xl p-6 border border-border animate-fade-in-up" style={{ animationDelay: "0.5s", opacity: 0, animationFillMode: "forwards" }}>
-              <h2 className="text-xl font-bold mb-4 text-foreground">Additional Information</h2>
-              <p className="mb-4 text-sm text-muted-foreground">Optional.</p>
-              
-              <div className="space-y-2">
-                <Label htmlFor="additionalInfo">Special Requests or Questions</Label>
-                <Textarea
-                  id="additionalInfo"
-                  placeholder="Let us know if you have any special requests or questions..."
-                  rows={4}
-                  value={formData.additionalInfo}
-                  onChange={(e) => setFormData({ ...formData, additionalInfo: e.target.value })}
-                />
-              </div>
-            </div>
-
-            {/* Terms & Submit */}
-            <div className="bg-card rounded-2xl p-6 border border-border animate-fade-in-up" style={{ animationDelay: "0.6s", opacity: 0, animationFillMode: "forwards" }}>
-              <div className="flex items-start gap-3 mb-6">
-                <Checkbox
-                  id="terms"
-                  checked={formData.agreeToTerms}
-                  onCheckedChange={(checked) => setFormData({ ...formData, agreeToTerms: checked as boolean })}
-                />
-                <Label htmlFor="terms" className="text-sm text-muted-foreground leading-relaxed cursor-pointer">
-                  I agree to the terms and conditions and privacy policy. I understand that TG World will contact me regarding this purchase inquiry.
-                </Label>
-              </div>
-
-              <Button 
-                type="button"
-                onClick={handleRequestProforma}
-                disabled={!formData.agreeToTerms}
-                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-14 rounded-xl text-lg font-semibold"
-              >
-                <CheckCircle className="w-5 h-5 mr-2" />
-                Request Proforma Invoice
-              </Button>
-            </div>
-          </div>
-
-          {/* Right Column - Order Summary */}
-          <div className="lg:col-span-1">
-            <div className="bg-card rounded-2xl p-6 border border-border sticky top-24 animate-slide-in-right" style={{ animationDelay: "0.3s", opacity: 0, animationFillMode: "forwards" }}>
-              <h2 className="text-xl font-bold mb-6 text-foreground">Order Summary</h2>
-              
-              {/* Car Image */}
-              <div className="relative aspect-video rounded-xl overflow-hidden mb-4 bg-muted">
-                <Image
-                  src={car.image}
-                  alt={`${car.year} ${car.name}`}
-                  fill
-                  className="object-cover"
-                  unoptimized={car.image?.startsWith('http')}
-                />
-              </div>
-
-              {/* Car Details */}
-              <h3 className="font-semibold text-lg text-foreground mb-1">
-                {car.year} {car.name}
-              </h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                {car.mileage} • {car.fuel} • {car.transmission}
-              </p>
-
-              {/* Price Breakdown */}
-              <div className="space-y-3 py-4 border-y border-border">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Vehicle Price</span>
-                  <span className="font-medium text-foreground text-right">
-                    {displayPrice.original && (
-                      <span className="block text-xs text-muted-foreground line-through">{displayPrice.original}</span>
-                    )}
-                    <span className={displayPrice.original ? "text-red-600" : ""}>{displayPrice.current}</span>
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Registration Fee</span>
-                  <span className="font-medium text-foreground">Included</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Documentation</span>
-                  <span className="font-medium text-foreground">Included</span>
-                </div>
-              </div>
-
-              {/* Total */}
-              <div className="flex justify-between mt-4 pb-3 border-b border-border">
-                <span className="text-lg font-bold text-foreground">Total</span>
-                <span className={`text-2xl font-bold ${displayPrice.original ? "text-red-600" : "text-primary"}`}>
-                  {displayPrice.current}
-                </span>
-              </div>
-
-              {/* Payment status — shown once user types an amount */}
-              {paidTshs > 0 && (
-                <div className="mt-3 space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Amount Paid</span>
-                    <span className="font-semibold text-emerald-600">
-                      {fmtNum(paidTshs)} Tshs
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Amount Due</span>
-                    <span className={`font-semibold ${dueTshs > 0 ? "text-destructive" : "text-emerald-600"}`}>
-                      {fmtNum(dueTshs)} Tshs
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* Delivery Info */}
-              <div className="mt-6 p-4 bg-muted rounded-xl">
-                <div className="flex items-start gap-3">
-                  <MapPin className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-medium text-sm text-foreground">Pickup Location</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      TG World Showroom<br />
-                      Sinza, Dar es Salaam<br />
-                      Tanzania
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Contact Support */}
-              <div className="mt-6 text-center">
-                <p className="text-xs text-muted-foreground mb-2">Need help?</p>
-                <a 
-                  href="/#contact" 
-                  className="text-sm text-primary hover:underline font-medium"
-                >
-                  Contact our sales team
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
+  return <div className="pb-12 pt-20"><div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <Link href={`/car/${car.id}`} className="mb-6 flex items-center gap-2 text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" />Back to car details</Link>
+    <h1 className="mb-2 text-3xl font-bold">Request a quotation</h1><p className="mb-8 text-muted-foreground">Tell us your proposed price. No payment is taken on this page.</p>
+    <div className="grid gap-8 lg:grid-cols-3"><div className="space-y-6 lg:col-span-2">
+      <section className="rounded-2xl border bg-card p-6"><h2 className="mb-6 flex items-center gap-2 text-xl font-bold"><User className="h-5 w-5" />Requester information</h2><div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Full Name *" id="fullName"><Input id="fullName" value={form.fullName} onChange={(e) => set("fullName", e.target.value.toUpperCase())} placeholder="JOHN DOE" /></Field>
+        <Field label="Phone Number *" id="phone"><Input id="phone" type="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="+255 123 456 789" /></Field>
+        <div className="sm:col-span-2"><Field label="Email Address *" id="email"><Input id="email" type="email" value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="john@example.com" /></Field></div>
+      </div></section>
+      <section className="rounded-2xl border bg-card p-6"><h2 className="mb-2 text-xl font-bold">Your proposed price</h2><p className="mb-5 text-sm text-muted-foreground">Enter the amount you would like TG World to consider. This is a request, not a payment.</p><div className="relative"><Input type="number" min="1" value={form.quotationPrice} onChange={(e) => set("quotationPrice", e.target.value)} placeholder="e.g. 350000000" className="h-12 pr-16 text-lg font-semibold" /><span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">Tshs</span></div></section>
+      <section className="rounded-2xl border bg-card p-6"><h2 className="mb-2 flex items-center gap-2 text-xl font-bold"><MapPin className="h-5 w-5" />Preferred delivery address</h2><p className="mb-5 text-sm text-muted-foreground">Optional — add where you would like the vehicle delivered.</p><div className="grid gap-4 sm:grid-cols-3"><div className="sm:col-span-3"><Field label="Street Address" id="address"><Input id="address" value={form.address} onChange={(e) => set("address", e.target.value)} /></Field></div><Field label="City" id="city"><Input id="city" value={form.city} onChange={(e) => set("city", e.target.value)} /></Field><Field label="Region" id="region"><Input id="region" value={form.region} onChange={(e) => set("region", e.target.value)} /></Field><Field label="Postal Code" id="postal"><Input id="postal" value={form.postalCode} onChange={(e) => set("postalCode", e.target.value)} /></Field></div></section>
+      <section className="rounded-2xl border bg-card p-6"><h2 className="mb-3 text-xl font-bold">Additional request details</h2><Textarea rows={4} value={form.additionalInfo} onChange={(e) => set("additionalInfo", e.target.value)} placeholder="Colour preference, financing question, trade-in details, or anything else..." /></section>
+      <section className="rounded-2xl border bg-card p-6">{error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-600">{error}</p>}<div className="mb-6 flex items-start gap-3"><Checkbox id="terms" checked={form.agreeToTerms} onCheckedChange={(v) => set("agreeToTerms", v === true)} /><Label htmlFor="terms" className="cursor-pointer text-sm leading-relaxed text-muted-foreground">I agree that TG World may contact me about this quotation request. I understand this is not a confirmed sale or payment.</Label></div><Button onClick={showPreview} disabled={!form.agreeToTerms} className="h-14 w-full rounded-xl text-lg font-semibold disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100"><FileText className="mr-2 h-5 w-5" />Preview quotation request</Button></section>
+    </div><aside><div className="sticky top-24 rounded-2xl border bg-card p-6"><h2 className="mb-5 text-xl font-bold">Vehicle summary</h2><CarImage src={car.image} alt={`${car.year} ${car.name}`} large /><h3 className="mt-4 text-lg font-semibold">{car.year} {car.name}</h3><p className="mt-1 text-sm text-muted-foreground">{[car.mileage, car.fuel, car.transmission].filter(Boolean).join(" • ")}</p><div className="mt-5 space-y-3 border-y py-4 text-sm"><Line label="Listed price" value={listedPrice} />{form.quotationPrice && <Line label="Your proposal" value={money(form.quotationPrice)} accent />}</div><p className="mt-4 text-xs leading-relaxed text-muted-foreground">A sales representative will review your request and contact you. Submission does not charge you.</p></div></aside></div>
+  </div>{preview && <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/60 p-4 sm:p-8" role="dialog" aria-modal="true"><div className="mx-auto max-w-4xl overflow-hidden rounded-2xl bg-white text-slate-900 shadow-2xl"><div className="flex items-center justify-between border-b px-6 py-4"><span className="text-sm font-semibold uppercase tracking-[.2em] text-slate-500">Quotation request preview</span><button onClick={() => setPreview(false)} className="rounded-full p-2 hover:bg-slate-100" aria-label="Close"><X className="h-5 w-5" /></button></div>{reference ? <div className="px-6 py-20 text-center"><CheckCircle2 className="mx-auto mb-4 h-14 w-14 text-emerald-600" /><h2 className="text-2xl font-bold">Quotation request sent</h2><p className="mt-2 text-slate-600">Reference: {reference}. TG World will contact you after reviewing your offer.</p><Button asChild className="mt-7"><Link href="/profile">View profile</Link></Button></div> : <><div className="flex flex-col justify-between gap-6 border-b px-6 py-7 sm:flex-row sm:items-start sm:px-10"><Image src="/logos/Logo%20tg2.png" alt="TG World International" width={132} height={100} className="h-auto w-28 object-contain" /><div className="sm:text-right"><p className="text-xs font-semibold uppercase tracking-[.2em] text-orange-600">Vehicle price quotation</p><h2 className="mt-2 text-2xl font-bold">Customer request</h2><p className="mt-1 text-sm text-slate-500">{new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" })}</p></div></div><div className="grid gap-8 px-6 py-7 sm:px-10 lg:grid-cols-[1.15fr_.85fr]"><div><CarImage src={gallery[0]} alt={car.name} large />{gallery.length > 1 && <div className="mt-3 grid grid-cols-3 gap-2">{gallery.slice(1).map((src) => <CarImage key={src} src={src} alt="Vehicle view" />)}</div>}<h3 className="mt-5 text-xl font-bold">{car.year} {car.name}</h3><div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-600">{[car.mileage, car.fuel, car.transmission, car.color, car.chassis].filter(Boolean).map((item) => <span key={item}>{item}</span>)}</div></div><div className="space-y-6"><div className="rounded-xl bg-slate-50 p-5"><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Proposed price</p><p className="mt-2 text-2xl font-bold text-orange-600">{money(form.quotationPrice)}</p><p className="mt-2 text-sm text-slate-500">Listed price: {listedPrice}</p></div><div><Caption>Requested by</Caption><p className="font-bold">{form.fullName}</p><p className="text-sm text-slate-600">{form.email}</p><p className="text-sm text-slate-600">{form.phone}</p></div>{(form.address || form.city || form.region) && <div><Caption>Preferred delivery</Caption><p className="text-sm">{[form.address, form.city, form.region, form.postalCode].filter(Boolean).join(", ")}</p></div>}{form.additionalInfo && <div><Caption>Request notes</Caption><p className="whitespace-pre-wrap text-sm">{form.additionalInfo}</p></div>}</div></div><div className="flex flex-col gap-3 border-t bg-slate-50 px-6 py-5 sm:flex-row sm:justify-end sm:px-10"><Button variant="outline" onClick={() => setPreview(false)}>Edit request</Button><Button onClick={submit} disabled={submitting} className="bg-orange-600 hover:bg-orange-700">{submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{isAuthenticated ? "Send quotation request" : "Sign in and send"}</Button></div></>}</div></div>}</div>
 }
+
+function Field({ label, id, children }: { label: string; id: string; children: React.ReactNode }) { return <div className="space-y-2"><Label htmlFor={id}>{label}</Label>{children}</div> }
+function Line({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) { return <div className="flex justify-between gap-4"><span className="text-muted-foreground">{label}</span><span className={`text-right font-semibold ${accent ? "text-primary" : ""}`}>{value}</span></div> }
+function Caption({ children }: { children: React.ReactNode }) { return <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{children}</p> }
+function CarImage({ src, alt, large = false }: { src: string; alt: string; large?: boolean }) { return <div className={`relative overflow-hidden rounded-xl bg-slate-100 ${large ? "aspect-video" : "aspect-video"}`}><Image src={src} alt={alt} fill className="object-cover" unoptimized={src.startsWith("http")} /></div> }

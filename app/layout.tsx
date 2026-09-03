@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { Playfair_Display, Inter, Lato, Outfit, Carter_One } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/components/auth-provider'
+import { FavoritesProvider } from '@/lib/favorites'
 
 const playfair = Playfair_Display({ 
   subsets: ['latin'],
@@ -71,7 +72,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${playfair.variable} ${inter.variable} ${lato.variable} ${outfit.variable} ${carterOne.variable} font-sans antialiased`}>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <FavoritesProvider>{children}</FavoritesProvider>
+        </AuthProvider>
       </body>
     </html>
   )

@@ -14,7 +14,7 @@ export interface CheckoutFormData {
   postalCode: string
   additionalInfo: string
   agreeToTerms: boolean
-  amountPaid: string
+  quotationPrice: string
 }
 
 export const EMPTY_CHECKOUT_FORM: CheckoutFormData = {
@@ -27,7 +27,7 @@ export const EMPTY_CHECKOUT_FORM: CheckoutFormData = {
   postalCode: "",
   additionalInfo: "",
   agreeToTerms: false,
-  amountPaid: "",
+  quotationPrice: "",
 }
 
 /** Restore draft from sessionStorage JSON; invalid input → empty form */
@@ -45,7 +45,7 @@ export function checkoutDraftFromStorage(raw: string | null): CheckoutFormData {
       postalCode: typeof p.postalCode === "string" ? p.postalCode : "",
       additionalInfo: typeof p.additionalInfo === "string" ? p.additionalInfo : "",
       agreeToTerms: p.agreeToTerms === true,
-      amountPaid: typeof p.amountPaid === "string" ? p.amountPaid : "",
+      quotationPrice: typeof p.quotationPrice === "string" ? p.quotationPrice : "",
     }
   } catch {
     return { ...EMPTY_CHECKOUT_FORM }

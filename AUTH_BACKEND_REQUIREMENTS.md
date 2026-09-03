@@ -72,7 +72,7 @@ Read the session cookie and return the signed-in user. Return `401 Unauthorized`
 
 ### `POST /api/auth/logout`
 
-Revoke the current session server-side and clear its cookie. Return `204 No Content`.
+Send an empty JSON object (`{}`), revoke the current session server-side, and clear its cookie. The request body is required because the production LiteSpeed configuration rejects bodyless POST requests. Return `204 No Content` for an authenticated session.
 
 ### Password recovery
 
@@ -147,7 +147,7 @@ Never include password hashes, raw session tokens, reset tokens, or internal exc
 The frontend now:
 
 1. Uses an authentication API client with `NEXT_PUBLIC_API_BASE_URL` and `credentials: "include"`.
-2. Submits the sign-in and registration forms to the matching endpoints.
+2. Submits the sign-in and registration forms to the matching endpoints and normalizes valid Tanzanian local phone numbers to E.164.
 3. Shows pending, validation, invalid-credential, rate-limit, and network states.
 4. Loads `/api/auth/me` and renders shared signed-in state in desktop and mobile headers.
 5. Uses same-origin-only redirects after authentication.
@@ -159,7 +159,9 @@ Protected data must still be enforced by the backend API on every request.
 
 Production authentication is deployed at `https://tgworld.e-saloon.online/api/auth`. Live contract checks confirm structured `UNAUTHENTICATED` and `INVALID_CREDENTIALS` responses, plus credentialed CORS support for `https://tgworld.netlify.app`.
 
-For local testing against a local backend, set `NEXT_PUBLIC_API_BASE_URL=http://localhost:8000`, run the backend there, and allow the exact `http://localhost:3001` origin with credentials. Otherwise, the frontend client uses the production API URL by default.
+The authentication client always uses the same-origin Next.js `/api/auth/*` proxy. The proxy forwards requests and authentication cookies to the configured backend API. This avoids browser CORS failures and supports the canonical `https://tgworldtz.com`, the Netlify deployment domain, and local development without maintaining a separate browser CORS allowlist for every frontend hostname.
+
+To test against a local backend instead, set `NEXT_PUBLIC_API_BASE_URL=http://localhost:8000` and run the backend there; the local frontend proxy will forward to that configured address.
 
 ## Backend acceptance criteria
 
